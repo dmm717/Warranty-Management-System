@@ -1,0 +1,114 @@
+.vehicle-list {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.vin-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.vin-cell strong {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: var(--primary-color);
+}
+
+.vin-cell small {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.vehicle-name {
+  font-weight: 600;
+  color: var(--dark-color);
+}
+
+.owner-cell strong {
+  color: var(--dark-color);
+}
+
+.contact-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-cell small {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.action-buttons .btn {
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+.status-active {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-warranty {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-maintenance {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-inactive {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.no-data-container {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.no-data-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.no-data-container h3 {
+  color: var(--dark-color);
+  margin-bottom: 8px;
+}
+
+.no-data-container p {
+  color: #6b7280;
+}
+
+@media (max-width: 768px) {
+  .table th,
+  .table td {
+    padding: 12px 8px;
+    font-size: 13px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .contact-cell {
+    min-width: 120px;
+  }
+}

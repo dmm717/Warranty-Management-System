@@ -1,0 +1,75 @@
+.stats-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card-content {
+  padding: 24px;
+}
+
+.stats-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.stats-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.stats-card-icon {
+  font-size: 24px;
+  opacity: 0.8;
+}
+
+.stats-card-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--dark-color);
+}
+
+.stats-card-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+}
+
+.stats-card-accent-blue {
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+
+.stats-card-accent-green {
+  background: linear-gradient(90deg, var(--success-color), #22c55e);
+}
+
+.stats-card-accent-orange {
+  background: linear-gradient(90deg, var(--warning-color), #fb923c);
+}
+
+.stats-card-accent-red {
+  background: linear-gradient(90deg, var(--error-color), #f87171);
+}
+
+.stats-card-accent-yellow {
+  background: linear-gradient(90deg, #eab308, #facc15);
+}
+
+.stats-card-accent-purple {
+  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+}
