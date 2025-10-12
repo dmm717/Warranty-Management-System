@@ -1,5 +1,5 @@
 import React from "react";
-import "./RecentActivity.css";
+import "../../styles/RecentActivity.css";
 
 function RecentActivity({ userRole }) {
   // Mock data cho hoạt động gần đây

@@ -16,7 +16,7 @@ import ReportManagement from "./components/Report/ReportManagement";
 import UserManagement from "./components/User/UserManagement";
 import ProfileForm from "./components/User/ProfileForm";
 import Layout from "./components/Layout/Layout";
-import "./App.css";
+import "./styles/App.css";
 
 function App() {
   return (

@@ -1,15 +1,17 @@
 .header {
   background: white;
-  padding: 0 24px;
+  padding: 0 var(--vf-space-6);
   display: flex;
   justify-content: space-between;
   align-items: center;
   height: 70px;
-  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--vf-shadow-sm);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--vf-z-sticky);
   width: 100%;
+  min-width: 0;
+  border-bottom: 1px solid var(--vf-neutral-200);
 }
 
 .header-left {
@@ -34,6 +36,36 @@
   display: flex;
   align-items: center;
   gap: 20px;
+}
+
+.role-permission-section {
+  position: relative;
+}
+
+.permissions-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  min-width: 300px;
+  z-index: 1001;
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .user-info {
@@ -68,7 +100,7 @@
   font-size: 14px;
 }
 
-.user-role {
+.user-email {
   font-size: 12px;
   color: #6b7280;
 }
@@ -133,5 +165,10 @@
   
   .user-details {
     display: none;
+  }
+  
+  .permissions-dropdown {
+    right: -50px;
+    min-width: 280px;
   }
 }

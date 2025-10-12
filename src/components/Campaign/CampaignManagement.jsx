@@ -5,7 +5,7 @@ import CampaignForm from "./CampaignForm";
 import CampaignDetail from "./CampaignDetail";
 import RecallList from "./RecallList";
 import RecallForm from "./RecallForm";
-import "./CampaignManagement.css";
+import "../../styles/CampaignManagement.css";
 
 function CampaignManagement() {
   const { user } = useAuth();

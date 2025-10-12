@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./ReportChart.css";
+import "../../styles/ReportChart.css";
 
 function ReportChart({ reportData }) {
   const [activeChart, setActiveChart] = useState("warranty");

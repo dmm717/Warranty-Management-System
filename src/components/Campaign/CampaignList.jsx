@@ -1,5 +1,5 @@
 import React from "react";
-import "./CampaignList.css";
+import "../../styles/CampaignList.css";
 
 function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole }) {
   const getStatusBadge = (status) => {

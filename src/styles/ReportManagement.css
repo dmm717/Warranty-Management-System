@@ -6,27 +6,32 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--border-color);
+  margin-bottom: var(--vf-space-8);
+  padding-bottom: var(--vf-space-4);
+  border-bottom: 2px solid var(--vf-neutral-200);
+  width: 100%;
 }
 
 .page-header h1 {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--dark-color);
+  font-size: var(--vf-text-3xl);
+  font-weight: var(--vf-font-weight-bold);
+  color: var(--vf-neutral-900);
+  line-height: var(--vf-leading-tight);
 }
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--vf-space-3);
+  flex-shrink: 0;
 }
 
 .report-tabs {
   display: flex;
-  gap: 4px;
-  margin-bottom: 24px;
-  border-bottom: 2px solid var(--border-color);
+  gap: var(--vf-space-1);
+  margin-bottom: var(--vf-space-6);
+  border-bottom: 2px solid var(--vf-neutral-200);
+  width: 100%;
+  overflow-x: auto;
 }
 
 .tab-btn {

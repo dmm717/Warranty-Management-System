@@ -1,9 +1,29 @@
 import React, { useState } from "react";
-import "./CampaignDetail.css";
+import "../../styles/CampaignDetail.css";
+import notificationService from "../../services/NotificationService";
+import vehicleDistributionService from "../../services/VehicleDistributionService";
+import appointmentSchedulingService from "../../services/AppointmentSchedulingService";
+import workAssignmentService from "../../services/WorkAssignmentService";
+import campaignResultTrackingService from "../../services/CampaignResultTrackingService";
+import reportConfirmationService from "../../services/ReportConfirmationService";
+import rolePermissionService from "../../services/RolePermissionService";
+import { useAuth } from "../../contexts/AuthContext";
 
 function CampaignDetail({ item, type, onEdit, onUpdateStatus, userRole }) {
+  const { user } = useAuth();
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState("");
+  const [workflowData, setWorkflowData] = useState({
+    distribution: null,
+    schedule: null,
+    assignment: null,
+    tracking: null,
+  });
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processLog, setProcessLog] = useState([]);
+
+  // Get current user role from context or props
+  const currentUserRole = user?.role || userRole;
 
   if (!item) return null;
 
@@ -63,7 +83,7 @@ function CampaignDetail({ item, type, onEdit, onUpdateStatus, userRole }) {
   };
 
   const canUpdateStatus = () => {
-    return userRole === "EVM_Staff" || userRole === "Admin";
+    return rolePermissionService.canUpdateRecall(currentUserRole);
   };
 
   const getAvailableStatuses = () => {
@@ -156,6 +176,260 @@ function CampaignDetail({ item, type, onEdit, onUpdateStatus, userRole }) {
 
   const timeline = getTimeline();
 
+  // 🔧 Handler functions for new services với kiểm tra quyền
+  const handleSendNotification = async () => {
+    // Kiểm tra quyền trước khi thực hiện
+    const validation = rolePermissionService.validateAction(
+      currentUserRole,
+      "notify_campaign_to_sc",
+      "gửi thông báo chiến dịch"
+    );
+
+    if (!validation.allowed) {
+      setProcessLog((prev) => [...prev, `❌ ${validation.error}`]);
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Log action cho audit trail
+      rolePermissionService.logAction(
+        currentUserRole,
+        user?.id,
+        "notify_campaign_to_sc",
+        isRecall ? item.Recall_ID : item.CampaignsID,
+        { type: isRecall ? "recall" : "campaign" }
+      );
+
+      const result = await notificationService.sendCampaignNotification(
+        isRecall ? item.Recall_ID : item.CampaignsID,
+        {
+          type: isRecall ? "recall" : "campaign",
+          title: isRecall ? item.RecallName : item.CampaignsTypeName,
+          description: isRecall ? item.IssueDescription : item.Description,
+          urgency: isRecall ? "high" : "medium",
+          requiredAction: isRecall
+            ? item.RequiredAction
+            : "Thực hiện theo hướng dẫn",
+        }
+      );
+
+      if (result.success) {
+        setProcessLog((prev) => [
+          ...prev,
+          `✅ Đã gửi thông báo đến ${result.notificationsSent} trung tâm`,
+        ]);
+      } else {
+        setProcessLog((prev) => [
+          ...prev,
+          `❌ Lỗi gửi thông báo: ${result.error}`,
+        ]);
+      }
+    } catch (error) {
+      setProcessLog((prev) => [...prev, `❌ Lỗi: ${error.message}`]);
+    }
+    setIsProcessing(false);
+  };
+
+  const handleUrgentNotification = async () => {
+    // Kiểm tra quyền gửi thông báo khẩn cấp
+    const validation = rolePermissionService.validateAction(
+      currentUserRole,
+      "notify_campaign_to_sc",
+      "gửi thông báo khẩn cấp"
+    );
+
+    if (!validation.allowed) {
+      setProcessLog((prev) => [...prev, `❌ ${validation.error}`]);
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      rolePermissionService.logAction(
+        currentUserRole,
+        user?.id,
+        "send_urgent_notification",
+        item.Recall_ID,
+        { type: "urgent_recall" }
+      );
+
+      const result = await notificationService.sendUrgentRecallNotification(
+        item.Recall_ID,
+        {
+          severity: "critical",
+          issueType: "safety",
+          immediateAction: item.RequiredAction,
+          description: item.IssueDescription,
+          deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+        }
+      );
+
+      if (result.success) {
+        setProcessLog((prev) => [
+          ...prev,
+          `🚨 Đã gửi thông báo khẩn cấp đến ${result.notificationsSent} trung tâm`,
+        ]);
+      } else {
+        setProcessLog((prev) => [
+          ...prev,
+          `❌ Lỗi gửi thông báo khẩn cấp: ${result.error}`,
+        ]);
+      }
+    } catch (error) {
+      setProcessLog((prev) => [...prev, `❌ Lỗi: ${error.message}`]);
+    }
+    setIsProcessing(false);
+  };
+
+  const handleStartWorkflow = async () => {
+    // Kiểm tra quyền phân bổ xe (chỉ EVM Staff và Admin)
+    const validation = rolePermissionService.validateAction(
+      currentUserRole,
+      "distribute_vehicles_to_centers",
+      "khởi động quy trình workflow"
+    );
+
+    if (!validation.allowed) {
+      setProcessLog((prev) => [...prev, `❌ ${validation.error}`]);
+      return;
+    }
+
+    setIsProcessing(true);
+    setProcessLog([]);
+
+    try {
+      const campaignId = isRecall ? item.Recall_ID : item.CampaignsID;
+
+      rolePermissionService.logAction(
+        currentUserRole,
+        user?.id,
+        "start_campaign_workflow",
+        campaignId,
+        { type: isRecall ? "recall" : "campaign" }
+      );
+
+      // Step 1: Get vehicles for campaign (cần quyền view_affected_vehicles)
+      if (!rolePermissionService.canViewAffectedVehicles(currentUserRole)) {
+        throw new Error("Không có quyền xem danh sách xe bị ảnh hưởng");
+      }
+
+      setProcessLog((prev) => [
+        ...prev,
+        "🔍 Đang lấy danh sách xe bị ảnh hưởng...",
+      ]);
+      const vehicles = await vehicleDistributionService.getVehiclesByCampaign(
+        campaignId,
+        isRecall ? "recall" : "campaign"
+      );
+
+      // Step 2: Distribute vehicles to service centers (cần quyền distribute_vehicles_to_centers)
+      setProcessLog((prev) => [
+        ...prev,
+        "📍 Đang phân bổ xe đến các trung tâm dịch vụ...",
+      ]);
+      const distributionResult =
+        await vehicleDistributionService.distributeVehiclesToCenters(
+          campaignId,
+          vehicles,
+          { method: "geographic" }
+        );
+
+      if (!distributionResult.success) {
+        throw new Error(distributionResult.error);
+      }
+
+      setProcessLog((prev) => [
+        ...prev,
+        `✅ Đã phân bổ ${vehicles.length} xe đến ${distributionResult.distributions.length} trung tâm`,
+      ]);
+
+      // Step 3: Create appointment schedule
+      setProcessLog((prev) => [...prev, "📅 Đang tạo lịch hẹn..."]);
+      const scheduleResult =
+        await appointmentSchedulingService.createCampaignSchedule(
+          campaignId,
+          distributionResult,
+          isRecall ? "recall" : "campaign"
+        );
+
+      if (!scheduleResult.success) {
+        throw new Error(scheduleResult.error);
+      }
+
+      setProcessLog((prev) => [
+        ...prev,
+        `✅ Đã tạo lịch hẹn cho ${scheduleResult.centerSchedules.length} trung tâm`,
+      ]);
+
+      // Step 4: Create work assignments (auto-assign, SC sẽ confirm sau)
+      setProcessLog((prev) => [
+        ...prev,
+        "👥 Đang tạo khung phân công công việc...",
+      ]);
+      const assignmentResult =
+        await workAssignmentService.createCampaignWorkAssignments(
+          campaignId,
+          scheduleResult,
+          isRecall ? "recall" : "campaign"
+        );
+
+      if (!assignmentResult.success) {
+        throw new Error(assignmentResult.error);
+      }
+
+      setProcessLog((prev) => [
+        ...prev,
+        `✅ Đã tạo ${assignmentResult.summary.totalWorkOrders} work order cho ${assignmentResult.summary.totalTechnicians} kỹ thuật viên`,
+      ]);
+
+      // Step 5: Initialize result tracking
+      setProcessLog((prev) => [
+        ...prev,
+        "📊 Đang khởi tạo theo dõi kết quả...",
+      ]);
+      const trackingResult =
+        await campaignResultTrackingService.initializeCampaignTracking(
+          campaignId,
+          assignmentResult,
+          scheduleResult
+        );
+
+      if (!trackingResult.success) {
+        throw new Error(trackingResult.error);
+      }
+
+      setProcessLog((prev) => [
+        ...prev,
+        `✅ Đã khởi tạo theo dõi cho ${trackingResult.centerResults.length} trung tâm`,
+      ]);
+
+      // Update workflow data
+      setWorkflowData({
+        distribution: distributionResult,
+        schedule: scheduleResult,
+        assignment: assignmentResult,
+        tracking: trackingResult,
+      });
+
+      setProcessLog((prev) => [
+        ...prev,
+        "🎉 Quy trình chiến dịch đã được khởi động thành công!",
+      ]);
+      setProcessLog((prev) => [
+        ...prev,
+        "ℹ️ Service Center sẽ xác nhận lịch hẹn và phân công cụ thể",
+      ]);
+    } catch (error) {
+      setProcessLog((prev) => [
+        ...prev,
+        `❌ Lỗi trong quy trình: ${error.message}`,
+      ]);
+    }
+
+    setIsProcessing(false);
+  };
+
   return (
     <div className="campaign-detail">
       <div className="detail-header">
@@ -180,13 +454,15 @@ function CampaignDetail({ item, type, onEdit, onUpdateStatus, userRole }) {
           </div>
         </div>
         <div className="detail-actions">
-          <button
-            onClick={() => onEdit(item, type)}
-            className="btn btn-outline"
-          >
-            <span>✏️</span>
-            Chỉnh sửa
-          </button>
+          {rolePermissionService.canUpdateRecall(currentUserRole) && (
+            <button
+              onClick={() => onEdit(item, type)}
+              className="btn btn-outline"
+            >
+              <span>✏️</span>
+              Chỉnh sửa
+            </button>
+          )}
           {canUpdateStatus() && getAvailableStatuses().length > 0 && (
             <button
               onClick={() => setShowStatusModal(true)}
@@ -345,26 +621,117 @@ function CampaignDetail({ item, type, onEdit, onUpdateStatus, userRole }) {
             <div className="quick-actions-section card">
               <h3 className="section-title">Thao tác nhanh</h3>
               <div className="quick-actions">
-                <button className="action-btn notification-btn">
-                  <span>📧</span>
-                  Gửi thông báo
-                </button>
-                <button className="action-btn report-btn">
-                  <span>📊</span>
-                  Xuất báo cáo
-                </button>
+                {rolePermissionService.canNotifyCampaignToSC(
+                  currentUserRole
+                ) && (
+                  <button
+                    className="action-btn notification-btn"
+                    onClick={handleSendNotification}
+                    disabled={isProcessing}
+                  >
+                    <span>📧</span>
+                    Gửi thông báo
+                  </button>
+                )}
+
+                {rolePermissionService.canDistributeVehicles(
+                  currentUserRole
+                ) && (
+                  <button
+                    className="action-btn workflow-btn"
+                    onClick={handleStartWorkflow}
+                    disabled={isProcessing}
+                  >
+                    <span>⚙️</span>
+                    Khởi động quy trình
+                  </button>
+                )}
+
+                {rolePermissionService.canRecordAndReport(currentUserRole) && (
+                  <button className="action-btn report-btn">
+                    <span>📊</span>
+                    Xuất báo cáo
+                  </button>
+                )}
+
+                {/* Contact button - available for all roles */}
                 <button className="action-btn contact-btn">
                   <span>📞</span>
                   Liên hệ khách hàng
                 </button>
-                {isRecall && (
-                  <button className="action-btn urgent-btn">
-                    <span>🚨</span>
-                    Báo cáo khẩn cấp
+
+                {/* Urgent notification - chỉ cho EVM Staff và Admin với recall */}
+                {isRecall &&
+                  rolePermissionService.canNotifyCampaignToSC(
+                    currentUserRole
+                  ) && (
+                    <button
+                      className="action-btn urgent-btn"
+                      onClick={handleUrgentNotification}
+                      disabled={isProcessing}
+                    >
+                      <span>🚨</span>
+                      Báo cáo khẩn cấp
+                    </button>
+                  )}
+
+                {/* SC specific actions */}
+                {rolePermissionService.canConfirmAppointmentDate(
+                  currentUserRole
+                ) && (
+                  <button className="action-btn appointment-btn">
+                    <span>📅</span>
+                    Xác nhận lịch hẹn
+                  </button>
+                )}
+
+                {rolePermissionService.canAssignWorkToTechnician(
+                  currentUserRole
+                ) && (
+                  <button className="action-btn assign-btn">
+                    <span>👥</span>
+                    Phân công việc
+                  </button>
+                )}
+
+                {rolePermissionService.canRejectCampaign(currentUserRole) && (
+                  <button className="action-btn reject-btn">
+                    <span>❌</span>
+                    Từ chối chiến dịch
+                  </button>
+                )}
+
+                {/* Technician specific actions */}
+                {rolePermissionService.canUpdateWorkResults(
+                  currentUserRole
+                ) && (
+                  <button className="action-btn results-btn">
+                    <span>🔧</span>
+                    Cập nhật kết quả
                   </button>
                 )}
               </div>
             </div>
+
+            {/* Process Log */}
+            {processLog.length > 0 && (
+              <div className="process-log-section card">
+                <h3 className="section-title">
+                  Nhật ký quy trình
+                  {isProcessing && <span className="loading-spinner">⏳</span>}
+                </h3>
+                <div className="process-log">
+                  {processLog.map((log, index) => (
+                    <div key={index} className="log-entry">
+                      <span className="log-time">
+                        {new Date().toLocaleTimeString("vi-VN")}
+                      </span>
+                      <span className="log-message">{log}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

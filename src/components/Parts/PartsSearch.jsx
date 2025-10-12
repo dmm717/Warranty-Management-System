@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./PartsSearch.css";
+import "../../styles/PartsSearch.css";
 
 function PartsSearch({ onSearch }) {
   const [searchTerm, setSearchTerm] = useState("");
