@@ -3,6 +3,8 @@
   background: white;
   box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.1);
   min-height: calc(100vh - 70px);
+  height: 100%;
+  overflow-y: auto;
 }
 
 .sidebar-nav {
