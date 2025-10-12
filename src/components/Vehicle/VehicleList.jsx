@@ -1,5 +1,5 @@
 import React from "react";
-import "./VehicleList.css";
+import "../../styles/VehicleList.css";
 
 function VehicleList({ vehicles, onEdit, onDelete }) {
   const getStatusBadge = (status) => {

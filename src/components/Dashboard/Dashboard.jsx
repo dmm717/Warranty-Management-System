@@ -3,7 +3,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import StatsCard from "./StatsCard";
 import ChartComponent from "./ChartComponent";
 import RecentActivity from "./RecentActivity";
-import "./Dashboard.css";
+import "../../styles/Dashboard.css";
 
 function Dashboard() {
   const { user } = useAuth();

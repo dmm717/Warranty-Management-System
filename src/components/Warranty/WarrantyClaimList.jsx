@@ -1,5 +1,5 @@
 import React from "react";
-import "./WarrantyClaimList.css";
+import "../../styles/WarrantyClaimList.css";
 
 function WarrantyClaimList({
   claims,

@@ -1,6 +1,6 @@
 import React from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import "./Header.css";
+import "../../styles/Header.css";
 
 function Header() {
   const { user, logout } = useAuth();
@@ -27,7 +27,7 @@ function Header() {
           </div>
           <div className="user-details">
             <span className="user-name">{user?.name}</span>
-            <span className="user-role">{user?.role}</span>
+            <span className="user-email">{user?.email}</span>
           </div>
         </div>
 

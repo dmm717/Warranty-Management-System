@@ -1,5 +1,5 @@
 import React from "react";
-import "./StatsCard.css";
+import "../../styles/StatsCard.css";
 
 function StatsCard({ title, value, icon, color }) {
   return (

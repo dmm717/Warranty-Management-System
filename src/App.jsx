@@ -15,7 +15,7 @@ import CampaignManagement from "./components/Campaign/CampaignManagement";
 import ReportManagement from "./components/Report/ReportManagement";
 import UserManagement from "./components/User/UserManagement";
 import Layout from "./components/Layout/Layout";
-import "./App.css";
+import "./styles/App.css";
 
 function App() {
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "./WarrantyClaimForm.css";
+import "../../styles/WarrantyClaimForm.css";
 
 function WarrantyClaimForm({ claim, onSave, onCancel }) {
   const [formData, setFormData] = useState({

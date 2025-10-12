@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "./VehicleForm.css";
+import "../../styles/VehicleForm.css";
 
 function VehicleForm({ vehicle, onSave, onCancel }) {
   const [formData, setFormData] = useState({

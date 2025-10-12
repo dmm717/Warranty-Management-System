@@ -4,7 +4,7 @@ import WarrantyClaimList from "./WarrantyClaimList";
 import WarrantyClaimForm from "./WarrantyClaimForm";
 import WarrantyClaimDetail from "./WarrantyClaimDetail";
 import ClaimSearch from "./ClaimSearch";
-import "./WarrantyClaimManagement.css";
+import "../../styles/WarrantyClaimManagement.css";
 
 function WarrantyClaimManagement() {
   const { user } = useAuth();

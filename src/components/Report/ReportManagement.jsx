@@ -4,7 +4,7 @@ import ReportList from "./ReportList";
 import ReportForm from "./ReportForm";
 import ReportDetail from "./ReportDetail";
 import ReportChart from "./ReportChart";
-import "./ReportManagement.css";
+import "../../styles/ReportManagement.css";
 
 function ReportManagement() {
   const { user } = useAuth();
