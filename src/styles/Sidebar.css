@@ -6,6 +6,8 @@
   box-shadow: var(--vf-shadow-sm);
   min-height: calc(100vh - 70px);
   border-right: 1px solid var(--vf-neutral-200);
+  height: 100%;
+  overflow-y: auto;
 }
 
 .sidebar-nav {

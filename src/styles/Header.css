@@ -22,6 +22,8 @@
 
 .header-logo {
   height: 40px;
+  object-fit: contain;
+  max-width: 150px;
 }
 
 .header h1 {
@@ -70,6 +72,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  position: relative;
+  cursor: pointer;
 }
 
 .user-avatar {
@@ -115,6 +119,38 @@
 .logout-btn {
   padding: 8px 16px;
   font-size: 14px;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  width: 200px;
+  z-index: 1000;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--dark-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.dropdown-item i {
+  font-size: 16px;
+  color: var(--primary-color);
 }
 
 @media (max-width: 768px) {
