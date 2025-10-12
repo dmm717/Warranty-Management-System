@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import vinLogo from "../../assets/Vin.jfif";
 import "./Login.css";
 
 function Login() {
@@ -9,9 +10,20 @@ function Login() {
     password: "",
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Check if we were redirected from registration with a success message
+    if (location.state?.message) {
+      setSuccess(location.state.message);
+      // Clear the message from location state to prevent showing again on refresh
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,13 +49,13 @@ function Login() {
   return (
     <div className="login-container">
       <div className="login-background">
-        <img src="/api/placeholder/1920/1080" alt="VinFast Background" />
+        <img src={vinLogo} alt="VinFast Background" className="background-image" />
       </div>
       <div className="login-form-container">
         <div className="login-form">
           <div className="login-header">
             <img
-              src="/api/placeholder/200/60"
+              src={vinLogo}
               alt="VinFast Logo"
               className="logo"
             />
@@ -52,6 +64,7 @@ function Login() {
           </div>
 
           {error && <div className="error-message">{error}</div>}
+          {success && <div className="success-message">{success}</div>}
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -93,6 +106,12 @@ function Login() {
             >
               {loading ? "Đang đăng nhập..." : "Đăng nhập"}
             </button>
+            
+            <div className="form-footer">
+              <p>
+                Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
+              </p>
+            </div>
           </form>
 
           <div className="demo-accounts">
