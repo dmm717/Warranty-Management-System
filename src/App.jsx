@@ -7,7 +7,6 @@ import {
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./components/Auth/Login";
-import Register from "./components/Auth/Register";
 import Dashboard from "./components/Dashboard/Dashboard";
 import VehicleManagement from "./components/Vehicle/VehicleManagement";
 import WarrantyClaimManagement from "./components/Warranty/WarrantyClaimManagement";
@@ -26,7 +25,6 @@ function App() {
         <div className="App">
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             <Route
               path="/"
               element={

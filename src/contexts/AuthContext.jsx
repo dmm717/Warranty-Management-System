@@ -9,7 +9,6 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [registeredUsers, setRegisteredUsers] = useState([]);
 
   useEffect(() => {
     // Check if user is logged in from localStorage
@@ -17,13 +16,6 @@ export function AuthProvider({ children }) {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-
-    // Load registered users
-    const storedUsers = localStorage.getItem("registeredUsers");
-    if (storedUsers) {
-      setRegisteredUsers(JSON.parse(storedUsers));
-    }
-
     setLoading(false);
   }, []);
 
@@ -61,24 +53,14 @@ export function AuthProvider({ children }) {
         },
       };
 
-      // Check in mock users
-      const foundMockUser = mockUsers[credentials.email];
-      if (foundMockUser && credentials.password === "password123") {
-        setUser(foundMockUser);
-        localStorage.setItem("user", JSON.stringify(foundMockUser));
+      const foundUser = mockUsers[credentials.email];
+      if (foundUser && credentials.password === "password123") {
+        setUser(foundUser);
+        localStorage.setItem("user", JSON.stringify(foundUser));
         return { success: true };
+      } else {
+        return { success: false, message: "Email hoặc mật khẩu không đúng" };
       }
-      
-      // Check in registered users
-      const foundRegisteredUser = registeredUsers.find(u => u.email === credentials.email);
-      if (foundRegisteredUser && credentials.password === "password123") { // In real app, passwords would be hashed
-        setUser(foundRegisteredUser);
-        localStorage.setItem("user", JSON.stringify(foundRegisteredUser));
-        return { success: true };
-      }
-      
-      // No user found or wrong password
-      return { success: false, message: "Email hoặc mật khẩu không đúng" };
     } catch (error) {
       return { success: false, message: "Login failed" };
     }
@@ -96,49 +78,12 @@ export function AuthProvider({ children }) {
     return { success: true };
   };
 
-  const register = async (userData) => {
-    try {
-      // Check if email already exists in mock users or registered users
-      const mockUsers = {
-        "sc_staff@vinfast.com": true,
-        "sc_tech@vinfast.com": true,
-        "evm_staff@vinfast.com": true,
-        "admin@vinfast.com": true,
-      };
-      
-      if (mockUsers[userData.email] || registeredUsers.some(u => u.email === userData.email)) {
-        return { success: false, message: "Email này đã được sử dụng" };
-      }
-      
-      // Create new user with ID
-      const newUser = {
-        id: `USER${Date.now().toString().slice(-5)}`,
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
-        department: userData.department,
-        // Password would normally be hashed on the server side
-      };
-      
-      // Store in local storage (in a real app, this would be a server request)
-      const updatedUsers = [...registeredUsers, newUser];
-      setRegisteredUsers(updatedUsers);
-      localStorage.setItem("registeredUsers", JSON.stringify(updatedUsers));
-      
-      return { success: true };
-    } catch (error) {
-      return { success: false, message: "Đăng ký thất bại" };
-    }
-  };
-
   const value = {
     user,
     login,
     logout,
     loading,
     updateProfile,
-    register,
-    registeredUsers
   };
 
   return (
