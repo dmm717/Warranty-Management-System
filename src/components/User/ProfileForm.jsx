@@ -97,7 +97,7 @@ function ProfileForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setMessage({ type: "", text: "" });
-    
+
     if (validateForm()) {
       const updatedInfo = {
         name: formData.name,
@@ -114,22 +114,28 @@ function ProfileForm() {
       try {
         const result = updateProfile(updatedInfo);
         if (result.success) {
-          setMessage({ 
-            type: "success", 
-            text: "Thông tin cá nhân đã được cập nhật thành công" 
+          setMessage({
+            type: "success",
+            text: "Thông tin cá nhân đã được cập nhật thành công",
           });
           // Clear password fields after successful update
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
             currentPassword: "",
             password: "",
-            confirmPassword: ""
+            confirmPassword: "",
           }));
         } else {
-          setMessage({ type: "error", text: result.message || "Có lỗi xảy ra" });
+          setMessage({
+            type: "error",
+            text: result.message || "Có lỗi xảy ra",
+          });
         }
       } catch (error) {
-        setMessage({ type: "error", text: "Có lỗi xảy ra khi cập nhật thông tin" });
+        setMessage({
+          type: "error",
+          text: "Có lỗi xảy ra khi cập nhật thông tin",
+        });
       }
     }
   };
@@ -148,14 +154,18 @@ function ProfileForm() {
     <div className="card profile-form-container">
       <h2 className="card-title">Thông tin cá nhân</h2>
       {message.text && (
-        <div className={`alert ${message.type === "success" ? "alert-success" : "alert-error"}`}>
+        <div
+          className={`alert ${
+            message.type === "success" ? "alert-success" : "alert-error"
+          }`}
+        >
           {message.text}
         </div>
       )}
       <form onSubmit={handleSubmit} className="user-form">
         <div className="form-section">
           <h3>Thông tin cơ bản</h3>
-          
+
           <div className="form-group">
             <label htmlFor="name">Họ tên</label>
             <input
@@ -179,7 +189,9 @@ function ProfileForm() {
               onChange={handleChange}
               className={errors.email ? "error" : ""}
             />
-            {errors.email && <div className="error-message">{errors.email}</div>}
+            {errors.email && (
+              <div className="error-message">{errors.email}</div>
+            )}
           </div>
 
           <div className="form-group">
@@ -192,7 +204,9 @@ function ProfileForm() {
               onChange={handleChange}
               className={errors.phone ? "error" : ""}
             />
-            {errors.phone && <div className="error-message">{errors.phone}</div>}
+            {errors.phone && (
+              <div className="error-message">{errors.phone}</div>
+            )}
           </div>
 
           <div className="form-group">
@@ -245,7 +259,8 @@ function ProfileForm() {
             />
             {formData.password && (
               <div className={`password-strength ${passwordStrength}`}>
-                Độ mạnh: {passwordStrength === "weak"
+                Độ mạnh:{" "}
+                {passwordStrength === "weak"
                   ? "Yếu"
                   : passwordStrength === "medium"
                   ? "Trung bình"
