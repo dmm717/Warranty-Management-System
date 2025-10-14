@@ -8,11 +8,11 @@ function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
-  
+
   const handleLogout = () => {
     logout();
   };
-  
+
   const handleProfileClick = () => {
     navigate("/profile");
     setShowDropdown(false);
@@ -21,16 +21,15 @@ function Header() {
   return (
     <header className="header">
       <div className="header-left">
-        <img
-          src={vinLogo}
-          alt="VinFast Logo"
-          className="header-logo"
-        />
+        <img src={vinLogo} alt="VinFast Logo" className="header-logo" />
         <h1>Hệ thống quản lý bảo hành</h1>
       </div>
 
       <div className="header-right">
-        <div className="user-info" onClick={() => setShowDropdown(!showDropdown)}>
+        <div
+          className="user-info"
+          onClick={() => setShowDropdown(!showDropdown)}
+        >
           <div className="user-avatar">
             {user?.name?.charAt(0).toUpperCase()}
           </div>
@@ -38,7 +37,7 @@ function Header() {
             <span className="user-name">{user?.name}</span>
             <span className="user-email">{user?.email}</span>
           </div>
-          
+
           {showDropdown && (
             <div className="user-dropdown">
               <div className="dropdown-item" onClick={handleProfileClick}>
