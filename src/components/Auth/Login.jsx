@@ -38,16 +38,16 @@ function Login() {
   return (
     <div className="login-container">
       <div className="login-background">
-        <img src={vinLogo} alt="VinFast Background" className="background-image" />
+        <img
+          src={vinLogo}
+          alt="VinFast Background"
+          className="background-image"
+        />
       </div>
       <div className="login-form-container">
         <div className="login-form">
           <div className="login-header">
-            <img
-              src={vinLogo}
-              alt="VinFast Logo"
-              className="logo"
-            />
+            <img src={vinLogo} alt="VinFast Logo" className="logo" />
             <h2>Hệ thống quản lý bảo hành</h2>
             <p>Đăng nhập để tiếp tục</p>
           </div>
