@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import TechnicianManagement from "./components/Technician/TechnicianManagement";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./components/Auth/Login";
 import Dashboard from "./components/Dashboard/Dashboard";
@@ -42,6 +43,7 @@ function App() {
               <Route path="campaigns" element={<CampaignManagement />} />
               <Route path="reports" element={<ReportManagement />} />
               <Route path="users" element={<UserManagement />} />
+              
             </Route>
           </Routes>
         </div>
