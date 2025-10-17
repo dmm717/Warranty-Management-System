@@ -8,7 +8,7 @@ function RecallList({ recalls, onEdit, onView, onUpdateStatus, userRole }) {
       "Đang thực hiện": "status-active",
       "Tạm dừng": "status-paused",
       "Hoàn thành": "status-completed",
-      "Hủy bỏ": "status-cancelled",
+      "Hủy bỏ": "status-cancelled", 
     };
 
     return (

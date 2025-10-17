@@ -14,7 +14,7 @@ function CampaignManagement() {
   const [showForm, setShowForm] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [formType, setFormType] = useState("campaign"); // 'campaign' or 'recall'
+  const [formType, setFormType] = useState("campaign");
   const [activeTab, setActiveTab] = useState("campaigns");
   const [loading, setLoading] = useState(true);
   const [vehicles, setVehicles] = useState([]);
@@ -93,6 +93,36 @@ function CampaignManagement() {
       setLoading(false);
     }, 1000);
   }, []);
+
+  // ✅ Modal handlers - đã fix đúng logic
+  const openAssignModal = (campaign) => {
+    setSelectedCampaign(campaign);
+    setIsModalOpen(true);
+  };
+
+  const closeAssignModal = () => {
+    setIsModalOpen(false);
+    setSelectedCampaign(null);
+  };
+
+  // ✅ Assign technician - logic mới
+  const handleAssign = (campaignId, techId) => {
+    setAssignments((prev) => [
+      ...prev,
+      { CampaignsID: campaignId, SC_TechnicianID: techId }
+    ]);
+    console.log("Assigned:", campaignId, techId);
+  };
+
+  // ✅ Remove technician - logic mới
+  const handleRemove = (campaignId, techId) => {
+    setAssignments((prev) =>
+      prev.filter(
+        (a) => !(a.CampaignsID === campaignId && a.SC_TechnicianID === techId)
+      )
+    );
+    console.log("Removed:", campaignId, techId);
+  };
 
   const handleCreateCampaign = () => {
     setSelectedItem(null);
@@ -261,6 +291,8 @@ function CampaignManagement() {
                 handleUpdateStatus(id, status, "campaign")
               }
               userRole={user?.role}
+              onAssign={openAssignModal}
+              assignments={assignments} // ✅ Pass assignments để hiển thị số lượng
             />
           ) : (
             <RecallList
@@ -298,6 +330,17 @@ function CampaignManagement() {
           userRole={user?.role}
         />
       )}
+      
+      {/* ✅ Modal - đã fix props đúng */}
+      <AssignTechnicianModal
+        isOpen={isModalOpen}
+        onClose={closeAssignModal}
+        campaign={selectedCampaign}
+        technicians={mockTechnicians}
+        assignments={assignments}
+        onAssign={handleAssign}
+        onRemove={handleRemove}
+      />
     </div>
   );
 }

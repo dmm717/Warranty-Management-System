@@ -1,7 +1,10 @@
+
 import React from "react";
 import "../../styles/CampaignList.css";
 
-function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole }) {
+
+
+function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole, onAssign }) {
   const getStatusBadge = (status) => {
     const statusClasses = {
       "Chuẩn bị": "status-preparing",
@@ -13,14 +16,14 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole }) {
 
     return (
       <span
-        className={`status-badge ${
-          statusClasses[status] || "status-preparing"
-        }`}
+        className={`status-badge ${statusClasses[status] || "status-preparing"
+          }`}
       >
         {status}
       </span>
     );
   };
+
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("vi-VN");
@@ -44,6 +47,14 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole }) {
     };
     return statusFlow[currentStatus] || [];
   };
+  const handleAssignTechnician = (campaignID, assignedList) => {
+  setCampaigns((prev) =>
+    prev.map((c) =>
+      c.CampaignID === campaignID ? { ...c, assignedTechnicians: assignedList } : c
+    )
+  );
+};
+
 
   if (campaigns.length === 0) {
     return (
@@ -55,6 +66,7 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole }) {
     );
   }
 
+
   return (
     <div className="campaign-list">
       <div className="table-container">
@@ -65,7 +77,7 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole }) {
               <th>Tên chiến dịch</th>
               <th>Thời gian</th>
               <th>Phụ tùng yêu cầu</th>
-              <th>Tiến độ</th>
+              <th>Tiến độ xe đã sữa</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
             </tr>
@@ -97,25 +109,11 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole }) {
                 </td>
                 <td>
                   <div className="progress-info">
-                    <div className="progress-bar">
-                      <div
-                        className="progress-fill"
-                        style={{
-                          width: `${getProgressPercentage(
-                            campaign.CompletedVehicles,
-                            campaign.AffectedVehicles
-                          )}%`,
-                        }}
-                      ></div>
-                    </div>
+
+                    {/* tiến độ sẽ được cập nhật dựa vào số xe được hoàng thành  nó được lưu trong report*/}
                     <div className="progress-text">
-                      {campaign.CompletedVehicles}/{campaign.AffectedVehicles}{" "}
-                      xe (
-                      {getProgressPercentage(
-                        campaign.CompletedVehicles,
-                        campaign.AffectedVehicles
-                      )}
-                      %)
+                      {campaign.CompletedVehicles}{" "}
+                      xe
                     </div>
                   </div>
                 </td>
@@ -146,6 +144,7 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole }) {
                       )}
                   </div>
                 </td>
+
                 <td>
                   <div className="action-buttons">
                     <button
@@ -164,13 +163,24 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole }) {
                         ✏️
                       </button>
                     )}
+                    {canUpdateStatus() && (
+                      <button
+                        onClick={() => onAssign(campaign)}
+                        className="btn btn-sm btn-warning"
+                        title="Phân công kỹ thuật viên"
+                      >
+                        👷
+                      </button>
+                    )}
                   </div>
                 </td>
+
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
     </div>
   );
 }

@@ -9,6 +9,7 @@ function CampaignForm({ campaign, onSave, onCancel }) {
     RequiredParts: "",
     Description: "",
     Status: "Chuẩn bị",
+    CompletedVehicles: 0,
   });
 
   const [errors, setErrors] = useState({});
@@ -36,7 +37,9 @@ function CampaignForm({ campaign, onSave, onCancel }) {
 
   const validateForm = () => {
     const newErrors = {};
-
+    if (formData.CompletedVehicles < 0) {
+      newErrors.CompletedVehicles = "Số xe hoàn thành không được âm";//PQD_fix_v1
+    }
     if (!formData.CampaignsTypeName.trim()) {
       newErrors.CampaignsTypeName = "Tên chiến dịch là bắt buộc";
     }
@@ -170,7 +173,26 @@ function CampaignForm({ campaign, onSave, onCancel }) {
                 Nhập "Không" nếu không cần phụ tùng
               </small>
             </div>
+            {/* ✅ Thêm ô nhập số xe hoàn thành */}
+            <div className="form-group">
+              <label className="form-label">Số xe hoàn thành</label>
+              <input
+                type="number"
+                name="CompletedVehicles"
+                value={formData.CompletedVehicles}
+                onChange={handleChange}
+                min="0"
+                className={`form-control ${
+                  errors.CompletedVehicles ? "error" : ""
+                }`}
+                placeholder="Nhập số xe đã hoàn thành"
+              />
+              {errors.CompletedVehicles && (
+                <div className="error-message">{errors.CompletedVehicles}</div>
+              )}
+            </div>
           </div>
+          
 
           <div className="form-row">
             <div className="form-group">

@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import TechnicianManagement from "./components/Technician/TechnicianManagement";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./components/Auth/Login";
 import Dashboard from "./components/Dashboard/Dashboard";
