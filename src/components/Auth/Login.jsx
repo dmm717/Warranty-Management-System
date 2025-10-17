@@ -99,6 +99,9 @@ function Login() {
           <div className="demo-accounts">
             <h4>Tài khoản demo:</h4>
             <div className="demo-account">
+              <strong>SC Admin:</strong> sc_admin@vinfast.com / password123
+            </div>
+            <div className="demo-account">
               <strong>SC Staff:</strong> sc_staff@vinfast.com / password123
             </div>
             <div className="demo-account">
