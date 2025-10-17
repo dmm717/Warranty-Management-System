@@ -49,12 +49,25 @@ class RolePermissionService {
         'send_notification_to_sc',
         'confirm_appointment_date',
         'assign_work_to_technician',
-        'reject_campaign', 
+        'reject_campaign',
         'record_and_report',
         'update_report',
-        // SC Admin có thêm quyền quản lý SC
         'manage_sc_staff',
-        'manage_sc_resources'
+        'manage_sc_resources',
+        'manage_sc_settings',
+        'view_sc_reports',
+        'approve_sc_report',
+        'assign_sc_roles',
+        'view_sc_data',
+        'confirm_appointment_for_all',
+        'distribute_work_in_sc',
+        'audit_sc_activity',
+        'manage_sc_inventory',
+        'manage_sc_finance',
+        'manage_sc_campaigns',
+        'update_sc_status',
+        'view_sc_technicians',
+        'manage_sc_technicians'
       ],
       
       // SC Technician - Kỹ thuật viên
@@ -78,7 +91,23 @@ class RolePermissionService {
       'update_work_results': 'Cập nhật kết quả xử lý lên hệ thống',
       'confirm_manufacturer_report': 'Xác nhận báo cáo của hãng',
       'update_report': 'Cập nhật báo cáo',
-      'update_campaign_status_per_vehicle': 'Cập nhật trạng thái chiến dịch cho từng xe'
+  'update_campaign_status_per_vehicle': 'Cập nhật trạng thái chiến dịch cho từng xe',
+  'manage_sc_staff': 'Quản lý nhân sự trung tâm dịch vụ',
+      'manage_sc_resources': 'Quản lý tài nguyên trung tâm dịch vụ',
+      'manage_sc_settings': 'Quản lý cài đặt trung tâm',
+      'view_sc_reports': 'Xem báo cáo trung tâm',
+      'approve_sc_report': 'Phê duyệt báo cáo trung tâm',
+      'assign_sc_roles': 'Phân quyền trong trung tâm',
+      'view_sc_data': 'Xem dữ liệu trung tâm',
+      'confirm_appointment_for_all': 'Xác nhận lịch hẹn cho toàn bộ trung tâm',
+      'distribute_work_in_sc': 'Phân phối công việc trong trung tâm',
+      'audit_sc_activity': 'Kiểm tra nhật ký hoạt động trung tâm',
+      'manage_sc_inventory': 'Quản lý kho vật tư trung tâm',
+      'manage_sc_finance': 'Quản lý tài chính trung tâm',
+      'manage_sc_campaigns': 'Quản lý chiến dịch trung tâm',
+      'update_sc_status': 'Cập nhật trạng thái trung tâm',
+      'view_sc_technicians': 'Xem danh sách kỹ thuật viên trung tâm',
+      'manage_sc_technicians': 'Quản lý kỹ thuật viên trung tâm'
     };
   }
 

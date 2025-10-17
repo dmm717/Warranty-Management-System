@@ -37,6 +37,13 @@ export function AuthProvider({ children }) {
           role: "SC_Technician",
           department: "Service Center",
         },
+        "sc_admin@vinfast.com": {
+          id: "SCA001",
+          name: "Nguyen Thi SC Admin",
+          email: "sc_admin@vinfast.com",
+          role: "SC_Admin",
+          department: "Service Center",
+        },
         "evm_staff@vinfast.com": {
           id: "EVM001",
           name: "Le Thi C",
