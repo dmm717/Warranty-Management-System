@@ -1,8 +1,13 @@
 .sidebar {
   width: 260px;
+  min-width: 260px; /* Prevent shrinking */
+  flex-shrink: 0; /* Prevent flex shrinking */
   background: white;
-  box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--vf-shadow-sm);
   min-height: calc(100vh - 70px);
+  border-right: 1px solid var(--vf-neutral-200);
+  height: 100%;
+  overflow-y: auto;
 }
 
 .sidebar-nav {

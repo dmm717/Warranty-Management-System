@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import "./Login.css";
+import vinLogo from "../../assets/Vin.jfif";
+import "../../styles/Login.css";
 
 function Login() {
   const [credentials, setCredentials] = useState({
@@ -37,16 +38,16 @@ function Login() {
   return (
     <div className="login-container">
       <div className="login-background">
-        <img src="/api/placeholder/1920/1080" alt="VinFast Background" />
+        <img
+          src={vinLogo}
+          alt="VinFast Background"
+          className="background-image"
+        />
       </div>
       <div className="login-form-container">
         <div className="login-form">
           <div className="login-header">
-            <img
-              src="/api/placeholder/200/60"
-              alt="VinFast Logo"
-              className="logo"
-            />
+            <img src={vinLogo} alt="VinFast Logo" className="logo" />
             <h2>Hệ thống quản lý bảo hành</h2>
             <p>Đăng nhập để tiếp tục</p>
           </div>
@@ -97,6 +98,9 @@ function Login() {
 
           <div className="demo-accounts">
             <h4>Tài khoản demo:</h4>
+            <div className="demo-account">
+              <strong>SC Admin:</strong> sc_admin@vinfast.com / password123
+            </div>
             <div className="demo-account">
               <strong>SC Staff:</strong> sc_staff@vinfast.com / password123
             </div>

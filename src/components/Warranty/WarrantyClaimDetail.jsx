@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./WarrantyClaimDetail.css";
+import "../../styles/WarrantyClaimDetail.css";
 
 function WarrantyClaimDetail({ claim, onEdit, onUpdateStatus, userRole }) {
   const [showStatusModal, setShowStatusModal] = useState(false);

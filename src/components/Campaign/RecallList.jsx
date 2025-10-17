@@ -1,5 +1,5 @@
 import React from "react";
-import "./RecallList.css";
+import "../../styles/RecallList.css";
 
 function RecallList({ recalls, onEdit, onView, onUpdateStatus, userRole }) {
   const getStatusBadge = (status) => {

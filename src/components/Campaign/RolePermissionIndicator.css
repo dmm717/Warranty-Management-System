@@ -1,0 +1,138 @@
+/* ==========================================================================
+   ROLE PERMISSION INDICATOR STYLES
+   ========================================================================== */
+
+.role-permission-indicator {
+  position: relative;
+}
+
+.role-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+.role-badge:not(:has(.permission-count)) {
+  justify-content: center;
+  min-width: 160px;
+}
+
+.role-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+
+.role-info {
+  flex: 1;
+}
+
+.role-name {
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+  opacity: 0.9;
+}
+
+.user-name {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.permission-count {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.permissions-detail {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--shadow-modal);
+  border: 1px solid rgba(60, 77, 231, 0.1);
+  padding: 1.5rem;
+  margin-top: 0.5rem;
+  z-index: 100;
+  animation: slideDown 0.3s ease-out;
+}
+
+.permissions-detail h4 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.permissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.permission-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: rgba(34, 197, 94, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid #22c55e;
+}
+
+.permission-icon {
+  color: #22c55e;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.permission-text {
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .role-badge {
+    min-width: 200px;
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .permissions-detail {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 400px;
+    max-height: 70vh;
+  }
+}
