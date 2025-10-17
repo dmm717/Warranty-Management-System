@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import UserList from "./UserList";
 import UserForm from "./UserForm";
-import "./UserManagement.css";
+import "../../styles/UserManagement.css";
 
 function UserManagement() {
   const { user } = useAuth();

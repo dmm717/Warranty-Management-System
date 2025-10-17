@@ -1,5 +1,5 @@
 import React from "react";
-import "./PartsList.css";
+import "../../styles/PartsList.css";
 
 function PartsList({ parts, onEdit, onDelete, userRole }) {
   const getStatusBadge = (status, quantity) => {

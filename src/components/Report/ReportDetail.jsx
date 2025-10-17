@@ -1,5 +1,5 @@
 import React from "react";
-import "./ReportDetail.css";
+import "../../styles/ReportDetail.css";
 
 function ReportDetail({ report, onEdit, userRole }) {
   if (!report) return null;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "./PartsRequest.css";
+import "../../styles/PartsRequest.css";
 
 function PartsRequest({ userRole, onCancel, isModal = false }) {
   const [requests, setRequests] = useState([]);

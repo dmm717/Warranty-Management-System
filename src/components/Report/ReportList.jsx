@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./ReportList.css";
+import "../../styles/ReportList.css";
 
 function ReportList({ reports, onEdit, onView, onDelete, userRole }) {
   const [searchTerm, setSearchTerm] = useState("");

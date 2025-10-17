@@ -1,5 +1,5 @@
 import React from "react";
-import "./ChartComponent.css";
+import "../../styles/ChartComponent.css";
 
 function ChartComponent({ userRole }) {
   // Mock data cho biểu đồ - replace với real data

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./UserList.css";
+import "../../styles/UserList.css";
 
 function UserList({ users, onEdit, onDelete, onUpdateStatus }) {
   const [searchTerm, setSearchTerm] = useState("");

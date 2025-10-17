@@ -5,9 +5,7 @@ import CampaignForm from "./CampaignForm";
 import CampaignDetail from "./CampaignDetail";
 import RecallList from "./RecallList";
 import RecallForm from "./RecallForm";
-import "./CampaignManagement.css";
-import AssignTechnicianModal from "../AssignTechnicianModal/AssignTechnicianModal";
-import { mockTechnicians } from "../Technician/TechnicianManagement";
+import "../../styles/CampaignManagement.css";
 
 function CampaignManagement() {
   const { user } = useAuth();
@@ -19,15 +17,8 @@ function CampaignManagement() {
   const [formType, setFormType] = useState("campaign");
   const [activeTab, setActiveTab] = useState("campaigns");
   const [loading, setLoading] = useState(true);
-  
-  // ✅ Modal states - đã sửa
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState(null);
-  const [assignments, setAssignments] = useState([
-    // Mock assignments ban đầu
-    { CampaignsID: "SC001", SC_TechnicianID: "T001" },
-    { CampaignsID: "SC001", SC_TechnicianID: "T002" }
-  ]);
+  const [vehicles, setVehicles] = useState([]);
+  const [recallVehicleMap, setRecallVehicleMap] = useState([]); // 🟡 Mảng mapping recall-vehicle
 
   useEffect(() => {
     const mockCampaigns = [
@@ -55,6 +46,14 @@ function CampaignManagement() {
         AffectedVehicles: 450,
         CompletedVehicles: 450,
       },
+    ];
+
+
+    // Fake dữ liệu xe (tạm thời)
+    const mockVehicles = [
+      { Vehicle_ID: "VH001", Vehicle_Name: "VF 8 Eco", Vehicle_Type: "SUV" },
+      { Vehicle_ID: "VH002", Vehicle_Name: "VF 9 Plus", Vehicle_Type: "SUV" },
+      { Vehicle_ID: "VH003", Vehicle_Name: "VF e34", Vehicle_Type: "Hatchback" },
     ];
 
     const mockRecalls = [
@@ -90,6 +89,7 @@ function CampaignManagement() {
     setTimeout(() => {
       setCampaigns(mockCampaigns);
       setRecalls(mockRecalls);
+      setVehicles(mockVehicles);
       setLoading(false);
     }, 1000);
   }, []);
@@ -181,9 +181,19 @@ function CampaignManagement() {
           Recall_ID: `RC${String(recalls.length + 1).padStart(3, "0")}`,
           NotificationSent: 0,
           EVMApprovalStatus: "Chờ phê duyệt",
-          AffectedVehicles: 0,
+          AffectedVehicles:  itemData.selectedVehicles?.length || 0,
           CompletedVehicles: 0,
         };
+        // 🟡 Tạo mapping recall-vehicle
+        const newMappings = (itemData.selectedVehicles || []).map(vId => ({
+        Recall_ID: newRecall.Recall_ID,
+        Vehicle_ID: vId,
+          })
+        );
+        setRecallVehicleMap(prev => [...prev, ...newMappings]);
+        console.log("✅ Recall mới tạo:", newRecall);
+        console.log("🔗 Recall-Vehicle Mapping:", recallVehicleMap);
+
         setRecalls([...recalls, newRecall]);
       }
     }
@@ -308,6 +318,7 @@ function CampaignManagement() {
             recall={selectedItem}
             onSave={handleSave}
             onCancel={handleBack}
+            vehicleList={vehicles} // ✅ Truyền fake vehicle data
           />
         )
       ) : (
