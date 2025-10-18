@@ -23,81 +23,34 @@ function CampaignManagement() {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [assignments, setAssignments] = useState([
     { CampaignsID: "SC001", SC_TechnicianID: "T001" },
-    { CampaignsID: "SC001", SC_TechnicianID: "T002" }
+    { CampaignsID: "SC001", SC_TechnicianID: "T002" },
   ]);
   const [vehicles, setVehicles] = useState([]);
   const [recallVehicleMap, setRecallVehicleMap] = useState([]); // 🟡 Mảng mapping recall-vehicle
 
   useEffect(() => {
-    const mockCampaigns = [
-      {
-        CampaignsID: "SC001",
-        CampaignsTypeName: "Cập nhật phần mềm BMS",
-        StartDate: "2025-10-01",
-        EndDate: "2025-12-31",
-        RequiredParts: "Không",
-        Description: "Cập nhật phần mềm quản lý pin cho tất cả xe VF8 2023",
-        Status: "Đang triển khai",
-        NotificationSent: 1,
-        AffectedVehicles: 1250,
-        CompletedVehicles: 340,
-      },
-      {
-        CampaignsID: "SC002",
-        CampaignsTypeName: "Thay thế cáp sạc",
-        StartDate: "2025-09-15",
-        EndDate: "2025-11-30",
-        RequiredParts: "Cáp sạc Type 2",
-        Description: "Thay thế cáp sạc bị lỗi cho VF9 batch 2023-Q2",
-        Status: "Hoàn thành",
-        NotificationSent: 1,
-        AffectedVehicles: 450,
-        CompletedVehicles: 450,
-      },
-    ];
-
-
-    // Fake dữ liệu xe (tạm thời)
-    const mockVehicles = [
-      { Vehicle_ID: "VH001", Vehicle_Name: "VF 8 Eco", Vehicle_Type: "SUV" },
-      { Vehicle_ID: "VH002", Vehicle_Name: "VF 9 Plus", Vehicle_Type: "SUV" },
-      { Vehicle_ID: "VH003", Vehicle_Name: "VF e34", Vehicle_Type: "Hatchback" },
-    ];
-
-    const mockRecalls = [
-      {
-        Recall_ID: "RC001",
-        RecallName: "Thu hồi pin VF8 2023",
-        IssueDescription:
-          "Phát hiện lỗi trong một số cell pin có thể gây quá nhiệt",
-        StartDate: "2025-09-01",
-        RequiredAction: "Thay thế toàn bộ bộ pin",
-        PartsRequired: "Pin Lithium 75kWh",
-        Status: "Đang thực hiện",
-        NotificationSent: 1,
-        EVMApprovalStatus: "Đã phê duyệt",
-        AffectedVehicles: 2500,
-        CompletedVehicles: 750,
-      },
-      {
-        Recall_ID: "RC002",
-        RecallName: "Kiểm tra hệ thống phanh",
-        IssueDescription: "Báo cáo về độ nhạy phanh không đồng đều",
-        StartDate: "2025-08-15",
-        RequiredAction: "Kiểm tra và hiệu chỉnh hệ thống phanh",
-        PartsRequired: "Má phanh, dầu phanh",
-        Status: "Hoàn thành",
-        NotificationSent: 1,
-        EVMApprovalStatus: "Đã phê duyệt",
-        AffectedVehicles: 800,
-        CompletedVehicles: 800,
-      },
-    ];
-
-    setTimeout(() => {
-      setCampaigns(mockCampaigns);
-      setRecalls(mockRecalls);
-      setVehicles(mockVehicles);
+    // TODO: Replace with real API calls
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // const campaignsRes = await fetch('/api/campaigns');
+        // const campaignsData = await campaignsRes.json();
+        // setCampaigns(campaignsData);
+        // const recallsRes = await fetch('/api/recalls');
+        // const recallsData = await recallsRes.json();
+        // setRecalls(recallsData);
+        // const vehiclesRes = await fetch('/api/vehicles');
+        // const vehiclesData = await vehiclesRes.json();
+        // setVehicles(vehiclesData);
+        setCampaigns([]);
+        setRecalls([]);
+        setVehicles([]);
+      } catch (error) {
+        console.error("Fetch campaign/recall/vehicle error:", error);
+        setCampaigns([]);
+        setRecalls([]);
+        setVehicles([]);
+      }
       setLoading(false);
     }, 1000);
   }, []);
