@@ -18,11 +18,36 @@
   font-size: 16px;
 }
 
+.dashboard-col-8 .stats-grid {
+  margin-bottom: 30px; /* 👈 khoảng cách dưới */
+}
+
+.Chart-dashboard {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  width: 100%;
+  height: 400px; /* 👈 chiều cao khối */
+  overflow: hidden; /* ẩn phần chart tràn ra */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.Chart-dashboard canvas {
+  max-height: 100%; /* 👈 canvas không vượt quá khối */
+  width: 100%;
+  object-fit: contain; /* giữ tỉ lệ biểu đồ */
+}
 .stats-grid {
+
+
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 24px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+
+
 }
 
 .dashboard-content {
@@ -38,6 +63,8 @@
 .dashboard-col-8 {
   flex: 2;
   min-width: 300px;
+  margin-bottom: 30px;
+  gap: 30px;
 }
 
 .dashboard-col-4 {
@@ -49,14 +76,15 @@
   .dashboard-row {
     flex-direction: column;
   }
-  
+
   .dashboard-col-8,
   .dashboard-col-4 {
     flex: 1;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 16px;
+    margin-bottom: 30px;
   }
 }

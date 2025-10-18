@@ -54,18 +54,19 @@ function Dashboard() {
         <h1>Dashboard</h1>
         <p>Chào mừng trở lại, {user?.name}!</p>
       </div>
-
-      <div className="stats-grid">
-        {currentStats.map((stat, index) => (
-          <StatsCard key={index} {...stat} />
-        ))}
-      </div>
-
       <div className="dashboard-content">
         <div className="dashboard-row">
           <div className="dashboard-col-8">
-            <ChartComponent userRole={user?.role} />
+            <div className="stats-grid">
+              {currentStats.map((stat, index) => (
+                <StatsCard key={index} {...stat} />
+              ))}
+            </div>
+            <div className="Chart-dashboard">
+              <ChartComponent userRole={user?.role} />
+            </div>
           </div>
+
           <div className="dashboard-col-4">
             <RecentActivity userRole={user?.role} />
           </div>
