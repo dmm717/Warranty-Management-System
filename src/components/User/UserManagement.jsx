@@ -123,7 +123,7 @@ function UserManagement() {
     setEditingUser(null);
   };
 
-  if (user?.role !== "Admin") {
+  if (user?.role !== "Admin" && user?.role !== "SC_Admin") {
     return (
       <div className="access-denied">
         <div className="access-denied-icon">🚫</div>
@@ -142,6 +142,12 @@ function UserManagement() {
     );
   }
 
+  // Lọc danh sách user theo role nếu là SC_Admin
+  const filteredUsers =
+    user?.role === "SC_Admin"
+      ? users.filter((u) => u.role === "SC_Staff" || u.role === "SC_Technician")
+      : users;
+
   return (
     <div className="user-management">
       <div className="page-header">
@@ -156,7 +162,7 @@ function UserManagement() {
 
       {!showForm ? (
         <UserList
-          users={users}
+          users={filteredUsers}
           onEdit={handleEditUser}
           onDelete={handleDeleteUser}
           onUpdateStatus={handleUpdateStatus}

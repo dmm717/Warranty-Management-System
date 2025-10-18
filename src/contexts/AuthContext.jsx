@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
+import PropTypes from "prop-types";
+import authService from "../services/AuthService";
 
 const AuthContext = createContext();
 
@@ -13,85 +15,100 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Check if user is logged in from localStorage
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    if (storedUser && authService.isAuthenticated()) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error("Error parsing stored user:", error);
+        localStorage.removeItem("user");
+      }
     }
     setLoading(false);
   }, []);
 
-  const login = async (credentials) => {
+  const login = useCallback(async (credentials) => {
     try {
-      // Mock login logic - replace with actual API call
-      const mockUsers = {
-        "sc_staff@vinfast.com": {
-          id: "SC001",
-          name: "Nguyen Van A",
-          email: "sc_staff@vinfast.com",
-          role: "SC_Staff",
-          department: "Service Center",
-        },
-        "sc_tech@vinfast.com": {
-          id: "SCT001",
-          name: "Tran Van B",
-          email: "sc_tech@vinfast.com",
-          role: "SC_Technician",
-          department: "Service Center",
-        },
-        "sc_admin@vinfast.com": {
-          id: "SCA001",
-          name: "Nguyen Thi SC Admin",
-          email: "sc_admin@vinfast.com",
-          role: "SC_Admin",
-          department: "Service Center",
-        },
-        "evm_staff@vinfast.com": {
-          id: "EVM001",
-          name: "Le Thi C",
-          email: "evm_staff@vinfast.com",
-          role: "EVM_Staff",
-          department: "Manufacturing",
-        },
-        "admin@vinfast.com": {
-          id: "ADM001",
-          name: "Pham Van D",
-          email: "admin@vinfast.com",
-          role: "Admin",
-          department: "IT",
-        },
-      };
+      // Validate credentials trước khi gọi API
+      const validation = authService.validateCredentials(credentials);
+      if (!validation.isValid) {
+        const errorMessage = validation.errors.map(e => e.message).join(', ');
+        return {
+          success: false,
+          message: errorMessage,
+          errors: validation.errors
+        };
+      }
 
-      const foundUser = mockUsers[credentials.email];
-      if (foundUser && credentials.password === "password123") {
-        setUser(foundUser);
-        localStorage.setItem("user", JSON.stringify(foundUser));
-        return { success: true };
+      // Gọi API login
+      const response = await authService.login(credentials);
+
+      if (response.success && response.data) {
+        // Lấy role đầu tiên từ danh sách roles
+        const primaryRole = response.data.roles && response.data.roles.length > 0
+          ? response.data.roles[0]
+          : null;
+
+        // Tạo user object theo format cũ để tương thích với code hiện tại
+        const userInfo = {
+          name: response.data.username,
+          email: credentials.email,
+          role: primaryRole,
+          roles: response.data.roles,
+        };
+
+        setUser(userInfo);
+        localStorage.setItem("user", JSON.stringify(userInfo));
+
+        return {
+          success: true,
+          message: response.message
+        };
       } else {
-        return { success: false, message: "Email hoặc mật khẩu không đúng" };
+        return {
+          success: false,
+          message: response.message || "Email hoặc mật khẩu không đúng",
+          errors: response.errors
+        };
       }
     } catch (error) {
-      return { success: false, message: "Login failed" };
+      console.error("Login error:", error);
+      return {
+        success: false,
+        message: "Không thể kết nối đến server. Vui lòng thử lại sau."
+      };
     }
-  };
+  }, []);
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
-  };
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+      setUser(null);
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Vẫn clear state dù có lỗi
+      setUser(null);
+    }
+  }, []);
 
-  const updateProfile = (updatedInfo) => {
-    const updatedUser = { ...user, ...updatedInfo };
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
+  const updateProfile = useCallback((updatedInfo) => {
+    setUser((currentUser) => {
+      const updatedUser = { ...currentUser, ...updatedInfo };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      return updatedUser;
+    });
     return { success: true };
-  };
+  }, []);
 
-  const value = {
-    user,
-    login,
-    logout,
-    loading,
-    updateProfile,
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      login,
+      logout,
+      loading,
+      updateProfile,
+    }),
+    [user, loading, login, logout, updateProfile]
+  );
 
   return (
     <AuthContext.Provider value={value}>
@@ -99,3 +116,7 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};

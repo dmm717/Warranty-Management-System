@@ -44,7 +44,6 @@ function Sidebar() {
       icon: "📈",
       roles: ["SC_Staff", "EVM_Staff", "Admin", "SC_Admin"],
     },
-    
     {
       path: "/users",
       name: "Quản lý người dùng",
@@ -65,8 +64,9 @@ function Sidebar() {
             <li key={item.path} className="nav-item">
               <Link
                 to={item.path}
-                className={`nav-link ${location.pathname === item.path ? "active" : ""
-                  }`}
+                className={`nav-link ${
+                  location.pathname === item.path ? "active" : ""
+                }`}
               >
                 <span className="nav-icon">{item.icon}</span>
                 <span className="nav-text">{item.name}</span>

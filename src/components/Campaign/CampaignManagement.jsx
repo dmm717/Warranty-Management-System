@@ -5,7 +5,9 @@ import CampaignForm from "./CampaignForm";
 import CampaignDetail from "./CampaignDetail";
 import RecallList from "./RecallList";
 import RecallForm from "./RecallForm";
-import "../../styles/CampaignManagement.css";
+import "./CampaignManagement.css";
+import AssignTechnicianModal from "../AssignTechnicianModal/AssignTechnicianModal";
+import { mockTechnicians } from "../Technician/TechnicianManagement";
 
 function CampaignManagement() {
   const { user } = useAuth();
@@ -17,6 +19,12 @@ function CampaignManagement() {
   const [formType, setFormType] = useState("campaign");
   const [activeTab, setActiveTab] = useState("campaigns");
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [assignments, setAssignments] = useState([
+    { CampaignsID: "SC001", SC_TechnicianID: "T001" },
+    { CampaignsID: "SC001", SC_TechnicianID: "T002" }
+  ]);
   const [vehicles, setVehicles] = useState([]);
   const [recallVehicleMap, setRecallVehicleMap] = useState([]); // 🟡 Mảng mapping recall-vehicle
 

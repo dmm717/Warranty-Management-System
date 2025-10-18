@@ -66,8 +66,10 @@ class RolePermissionService {
         'manage_sc_finance',
         'manage_sc_campaigns',
         'update_sc_status',
-        'view_sc_technicians',
-        'manage_sc_technicians'
+  'view_sc_technicians',
+  'manage_sc_technicians',
+  'create_sc_staff',
+  'create_sc_technician'
       ],
       
       // SC Technician - Kỹ thuật viên
@@ -106,8 +108,10 @@ class RolePermissionService {
       'manage_sc_finance': 'Quản lý tài chính trung tâm',
       'manage_sc_campaigns': 'Quản lý chiến dịch trung tâm',
       'update_sc_status': 'Cập nhật trạng thái trung tâm',
-      'view_sc_technicians': 'Xem danh sách kỹ thuật viên trung tâm',
-      'manage_sc_technicians': 'Quản lý kỹ thuật viên trung tâm'
+  'view_sc_technicians': 'Xem danh sách kỹ thuật viên trung tâm',
+  'manage_sc_technicians': 'Quản lý kỹ thuật viên trung tâm',
+  'create_sc_staff': 'Tạo tài khoản SC Staff',
+  'create_sc_technician': 'Tạo tài khoản SC Technician'
     };
   }
 
