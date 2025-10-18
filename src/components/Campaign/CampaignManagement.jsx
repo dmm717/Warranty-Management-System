@@ -52,7 +52,8 @@ function CampaignManagement() {
         setVehicles([]);
       }
       setLoading(false);
-    }, 1000);
+    };
+    fetchData();
   }, []);
 
   // ✅ Modal handlers - đã fix đúng logic
@@ -70,7 +71,7 @@ function CampaignManagement() {
   const handleAssign = (campaignId, techId) => {
     setAssignments((prev) => [
       ...prev,
-      { CampaignsID: campaignId, SC_TechnicianID: techId }
+      { CampaignsID: campaignId, SC_TechnicianID: techId },
     ]);
     console.log("Assigned:", campaignId, techId);
   };
@@ -113,68 +114,88 @@ function CampaignManagement() {
     setShowForm(false);
   };
 
-  const handleSave = (itemData) => {
-    if (formType === "campaign") {
-      if (selectedItem) {
-        const updatedCampaigns = campaigns.map((c) =>
-          c.CampaignsID === selectedItem.CampaignsID ? { ...c, ...itemData } : c
-        );
-        setCampaigns(updatedCampaigns);
+  const handleSave = async (itemData) => {
+    try {
+      if (formType === "campaign") {
+        if (selectedItem) {
+          // await fetch(`/api/campaigns/${selectedItem.CampaignsID}`, { method: 'PUT', body: JSON.stringify(itemData) });
+          setCampaigns(
+            campaigns.map((c) =>
+              c.CampaignsID === selectedItem.CampaignsID
+                ? { ...c, ...itemData }
+                : c
+            )
+          );
+        } else {
+          // const res = await fetch('/api/campaigns', { method: 'POST', body: JSON.stringify(itemData) });
+          // const newCampaign = await res.json();
+          // setCampaigns([...campaigns, newCampaign]);
+          setCampaigns([
+            ...campaigns,
+            {
+              ...itemData,
+              CampaignsID: `SC${String(campaigns.length + 1).padStart(3, "0")}`,
+              NotificationSent: 0,
+              AffectedVehicles: 0,
+              CompletedVehicles: 0,
+            },
+          ]);
+        }
       } else {
-        const newCampaign = {
-          ...itemData,
-          CampaignsID: `SC${String(campaigns.length + 1).padStart(3, "0")}`,
-          NotificationSent: 0,
-          AffectedVehicles: 0,
-          CompletedVehicles: 0,
-        };
-        setCampaigns([...campaigns, newCampaign]);
+        if (selectedItem) {
+          // await fetch(`/api/recalls/${selectedItem.Recall_ID}`, { method: 'PUT', body: JSON.stringify(itemData) });
+          setRecalls(
+            recalls.map((r) =>
+              r.Recall_ID === selectedItem.Recall_ID ? { ...r, ...itemData } : r
+            )
+          );
+        } else {
+          // const res = await fetch('/api/recalls', { method: 'POST', body: JSON.stringify(itemData) });
+          // const newRecall = await res.json();
+          // setRecalls([...recalls, newRecall]);
+          const newRecall = {
+            ...itemData,
+            Recall_ID: `RC${String(recalls.length + 1).padStart(3, "0")}`,
+            NotificationSent: 0,
+            EVMApprovalStatus: "Chờ phê duyệt",
+            AffectedVehicles: itemData.selectedVehicles?.length || 0,
+            CompletedVehicles: 0,
+          };
+          // 🟡 Tạo mapping recall-vehicle
+          const newMappings = (itemData.selectedVehicles || []).map((vId) => ({
+            Recall_ID: newRecall.Recall_ID,
+            Vehicle_ID: vId,
+          }));
+          setRecallVehicleMap((prev) => [...prev, ...newMappings]);
+          setRecalls([...recalls, newRecall]);
+        }
       }
-    } else {
-      if (selectedItem) {
-        const updatedRecalls = recalls.map((r) =>
-          r.Recall_ID === selectedItem.Recall_ID ? { ...r, ...itemData } : r
-        );
-        setRecalls(updatedRecalls);
-      } else {
-        const newRecall = {
-          ...itemData,
-          Recall_ID: `RC${String(recalls.length + 1).padStart(3, "0")}`,
-          NotificationSent: 0,
-          EVMApprovalStatus: "Chờ phê duyệt",
-          AffectedVehicles:  itemData.selectedVehicles?.length || 0,
-          CompletedVehicles: 0,
-        };
-        // 🟡 Tạo mapping recall-vehicle
-        const newMappings = (itemData.selectedVehicles || []).map(vId => ({
-        Recall_ID: newRecall.Recall_ID,
-        Vehicle_ID: vId,
-          })
-        );
-        setRecallVehicleMap(prev => [...prev, ...newMappings]);
-        console.log("✅ Recall mới tạo:", newRecall);
-        console.log("🔗 Recall-Vehicle Mapping:", recallVehicleMap);
-
-        setRecalls([...recalls, newRecall]);
-      }
+    } catch (error) {
+      console.error("Save campaign/recall error:", error);
     }
     setShowForm(false);
     setSelectedItem(null);
   };
 
-  const handleUpdateStatus = (itemId, newStatus, type) => {
-    if (type === "campaign") {
-      setCampaigns(
-        campaigns.map((c) =>
-          c.CampaignsID === itemId ? { ...c, Status: newStatus } : c
-        )
-      );
-    } else {
-      setRecalls(
-        recalls.map((r) =>
-          r.Recall_ID === itemId ? { ...r, Status: newStatus } : r
-        )
-      );
+  const handleUpdateStatus = async (itemId, newStatus, type) => {
+    try {
+      if (type === "campaign") {
+        // await fetch(`/api/campaigns/${itemId}/status`, { method: 'PATCH', body: JSON.stringify({ Status: newStatus }) });
+        setCampaigns(
+          campaigns.map((c) =>
+            c.CampaignsID === itemId ? { ...c, Status: newStatus } : c
+          )
+        );
+      } else {
+        // await fetch(`/api/recalls/${itemId}/status`, { method: 'PATCH', body: JSON.stringify({ Status: newStatus }) });
+        setRecalls(
+          recalls.map((r) =>
+            r.Recall_ID === itemId ? { ...r, Status: newStatus } : r
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Update status error:", error);
     }
   };
 
@@ -291,7 +312,7 @@ function CampaignManagement() {
           userRole={user?.role}
         />
       )}
-      
+
       {/* ✅ Modal - đã fix props đúng */}
       <AssignTechnicianModal
         isOpen={isModalOpen}
