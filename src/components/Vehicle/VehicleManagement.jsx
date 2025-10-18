@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import VehicleList from "./VehicleList";
 import VehicleForm from "./VehicleForm";
 import VehicleSearch from "./VehicleSearch";
-import "./VehicleManagement.css";
+import "../../styles/VehicleManagement.css";
 
 function VehicleManagement() {
   const [vehicles, setVehicles] = useState([]);

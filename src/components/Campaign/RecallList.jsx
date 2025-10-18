@@ -1,5 +1,5 @@
 import React from "react";
-import "./RecallList.css";
+import "../../styles/RecallList.css";
 
 function RecallList({ recalls, onEdit, onView, onUpdateStatus, userRole }) {
   const getStatusBadge = (status) => {
@@ -8,7 +8,7 @@ function RecallList({ recalls, onEdit, onView, onUpdateStatus, userRole }) {
       "Đang thực hiện": "status-active",
       "Tạm dừng": "status-paused",
       "Hoàn thành": "status-completed",
-      "Hủy bỏ": "status-cancelled",
+      "Hủy bỏ": "status-cancelled", 
     };
 
     return (

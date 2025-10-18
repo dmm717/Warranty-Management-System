@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import TechnicianManagement from "./components/Technician/TechnicianManagement";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./components/Auth/Login";
 import Dashboard from "./components/Dashboard/Dashboard";
@@ -14,8 +15,9 @@ import PartsManagement from "./components/Parts/PartsManagement";
 import CampaignManagement from "./components/Campaign/CampaignManagement";
 import ReportManagement from "./components/Report/ReportManagement";
 import UserManagement from "./components/User/UserManagement";
+import ProfileForm from "./components/User/ProfileForm";
 import Layout from "./components/Layout/Layout";
-import "./App.css";
+import "./styles/App.css";
 
 function App() {
   return (
@@ -42,6 +44,7 @@ function App() {
               <Route path="campaigns" element={<CampaignManagement />} />
               <Route path="reports" element={<ReportManagement />} />
               <Route path="users" element={<UserManagement />} />
+              <Route path="profile" element={<ProfileForm />} />
             </Route>
           </Routes>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "./ReportForm.css";
+import "../../styles/ReportForm.css";
 
 function ReportForm({ report, onSave, onCancel }) {
   const [formData, setFormData] = useState({

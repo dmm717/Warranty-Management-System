@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "./PartsForm.css";
+import "../../styles/PartsForm.css";
 
 function PartsForm({ part, onSave, onCancel }) {
   const [formData, setFormData] = useState({

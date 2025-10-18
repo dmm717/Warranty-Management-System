@@ -37,6 +37,13 @@ export function AuthProvider({ children }) {
           role: "SC_Technician",
           department: "Service Center",
         },
+        "sc_admin@vinfast.com": {
+          id: "SCA001",
+          name: "Nguyen Thi SC Admin",
+          email: "sc_admin@vinfast.com",
+          role: "SC_Admin",
+          department: "Service Center",
+        },
         "evm_staff@vinfast.com": {
           id: "EVM001",
           name: "Le Thi C",
@@ -59,7 +66,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem("user", JSON.stringify(foundUser));
         return { success: true };
       } else {
-        return { success: false, message: "Invalid credentials" };
+        return { success: false, message: "Email hoặc mật khẩu không đúng" };
       }
     } catch (error) {
       return { success: false, message: "Login failed" };
@@ -71,11 +78,19 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("user");
   };
 
+  const updateProfile = (updatedInfo) => {
+    const updatedUser = { ...user, ...updatedInfo };
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    return { success: true };
+  };
+
   const value = {
     user,
     login,
     logout,
     loading,
+    updateProfile,
   };
 
   return (

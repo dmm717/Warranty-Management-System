@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import "./Sidebar.css";
+import "../../styles/Sidebar.css";
 
 function Sidebar() {
   const location = useLocation();
@@ -12,43 +12,44 @@ function Sidebar() {
       path: "/",
       name: "Dashboard",
       icon: "📊",
-      roles: ["SC_Staff", "SC_Technician", "EVM_Staff", "Admin"],
+      roles: ["SC_Staff", "SC_Technician", "EVM_Staff", "Admin", "SC_Admin"],
     },
     {
       path: "/vehicles",
       name: "Quản lý xe",
       icon: "🚗",
-      roles: ["SC_Staff", "SC_Technician", "EVM_Staff", "Admin"],
+      roles: ["SC_Staff", "SC_Technician", "EVM_Staff", "Admin", "SC_Admin"],
     },
     {
       path: "/warranty-claims",
       name: "Yêu cầu bảo hành",
       icon: "🔧",
-      roles: ["SC_Staff", "SC_Technician", "EVM_Staff", "Admin"],
+      roles: ["SC_Staff", "SC_Technician", "EVM_Staff", "Admin", "SC_Admin"],
     },
     {
       path: "/parts",
       name: "Quản lý phụ tùng",
       icon: "⚙️",
-      roles: ["SC_Staff", "EVM_Staff", "Admin"],
+      roles: ["SC_Staff", "EVM_Staff", "Admin", "SC_Admin"],
     },
     {
       path: "/campaigns",
       name: "Chiến dịch & Recall",
       icon: "📢",
-      roles: ["SC_Staff", "EVM_Staff", "Admin"],
+      roles: ["SC_Staff", "EVM_Staff", "Admin", "SC_Admin"],
     },
     {
       path: "/reports",
       name: "Báo cáo",
       icon: "📈",
-      roles: ["SC_Staff", "EVM_Staff", "Admin"],
+      roles: ["SC_Staff", "EVM_Staff", "Admin", "SC_Admin"],
     },
+    
     {
       path: "/users",
       name: "Quản lý người dùng",
       icon: "👥",
-      roles: ["Admin"],
+      roles: ["Admin", "SC_Admin"],
     },
   ];
 
@@ -64,9 +65,8 @@ function Sidebar() {
             <li key={item.path} className="nav-item">
               <Link
                 to={item.path}
-                className={`nav-link ${
-                  location.pathname === item.path ? "active" : ""
-                }`}
+                className={`nav-link ${location.pathname === item.path ? "active" : ""
+                  }`}
               >
                 <span className="nav-icon">{item.icon}</span>
                 <span className="nav-text">{item.name}</span>

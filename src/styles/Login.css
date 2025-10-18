@@ -7,6 +7,7 @@
   height: 100vh;
   position: relative;
   background: linear-gradient(135deg, #1e40af 0%, #0ea5e9 100%);
+  padding: 20px;
 }
 
 .login-background {
@@ -25,12 +26,18 @@
   opacity: 0.1;
 }
 
+.background-image {
+  filter: grayscale(50%);
+}
+
 .login-form-container {
   position: relative;
   z-index: 2;
   width: 100%;
   max-width: 450px;
-  padding: 20px;
+  margin: 0 auto; /* Center the form */
+  display: flex;
+  justify-content: center;
 }
 
 .login-form {
@@ -38,6 +45,11 @@
   padding: 40px;
   border-radius: 16px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+}
+
+.register-form {
+  max-width: 500px;
 }
 
 .login-header {
@@ -47,6 +59,8 @@
 
 .logo {
   height: 60px;
+  max-width: 200px;
+  object-fit: contain;
   margin-bottom: 20px;
 }
 
@@ -78,6 +92,38 @@
   margin-bottom: 20px;
   text-align: center;
   font-weight: 600;
+}
+
+.success-message {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.form-footer {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.form-footer p {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.form-footer a {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.form-footer a:hover {
+  text-decoration: underline;
 }
 
 .demo-accounts {

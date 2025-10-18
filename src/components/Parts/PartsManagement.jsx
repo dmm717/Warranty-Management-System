@@ -4,7 +4,7 @@ import PartsList from "./PartsList";
 import PartsForm from "./PartsForm";
 import PartsSearch from "./PartsSearch";
 import PartsRequest from "./PartsRequest";
-import "./PartsManagement.css";
+import "../../styles/PartsManagement.css";
 
 function PartsManagement() {
   const { user } = useAuth();
