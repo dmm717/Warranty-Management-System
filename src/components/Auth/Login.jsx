@@ -10,6 +10,7 @@ function Login() {
     password: "",
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -17,15 +18,34 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
     setLoading(true);
 
-    const result = await login(credentials);
-    if (result.success) {
-      navigate("/");
-    } else {
-      setError(result.message);
+    try {
+      const result = await login(credentials);
+      if (result.success) {
+        navigate("/");
+      } else {
+        // Hiển thị lỗi chi tiết hơn
+        setError(result.message);
+
+        // Xử lý field-specific errors từ backend
+        if (result.errors && Array.isArray(result.errors)) {
+          const errors = {};
+          for (const err of result.errors) {
+            if (err.field) {
+              errors[err.field] = err.message;
+            }
+          }
+          setFieldErrors(errors);
+        }
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleChange = (e) => {
@@ -63,12 +83,14 @@ function Login() {
                 type="email"
                 id="email"
                 name="email"
-                className="form-control"
+                className={`form-control ${fieldErrors.email ? 'error' : ''}`}
                 value={credentials.email}
                 onChange={handleChange}
-                required
                 placeholder="Nhập email của bạn"
               />
+              {fieldErrors.email && (
+                <div className="field-error">{fieldErrors.email}</div>
+              )}
             </div>
 
             <div className="form-group">
@@ -79,12 +101,14 @@ function Login() {
                 type="password"
                 id="password"
                 name="password"
-                className="form-control"
+                className={`form-control ${fieldErrors.password ? 'error' : ''}`}
                 value={credentials.password}
                 onChange={handleChange}
-                required
                 placeholder="Nhập mật khẩu"
               />
+              {fieldErrors.password && (
+                <div className="field-error">{fieldErrors.password}</div>
+              )}
             </div>
 
             <button
