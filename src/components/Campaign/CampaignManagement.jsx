@@ -23,83 +23,37 @@ function CampaignManagement() {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [assignments, setAssignments] = useState([
     { CampaignsID: "SC001", SC_TechnicianID: "T001" },
-    { CampaignsID: "SC001", SC_TechnicianID: "T002" }
+    { CampaignsID: "SC001", SC_TechnicianID: "T002" },
   ]);
   const [vehicles, setVehicles] = useState([]);
   const [recallVehicleMap, setRecallVehicleMap] = useState([]); // 🟡 Mảng mapping recall-vehicle
 
   useEffect(() => {
-    const mockCampaigns = [
-      {
-        CampaignsID: "SC001",
-        CampaignsTypeName: "Cập nhật phần mềm BMS",
-        StartDate: "2025-10-01",
-        EndDate: "2025-12-31",
-        RequiredParts: "Không",
-        Description: "Cập nhật phần mềm quản lý pin cho tất cả xe VF8 2023",
-        Status: "Đang triển khai",
-        NotificationSent: 1,
-        AffectedVehicles: 1250,
-        CompletedVehicles: 340,
-      },
-      {
-        CampaignsID: "SC002",
-        CampaignsTypeName: "Thay thế cáp sạc",
-        StartDate: "2025-09-15",
-        EndDate: "2025-11-30",
-        RequiredParts: "Cáp sạc Type 2",
-        Description: "Thay thế cáp sạc bị lỗi cho VF9 batch 2023-Q2",
-        Status: "Hoàn thành",
-        NotificationSent: 1,
-        AffectedVehicles: 450,
-        CompletedVehicles: 450,
-      },
-    ];
-
-
-    // Fake dữ liệu xe (tạm thời)
-    const mockVehicles = [
-      { Vehicle_ID: "VH001", Vehicle_Name: "VF 8 Eco", Vehicle_Type: "SUV" },
-      { Vehicle_ID: "VH002", Vehicle_Name: "VF 9 Plus", Vehicle_Type: "SUV" },
-      { Vehicle_ID: "VH003", Vehicle_Name: "VF e34", Vehicle_Type: "Hatchback" },
-    ];
-
-    const mockRecalls = [
-      {
-        Recall_ID: "RC001",
-        RecallName: "Thu hồi pin VF8 2023",
-        IssueDescription:
-          "Phát hiện lỗi trong một số cell pin có thể gây quá nhiệt",
-        StartDate: "2025-09-01",
-        RequiredAction: "Thay thế toàn bộ bộ pin",
-        PartsRequired: "Pin Lithium 75kWh",
-        Status: "Đang thực hiện",
-        NotificationSent: 1,
-        EVMApprovalStatus: "Đã phê duyệt",
-        AffectedVehicles: 2500,
-        CompletedVehicles: 750,
-      },
-      {
-        Recall_ID: "RC002",
-        RecallName: "Kiểm tra hệ thống phanh",
-        IssueDescription: "Báo cáo về độ nhạy phanh không đồng đều",
-        StartDate: "2025-08-15",
-        RequiredAction: "Kiểm tra và hiệu chỉnh hệ thống phanh",
-        PartsRequired: "Má phanh, dầu phanh",
-        Status: "Hoàn thành",
-        NotificationSent: 1,
-        EVMApprovalStatus: "Đã phê duyệt",
-        AffectedVehicles: 800,
-        CompletedVehicles: 800,
-      },
-    ];
-
-    setTimeout(() => {
-      setCampaigns(mockCampaigns);
-      setRecalls(mockRecalls);
-      setVehicles(mockVehicles);
+    // TODO: Replace with real API calls
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // const campaignsRes = await fetch('/api/campaigns');
+        // const campaignsData = await campaignsRes.json();
+        // setCampaigns(campaignsData);
+        // const recallsRes = await fetch('/api/recalls');
+        // const recallsData = await recallsRes.json();
+        // setRecalls(recallsData);
+        // const vehiclesRes = await fetch('/api/vehicles');
+        // const vehiclesData = await vehiclesRes.json();
+        // setVehicles(vehiclesData);
+        setCampaigns([]);
+        setRecalls([]);
+        setVehicles([]);
+      } catch (error) {
+        console.error("Fetch campaign/recall/vehicle error:", error);
+        setCampaigns([]);
+        setRecalls([]);
+        setVehicles([]);
+      }
       setLoading(false);
-    }, 1000);
+    };
+    fetchData();
   }, []);
 
   // ✅ Modal handlers - đã fix đúng logic
@@ -117,7 +71,7 @@ function CampaignManagement() {
   const handleAssign = (campaignId, techId) => {
     setAssignments((prev) => [
       ...prev,
-      { CampaignsID: campaignId, SC_TechnicianID: techId }
+      { CampaignsID: campaignId, SC_TechnicianID: techId },
     ]);
     console.log("Assigned:", campaignId, techId);
   };
@@ -160,68 +114,88 @@ function CampaignManagement() {
     setShowForm(false);
   };
 
-  const handleSave = (itemData) => {
-    if (formType === "campaign") {
-      if (selectedItem) {
-        const updatedCampaigns = campaigns.map((c) =>
-          c.CampaignsID === selectedItem.CampaignsID ? { ...c, ...itemData } : c
-        );
-        setCampaigns(updatedCampaigns);
+  const handleSave = async (itemData) => {
+    try {
+      if (formType === "campaign") {
+        if (selectedItem) {
+          // await fetch(`/api/campaigns/${selectedItem.CampaignsID}`, { method: 'PUT', body: JSON.stringify(itemData) });
+          setCampaigns(
+            campaigns.map((c) =>
+              c.CampaignsID === selectedItem.CampaignsID
+                ? { ...c, ...itemData }
+                : c
+            )
+          );
+        } else {
+          // const res = await fetch('/api/campaigns', { method: 'POST', body: JSON.stringify(itemData) });
+          // const newCampaign = await res.json();
+          // setCampaigns([...campaigns, newCampaign]);
+          setCampaigns([
+            ...campaigns,
+            {
+              ...itemData,
+              CampaignsID: `SC${String(campaigns.length + 1).padStart(3, "0")}`,
+              NotificationSent: 0,
+              AffectedVehicles: 0,
+              CompletedVehicles: 0,
+            },
+          ]);
+        }
       } else {
-        const newCampaign = {
-          ...itemData,
-          CampaignsID: `SC${String(campaigns.length + 1).padStart(3, "0")}`,
-          NotificationSent: 0,
-          AffectedVehicles: 0,
-          CompletedVehicles: 0,
-        };
-        setCampaigns([...campaigns, newCampaign]);
+        if (selectedItem) {
+          // await fetch(`/api/recalls/${selectedItem.Recall_ID}`, { method: 'PUT', body: JSON.stringify(itemData) });
+          setRecalls(
+            recalls.map((r) =>
+              r.Recall_ID === selectedItem.Recall_ID ? { ...r, ...itemData } : r
+            )
+          );
+        } else {
+          // const res = await fetch('/api/recalls', { method: 'POST', body: JSON.stringify(itemData) });
+          // const newRecall = await res.json();
+          // setRecalls([...recalls, newRecall]);
+          const newRecall = {
+            ...itemData,
+            Recall_ID: `RC${String(recalls.length + 1).padStart(3, "0")}`,
+            NotificationSent: 0,
+            EVMApprovalStatus: "Chờ phê duyệt",
+            AffectedVehicles: itemData.selectedVehicles?.length || 0,
+            CompletedVehicles: 0,
+          };
+          // 🟡 Tạo mapping recall-vehicle
+          const newMappings = (itemData.selectedVehicles || []).map((vId) => ({
+            Recall_ID: newRecall.Recall_ID,
+            Vehicle_ID: vId,
+          }));
+          setRecallVehicleMap((prev) => [...prev, ...newMappings]);
+          setRecalls([...recalls, newRecall]);
+        }
       }
-    } else {
-      if (selectedItem) {
-        const updatedRecalls = recalls.map((r) =>
-          r.Recall_ID === selectedItem.Recall_ID ? { ...r, ...itemData } : r
-        );
-        setRecalls(updatedRecalls);
-      } else {
-        const newRecall = {
-          ...itemData,
-          Recall_ID: `RC${String(recalls.length + 1).padStart(3, "0")}`,
-          NotificationSent: 0,
-          EVMApprovalStatus: "Chờ phê duyệt",
-          AffectedVehicles:  itemData.selectedVehicles?.length || 0,
-          CompletedVehicles: 0,
-        };
-        // 🟡 Tạo mapping recall-vehicle
-        const newMappings = (itemData.selectedVehicles || []).map(vId => ({
-        Recall_ID: newRecall.Recall_ID,
-        Vehicle_ID: vId,
-          })
-        );
-        setRecallVehicleMap(prev => [...prev, ...newMappings]);
-        console.log("✅ Recall mới tạo:", newRecall);
-        console.log("🔗 Recall-Vehicle Mapping:", recallVehicleMap);
-
-        setRecalls([...recalls, newRecall]);
-      }
+    } catch (error) {
+      console.error("Save campaign/recall error:", error);
     }
     setShowForm(false);
     setSelectedItem(null);
   };
 
-  const handleUpdateStatus = (itemId, newStatus, type) => {
-    if (type === "campaign") {
-      setCampaigns(
-        campaigns.map((c) =>
-          c.CampaignsID === itemId ? { ...c, Status: newStatus } : c
-        )
-      );
-    } else {
-      setRecalls(
-        recalls.map((r) =>
-          r.Recall_ID === itemId ? { ...r, Status: newStatus } : r
-        )
-      );
+  const handleUpdateStatus = async (itemId, newStatus, type) => {
+    try {
+      if (type === "campaign") {
+        // await fetch(`/api/campaigns/${itemId}/status`, { method: 'PATCH', body: JSON.stringify({ Status: newStatus }) });
+        setCampaigns(
+          campaigns.map((c) =>
+            c.CampaignsID === itemId ? { ...c, Status: newStatus } : c
+          )
+        );
+      } else {
+        // await fetch(`/api/recalls/${itemId}/status`, { method: 'PATCH', body: JSON.stringify({ Status: newStatus }) });
+        setRecalls(
+          recalls.map((r) =>
+            r.Recall_ID === itemId ? { ...r, Status: newStatus } : r
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Update status error:", error);
     }
   };
 
@@ -338,7 +312,7 @@ function CampaignManagement() {
           userRole={user?.role}
         />
       )}
-      
+
       {/* ✅ Modal - đã fix props đúng */}
       <AssignTechnicianModal
         isOpen={isModalOpen}
