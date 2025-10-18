@@ -1,5 +1,9 @@
 .chart-container {
   padding: 20px 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-legend {
@@ -7,6 +11,7 @@
   gap: 24px;
   margin-bottom: 32px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .legend-item {
@@ -15,6 +20,7 @@
   gap: 8px;
   font-size: 14px;
   color: var(--dark-color);
+  margin-bottom: 8px;
 }
 
 .legend-color {
@@ -41,37 +47,64 @@
   justify-content: space-around;
   align-items: flex-end;
   height: 300px;
-  padding: 20px;
+  padding: 20px 10px;
   border-bottom: 2px solid var(--border-color);
   position: relative;
+  width: 100%;
+  flex-grow: 1;
+  overflow-x: auto;
 }
 
 .bar-group {
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex: 1;
+  min-width: 70px;
 }
 
 .bar-container {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   align-items: flex-end;
   height: 250px;
   margin-bottom: 12px;
+  justify-content: center;
 }
 
 .bar {
-  width: 20px;
+  width: 18px;
   border-radius: 4px 4px 0 0;
   transition: all 0.3s ease;
   cursor: pointer;
   min-height: 4px;
+  position: relative;
 }
 
 .bar:hover {
   opacity: 0.8;
   transform: scaleY(1.05);
+}
+
+.bar::after {
+  content: attr(title);
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.bar:hover::after {
+  opacity: 1;
 }
 
 .bar-pending {
@@ -91,6 +124,7 @@
   color: #6b7280;
   font-weight: 600;
   text-align: center;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {
@@ -102,6 +136,8 @@
   .chart-bars {
     gap: 12px;
     height: 250px;
+    padding: 20px 5px;
+    overflow-x: auto;
   }
   
   .bar-container {
@@ -109,6 +145,54 @@
   }
   
   .bar {
-    width: 16px;
+    width: 14px;
   }
+}
+
+@media (max-width: 576px) {
+  .chart-bars {
+    height: 220px;
+    padding-bottom: 15px;
+  }
+  
+  .bar-container {
+    height: 180px;
+    gap: 3px;
+  }
+  
+  .bar {
+    width: 12px;
+  }
+  
+  .bar-group {
+    min-width: 60px;
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+}
+
+.chart-filter {
+  display: flex;
+  align-items: center;
+}
+
+.year-filter {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: #fff;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+
+.bar-total {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 4px;
 }

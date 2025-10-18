@@ -28,10 +28,10 @@
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   width: 100%;
-  height: 400px; /* 👈 chiều cao khối */
+  height: 450px; /* 👈 Tăng chiều cao khối */
   overflow: hidden; /* ẩn phần chart tràn ra */
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
 }
 

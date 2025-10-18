@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import "../../styles/ChartComponent.css";
 
 function ChartComponent({ userRole }) {
+  const [yearFilter, setYearFilter] = useState("2025");
+  
   // Mock data cho biểu đồ - replace với real data
   const chartData = {
     SC_Staff: {
@@ -13,6 +15,12 @@ function ChartComponent({ userRole }) {
         { month: "T4", pending: 20, approved: 35, rejected: 1 },
         { month: "T5", pending: 16, approved: 32, rejected: 5 },
         { month: "T6", pending: 14, approved: 38, rejected: 2 },
+        { month: "T7", pending: 19, approved: 30, rejected: 3 },
+        { month: "T8", pending: 22, approved: 32, rejected: 2 },
+        { month: "T9", pending: 18, approved: 36, rejected: 4 },
+        { month: "T10", pending: 21, approved: 42, rejected: 3 },
+        { month: "T11", pending: 16, approved: 38, rejected: 1 },
+        { month: "T12", pending: 19, approved: 40, rejected: 2 },
       ],
     },
     EVM_Staff: {
@@ -36,11 +44,30 @@ function ChartComponent({ userRole }) {
       item.rejected,
     ])
   );
+  
+  // Calculate total for each month
+  const calculateTotal = (item) => item.pending + item.approved + item.rejected;
+  
+  // Format for display
+  const formatNumber = (num) => num.toLocaleString('vi-VN');
 
   return (
     <div className="chart-component card">
       <div className="card-header">
         <h3 className="card-title">{currentData.title}</h3>
+        {userRole === "SC_Staff" && (
+          <div className="chart-filter">
+            <select 
+              value={yearFilter} 
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="year-filter"
+            >
+              <option value="2023">2023</option>
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+            </select>
+          </div>
+        )}
       </div>
       <div className="chart-container">
         <div className="chart-legend">
@@ -64,20 +91,21 @@ function ChartComponent({ userRole }) {
                 <div
                   className="bar bar-pending"
                   style={{ height: `${(item.pending / maxValue) * 100}%` }}
-                  title={`Chờ xử lý: ${item.pending}`}
+                  title={`Chờ xử lý: ${formatNumber(item.pending)}`}
                 ></div>
                 <div
                   className="bar bar-approved"
                   style={{ height: `${(item.approved / maxValue) * 100}%` }}
-                  title={`Đã duyệt: ${item.approved}`}
+                  title={`Đã duyệt: ${formatNumber(item.approved)}`}
                 ></div>
                 <div
                   className="bar bar-rejected"
                   style={{ height: `${(item.rejected / maxValue) * 100}%` }}
-                  title={`Từ chối: ${item.rejected}`}
+                  title={`Từ chối: ${formatNumber(item.rejected)}`}
                 ></div>
               </div>
               <div className="bar-label">{item.month}</div>
+              <div className="bar-total">{formatNumber(calculateTotal(item))}</div>
             </div>
           ))}
         </div>
