@@ -2,9 +2,41 @@
    ROLE PERMISSION SERVICE - Quản lý quyền truy cập theo role
    ========================================================================== */
 
+import apiService from './ApiService';
+
 class RolePermissionService {
   constructor() {
-    // Định nghĩa các quyền cho từng role
+    // These maps will be populated from the API
+    this.permissions = {};
+    this.permissionDescriptions = {};
+    
+    // Load permissions from API when service is initialized
+    this.initializePermissions();
+  }
+  
+  // Initialize permissions from API
+  async initializePermissions() {
+    try {
+      const response = await apiService.get('/permissions/roles');
+      
+      if (response.success) {
+        this.permissions = response.data.permissions || {};
+        this.permissionDescriptions = response.data.descriptions || {};
+      } else {
+        console.error('Failed to initialize permissions:', response.message);
+        // Fall back to default permissions if API call fails
+        this.setDefaultPermissions();
+      }
+    } catch (error) {
+      console.error('Error initializing permissions:', error);
+      // Fall back to default permissions if API call fails
+      this.setDefaultPermissions();
+    }
+  }
+  
+  // Set default permissions as fallback
+  setDefaultPermissions() {
+    // Default permissions for each role
     this.permissions = {
       // EVM Staff - Nhân viên nhà sản xuất
       'EVM_Staff': [
@@ -66,10 +98,10 @@ class RolePermissionService {
         'manage_sc_finance',
         'manage_sc_campaigns',
         'update_sc_status',
-  'view_sc_technicians',
-  'manage_sc_technicians',
-  'create_sc_staff',
-  'create_sc_technician'
+        'view_sc_technicians',
+        'manage_sc_technicians',
+        'create_sc_staff',
+        'create_sc_technician'
       ],
       
       // SC Technician - Kỹ thuật viên
@@ -78,7 +110,7 @@ class RolePermissionService {
       ]
     };
 
-    // Định nghĩa mô tả các quyền
+    // Default permission descriptions
     this.permissionDescriptions = {
       'create_recall': 'Tạo recall',
       'update_recall': 'Cập nhật recall', 
@@ -93,8 +125,8 @@ class RolePermissionService {
       'update_work_results': 'Cập nhật kết quả xử lý lên hệ thống',
       'confirm_manufacturer_report': 'Xác nhận báo cáo của hãng',
       'update_report': 'Cập nhật báo cáo',
-  'update_campaign_status_per_vehicle': 'Cập nhật trạng thái chiến dịch cho từng xe',
-  'manage_sc_staff': 'Quản lý nhân sự trung tâm dịch vụ',
+      'update_campaign_status_per_vehicle': 'Cập nhật trạng thái chiến dịch cho từng xe',
+      'manage_sc_staff': 'Quản lý nhân sự trung tâm dịch vụ',
       'manage_sc_resources': 'Quản lý tài nguyên trung tâm dịch vụ',
       'manage_sc_settings': 'Quản lý cài đặt trung tâm',
       'view_sc_reports': 'Xem báo cáo trung tâm',
@@ -108,10 +140,10 @@ class RolePermissionService {
       'manage_sc_finance': 'Quản lý tài chính trung tâm',
       'manage_sc_campaigns': 'Quản lý chiến dịch trung tâm',
       'update_sc_status': 'Cập nhật trạng thái trung tâm',
-  'view_sc_technicians': 'Xem danh sách kỹ thuật viên trung tâm',
-  'manage_sc_technicians': 'Quản lý kỹ thuật viên trung tâm',
-  'create_sc_staff': 'Tạo tài khoản SC Staff',
-  'create_sc_technician': 'Tạo tài khoản SC Technician'
+      'view_sc_technicians': 'Xem danh sách kỹ thuật viên trung tâm',
+      'manage_sc_technicians': 'Quản lý kỹ thuật viên trung tâm',
+      'create_sc_staff': 'Tạo tài khoản SC Staff',
+      'create_sc_technician': 'Tạo tài khoản SC Technician'
     };
   }
 
@@ -125,9 +157,33 @@ class RolePermissionService {
     return rolePermissions.includes(permission);
   }
 
+  // Check permissions from API
+  async checkPermission(userId, permission) {
+    try {
+      const response = await apiService.post('/permissions/check', {
+        userId,
+        permission
+      });
+      
+      return response.success ? response.data.hasPermission : false;
+    } catch (error) {
+      console.error('Error checking permission:', error);
+      // Fall back to client-side check if API call fails
+      const userRole = localStorage.getItem('userRole');
+      return this.hasPermission(userRole, permission);
+    }
+  }
+
   // Lấy tất cả quyền của một role
-  getRolePermissions(userRole) {
-    return this.permissions[userRole] || [];
+  async getRolePermissions(userRole) {
+    try {
+      const response = await apiService.get(`/permissions/roles/${userRole}`);
+      return response.success ? response.data.permissions : (this.permissions[userRole] || []);
+    } catch (error) {
+      console.error('Error getting role permissions:', error);
+      // Fall back to local permissions if API call fails
+      return this.permissions[userRole] || [];
+    }
   }
 
   // Kiểm tra nhiều quyền cùng lúc
@@ -141,12 +197,29 @@ class RolePermissionService {
   }
 
   // Lấy danh sách quyền với mô tả
-  getPermissionDescriptions(userRole) {
-    const rolePermissions = this.getRolePermissions(userRole);
-    return rolePermissions.map(permission => ({
-      permission,
-      description: this.permissionDescriptions[permission] || permission
-    }));
+  async getPermissionDescriptions(userRole) {
+    try {
+      const response = await apiService.get(`/permissions/descriptions/${userRole}`);
+      
+      if (response.success) {
+        return response.data.permissions;
+      } else {
+        // Fall back to local implementation
+        const rolePermissions = await this.getRolePermissions(userRole);
+        return rolePermissions.map(permission => ({
+          permission,
+          description: this.permissionDescriptions[permission] || permission
+        }));
+      }
+    } catch (error) {
+      console.error('Error getting permission descriptions:', error);
+      // Fall back to local implementation
+      const rolePermissions = this.permissions[userRole] || [];
+      return rolePermissions.map(permission => ({
+        permission,
+        description: this.permissionDescriptions[permission] || permission
+      }));
+    }
   }
 
   // Kiểm tra quyền cho các chức năng cụ thể
@@ -239,7 +312,23 @@ class RolePermissionService {
   }
 
   // Kiểm tra quyền truy cập API endpoint
-  canAccessEndpoint(userRole, endpoint, method = 'GET') {
+  async canAccessEndpoint(userRole, endpoint, method = 'GET') {
+    try {
+      // Check with API first
+      const response = await apiService.post('/permissions/endpoint-access', {
+        userRole,
+        endpoint,
+        method
+      });
+      
+      if (response.success) {
+        return response.data.hasAccess;
+      }
+    } catch (error) {
+      console.error('Error checking endpoint access:', error);
+    }
+    
+    // Fall back to local implementation if API call fails
     const endpointPermissions = {
       // Campaign/Recall endpoints
       'POST /api/campaigns': ['create_recall'],
@@ -278,7 +367,23 @@ class RolePermissionService {
   }
 
   // Validate user action với error message
-  validateAction(userRole, permission, actionName) {
+  async validateAction(userRole, permission, actionName) {
+    try {
+      // Check with API first
+      const response = await apiService.post('/permissions/validate', {
+        userRole,
+        permission,
+        actionName
+      });
+      
+      if (response.success) {
+        return response.data;
+      }
+    } catch (error) {
+      console.error('Error validating action:', error);
+    }
+    
+    // Fall back to local implementation if API call fails
     if (!this.hasPermission(userRole, permission)) {
       return {
         allowed: false,
@@ -291,24 +396,47 @@ class RolePermissionService {
   }
 
   // Log action cho audit trail
-  logAction(userRole, userId, action, resourceId = null, details = {}) {
+  async logAction(userRole, userId, action, resourceId = null, details = {}) {
     const logEntry = {
       timestamp: new Date().toISOString(),
       userRole,
       userId,
       action,
       resourceId,
-      details,
-      allowed: this.hasPermission(userRole, action)
+      details
     };
     
-    // Trong thực tế sẽ ghi vào database
-    console.log('Action Log:', logEntry);
-    return logEntry;
+    try {
+      // Send log to API
+      const response = await apiService.post('/audit/log', logEntry);
+      return response.success ? response.data : logEntry;
+    } catch (error) {
+      console.error('Error logging action:', error);
+      // Just log locally if API fails
+      console.log('Action Log (local fallback):', {
+        ...logEntry,
+        allowed: this.hasPermission(userRole, action)
+      });
+      return logEntry;
+    }
   }
 
   // Lấy menu items dựa trên quyền
-  getMenuItems(userRole) {
+  async getMenuItems(userRole) {
+    try {
+      // Get menu items from API
+      const response = await apiService.get('/permissions/menu-items', {
+        params: { userRole }
+      });
+      
+      if (response.success) {
+        return response.data.menuItems;
+      }
+    } catch (error) {
+      console.error('Error fetching menu items:', error);
+    }
+    
+    // Fall back to local implementation if API call fails
     const menuItems = [
       {
         id: 'dashboard',
@@ -387,6 +515,31 @@ class RolePermissionService {
       
       return true;
     });
+  }
+  
+  // Check if user has permission to access feature
+  async canAccessFeature(userId, featureName) {
+    try {
+      const response = await apiService.post('/permissions/feature-access', {
+        userId,
+        featureName
+      });
+      
+      return response.success ? response.data.hasAccess : false;
+    } catch (error) {
+      console.error('Error checking feature access:', error);
+      // Fall back to role based check
+      const userRole = localStorage.getItem('userRole');
+      const featurePermissionMap = {
+        'campaigns': ['view_affected_vehicles'],
+        'create-recall': ['create_recall'],
+        'work-assignments': ['assign_work_to_technician', 'update_work_results'],
+        'reports': ['record_and_report', 'update_report', 'confirm_manufacturer_report']
+      };
+      
+      const requiredPermissions = featurePermissionMap[featureName] || [];
+      return this.hasAnyPermission(userRole, requiredPermissions);
+    }
   }
 }
 
