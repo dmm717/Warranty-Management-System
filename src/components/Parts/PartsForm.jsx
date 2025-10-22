@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from "react";
+import {
+  PARTS_CATEGORIES,
+  PARTS_CONDITIONS,
+  MANUFACTURERS,
+  PARTS_STATUS,
+} from "../../constants";
 import "../../styles/PartsForm.css";
 
 function PartsForm({ part, onSave, onCancel }) {
@@ -12,25 +18,17 @@ function PartsForm({ part, onSave, onCancel }) {
     Part_Name: "",
     Total_Amount_Of_Product: 0,
     Manufacturer: "VinFast",
-    Condition: "Mới",
-    Status: "Có sẵn",
+    Condition: "NEW",
+    Status: "AVAILABLE",
   });
 
   const [errors, setErrors] = useState({});
 
-  const categories = [
-    "Battery Pack",
-    "Electric Motor",
-    "BMS",
-    "Inverter",
-    "Charger",
-    "Brake System",
-    "Suspension",
-    "Body Parts",
-  ];
-
-  const conditions = ["Mới", "Đã qua sử dụng", "Tân trang"];
-  const manufacturers = ["VinFast", "Bosch", "Continental", "Denso", "Magna"];
+  // Sử dụng constants
+  const categories = PARTS_CATEGORIES;
+  const conditions = PARTS_CONDITIONS;
+  const manufacturers = MANUFACTURERS;
+  const statusOptions = PARTS_STATUS;
 
   useEffect(() => {
     if (part) {
@@ -131,8 +129,8 @@ function PartsForm({ part, onSave, onCancel }) {
               >
                 <option value="">Chọn danh mục</option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                  <option key={category.value} value={category.value}>
+                    {category.label}
                   </option>
                 ))}
               </select>
@@ -163,8 +161,8 @@ function PartsForm({ part, onSave, onCancel }) {
                 className="form-control"
               >
                 {manufacturers.map((manufacturer) => (
-                  <option key={manufacturer} value={manufacturer}>
-                    {manufacturer}
+                  <option key={manufacturer.value} value={manufacturer.value}>
+                    {manufacturer.label}
                   </option>
                 ))}
               </select>
@@ -253,8 +251,8 @@ function PartsForm({ part, onSave, onCancel }) {
                 className="form-control"
               >
                 {conditions.map((condition) => (
-                  <option key={condition} value={condition}>
-                    {condition}
+                  <option key={condition.value} value={condition.value}>
+                    {condition.label}
                   </option>
                 ))}
               </select>
@@ -292,10 +290,11 @@ function PartsForm({ part, onSave, onCancel }) {
                 onChange={handleChange}
                 className="form-control"
               >
-                <option value="Có sẵn">Có sẵn</option>
-                <option value="Thiếu hàng">Thiếu hàng</option>
-                <option value="Hết hàng">Hết hàng</option>
-                <option value="Ngừng sản xuất">Ngừng sản xuất</option>
+                {statusOptions.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

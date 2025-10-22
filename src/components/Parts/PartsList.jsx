@@ -6,14 +6,27 @@ function PartsList({ parts, onEdit, onDelete, userRole }) {
     let statusClass = "status-available";
     let displayStatus = status;
 
+    // Map BE status to display
+    const statusLabels = {
+      AVAILABLE: "Có sẵn",
+      OUT_OF_STOCK: "Hết hàng",
+      LOW_STOCK: "Thiếu hàng",
+      ORDERED: "Đang đặt hàng",
+    };
+
+    const displayText = statusLabels[status] || status;
+
     if (quantity === 0) {
       statusClass = "status-out-of-stock";
       displayStatus = "Hết hàng";
     } else if (quantity < 10) {
       statusClass = "status-low-stock";
       displayStatus = "Thiếu hàng";
-    } else if (status === "Có sẵn") {
+    } else if (status === "Có sẵn" || status === "AVAILABLE") {
       statusClass = "status-available";
+      displayStatus = displayText;
+    } else {
+      displayStatus = displayText;
     }
 
     return (
@@ -65,44 +78,58 @@ function PartsList({ parts, onEdit, onDelete, userRole }) {
           </thead>
           <tbody>
             {parts.map((part) => (
-              <tr key={part.ID_Product_Serial_SC}>
+              <tr key={part.partsRequestId || part.ID_Product_Serial_SC}>
                 <td>
                   <div className="part-id">
-                    <strong>{part.ID_Product_Serial_SC}</strong>
+                    <strong>
+                      {part.partNumber || part.ID_Product_Serial_SC}
+                    </strong>
                   </div>
                 </td>
                 <td>
                   <div className="part-info">
-                    <strong>{part.Name_Product}</strong>
-                    <small>{part.Description}</small>
+                    <strong>{part.partName || part.Name_Product}</strong>
+                    <small>
+                      {part.description || part.Description || "N/A"}
+                    </small>
                   </div>
                 </td>
                 <td>
-                  <span className="category-badge">{part.Part_Name}</span>
+                  <span className="category-badge">
+                    {part.partTypeId || part.Part_Name || "N/A"}
+                  </span>
                 </td>
-                <td>{part.Brand}</td>
+                <td>{part.Brand || "N/A"}</td>
                 <td>
                   <div className="quantity-info">
                     <strong
                       className={
-                        part.Total_Amount_Of_Product < 10 ? "low-quantity" : ""
+                        (part.quantity || part.Total_Amount_Of_Product || 0) <
+                        10
+                          ? "low-quantity"
+                          : ""
                       }
                     >
-                      {part.Total_Amount_Of_Product}
+                      {part.quantity || part.Total_Amount_Of_Product || 0}
                     </strong>
                     <small>đơn vị</small>
                   </div>
                 </td>
                 <td>
-                  <div className="price-info">{formatCurrency(part.Price)}</div>
-                </td>
-                <td>
-                  <div className="warranty-info">
-                    {part.Warranty_Period} tháng
+                  <div className="price-info">
+                    {formatCurrency(part.Price || 0)}
                   </div>
                 </td>
                 <td>
-                  {getStatusBadge(part.Status, part.Total_Amount_Of_Product)}
+                  <div className="warranty-info">
+                    {part.Warranty_Period || "N/A"} tháng
+                  </div>
+                </td>
+                <td>
+                  {getStatusBadge(
+                    part.status || part.Status,
+                    part.quantity || part.Total_Amount_Of_Product || 0
+                  )}
                 </td>
                 {canEditDelete() && (
                   <td>
@@ -115,7 +142,11 @@ function PartsList({ parts, onEdit, onDelete, userRole }) {
                         ✏️
                       </button>
                       <button
-                        onClick={() => onDelete(part.ID_Product_Serial_SC)}
+                        onClick={() =>
+                          onDelete(
+                            part.partsRequestId || part.ID_Product_Serial_SC
+                          )
+                        }
                         className="btn btn-sm btn-danger"
                         title="Xóa"
                       >

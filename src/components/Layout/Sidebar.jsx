@@ -12,44 +12,43 @@ function Sidebar() {
       path: "/",
       name: "Dashboard",
       icon: "📊",
-      roles: ["SC_Staff", "SC_Technician", "EVM_Staff", "Admin", "SC_Admin"],
+      roles: ["SC_STAFF", "SC_TECHNICAL", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/vehicles",
       name: "Quản lý xe",
       icon: "🚗",
-      roles: ["SC_Staff", "SC_Technician", "EVM_Staff", "Admin", "SC_Admin"],
+      roles: ["SC_STAFF", "SC_TECHNICAL", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/warranty-claims",
       name: "Yêu cầu bảo hành",
       icon: "🔧",
-      roles: ["SC_Staff", "SC_Technician", "EVM_Staff", "Admin", "SC_Admin"],
+      roles: ["SC_STAFF", "SC_TECHNICAL", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/parts",
       name: "Quản lý phụ tùng",
       icon: "⚙️",
-      roles: ["SC_Staff", "EVM_Staff", "Admin", "SC_Admin"],
+      roles: ["SC_STAFF", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/campaigns",
       name: "Chiến dịch & Recall",
       icon: "📢",
-      roles: ["SC_Staff", "EVM_Staff", "Admin", "SC_Admin"],
+      roles: ["SC_STAFF", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/reports",
       name: "Báo cáo",
       icon: "📈",
-      roles: ["SC_Staff", "EVM_Staff", "Admin", "SC_Admin"],
+      roles: ["SC_STAFF", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
-    
     {
       path: "/users",
       name: "Quản lý người dùng",
       icon: "👥",
-      roles: ["Admin", "SC_Admin"],
+      roles: ["SC_ADMIN", "EVM_ADMIN"],
     },
   ];
 
@@ -65,8 +64,9 @@ function Sidebar() {
             <li key={item.path} className="nav-item">
               <Link
                 to={item.path}
-                className={`nav-link ${location.pathname === item.path ? "active" : ""
-                  }`}
+                className={`nav-link ${
+                  location.pathname === item.path ? "active" : ""
+                }`}
               >
                 <span className="nav-icon">{item.icon}</span>
                 <span className="nav-text">{item.name}</span>

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { transformVehicleToBackend } from "../../services/api";
+import { VEHICLE_TYPES, VEHICLE_STATUS_OPTIONS } from "../../constants";
 import "../../styles/VehicleForm.css";
 
 function VehicleForm({ vehicle, onSave, onCancel }) {
@@ -8,34 +10,34 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
     Owner: "",
     Phone_Number: "",
     Email: "",
-    Status: "Đang sử dụng",
+    Status: "ACTIVE",
     Total_KM: 0,
     Production_Date: "",
     ID_Electric_Vehicle_Type: "",
+    Picture: "",
   });
 
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (vehicle) {
-      setFormData(vehicle);
+      setFormData({
+        Vehicle_Name: vehicle.Vehicle_Name || "",
+        VIN: vehicle.VIN || "",
+        Owner: vehicle.Owner || "",
+        Phone_Number: vehicle.Phone_Number || "",
+        Email: vehicle.Email || "",
+        Status: vehicle.Status || "ACTIVE",
+        Total_KM: vehicle.Total_KM || 0,
+        Production_Date: vehicle.Production_Date || "",
+        ID_Electric_Vehicle_Type: vehicle.ID_Electric_Vehicle_Type || "",
+        Picture: vehicle.Picture || "",
+      });
     }
   }, [vehicle]);
 
-  const vehicleTypes = [
-    { id: "EVT001", name: "VinFast VF8" },
-    { id: "EVT002", name: "VinFast VF9" },
-    { id: "EVT003", name: "VinFast VF5" },
-    { id: "EVT004", name: "VinFast VF6" },
-    { id: "EVT005", name: "VinFast VF7" },
-  ];
-
-  const statusOptions = [
-    "Đang sử dụng",
-    "Bảo hành",
-    "Bảo dưỡng",
-    "Ngừng hoạt động",
-  ];
+  const vehicleTypes = VEHICLE_TYPES;
+  const statusOptions = VEHICLE_STATUS_OPTIONS;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -101,7 +103,15 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      onSave(formData);
+      // Add default picture if not provided
+      const dataToSave = {
+        ...formData,
+        Picture: formData.Picture || "default-vehicle.jpg",
+      };
+
+      // Transform data sang format backend
+      const backendData = transformVehicleToBackend(dataToSave);
+      onSave(backendData);
     }
   };
 
@@ -245,8 +255,8 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
               className="form-control"
             >
               {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status}
+                <option key={status.value} value={status.value}>
+                  {status.label}
                 </option>
               ))}
             </select>
@@ -269,6 +279,21 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
             {errors.Total_KM && (
               <div className="error-message">{errors.Total_KM}</div>
             )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Hình ảnh (URL)</label>
+            <input
+              type="text"
+              name="Picture"
+              value={formData.Picture}
+              onChange={handleChange}
+              className="form-control"
+              placeholder="https://example.com/vehicle.jpg hoặc để trống"
+            />
+            <small className="form-help">
+              Để trống sẽ sử dụng ảnh mặc định
+            </small>
           </div>
         </div>
 

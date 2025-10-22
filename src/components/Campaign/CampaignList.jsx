@@ -1,12 +1,21 @@
-
 import React from "react";
 import "../../styles/CampaignList.css";
 
-
-
-function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole, onAssign }) {
+function CampaignList({
+  campaigns,
+  onEdit,
+  onView,
+  onUpdateStatus,
+  userRole,
+  onAssign,
+}) {
   const getStatusBadge = (status) => {
     const statusClasses = {
+      ACTIVE: "status-active",
+      INACTIVE: "status-inactive",
+      COMPLETED: "status-completed",
+      CANCELLED: "status-cancelled",
+      PENDING: "status-preparing",
       "Chuẩn bị": "status-preparing",
       "Đang triển khai": "status-active",
       "Tạm dừng": "status-paused",
@@ -14,23 +23,31 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole, onA
       "Hủy bỏ": "status-cancelled",
     };
 
+    const statusLabels = {
+      ACTIVE: "Đang triển khai",
+      INACTIVE: "Tạm dừng",
+      COMPLETED: "Hoàn thành",
+      CANCELLED: "Hủy bỏ",
+      PENDING: "Chuẩn bị",
+    };
+
+    const displayStatus = statusLabels[status] || status;
+
     return (
       <span
-        className={`status-badge ${statusClasses[status] || "status-preparing"
-          }`}
+        className={`status-badge ${
+          statusClasses[status] ||
+          statusClasses[displayStatus] ||
+          "status-preparing"
+        }`}
       >
-        {status}
+        {displayStatus}
       </span>
     );
   };
 
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("vi-VN");
-  };
-
-  const getProgressPercentage = (completed, total) => {
-    return total > 0 ? Math.round((completed / total) * 100) : 0;
   };
 
   const canUpdateStatus = () => {
@@ -39,6 +56,11 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole, onA
 
   const getAvailableStatuses = (currentStatus) => {
     const statusFlow = {
+      ACTIVE: ["INACTIVE", "COMPLETED"],
+      INACTIVE: ["ACTIVE", "CANCELLED"],
+      PENDING: ["ACTIVE", "CANCELLED"],
+      COMPLETED: [],
+      CANCELLED: [],
       "Chuẩn bị": ["Đang triển khai", "Hủy bỏ"],
       "Đang triển khai": ["Tạm dừng", "Hoàn thành"],
       "Tạm dừng": ["Đang triển khai", "Hủy bỏ"],
@@ -47,14 +69,6 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole, onA
     };
     return statusFlow[currentStatus] || [];
   };
-  const handleAssignTechnician = (campaignID, assignedList) => {
-  setCampaigns((prev) =>
-    prev.map((c) =>
-      c.CampaignID === campaignID ? { ...c, assignedTechnicians: assignedList } : c
-    )
-  );
-};
-
 
   if (campaigns.length === 0) {
     return (
@@ -65,7 +79,6 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole, onA
       </div>
     );
   }
-
 
   return (
     <div className="campaign-list">
@@ -84,62 +97,74 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole, onA
           </thead>
           <tbody>
             {campaigns.map((campaign) => (
-              <tr key={campaign.CampaignsID}>
+              <tr key={campaign.campaignId || campaign.CampaignsID}>
                 <td>
                   <div className="campaign-id">
-                    <strong>{campaign.CampaignsID}</strong>
+                    <strong>
+                      {campaign.campaignId || campaign.CampaignsID}
+                    </strong>
                   </div>
                 </td>
                 <td>
                   <div className="campaign-info">
-                    <strong>{campaign.CampaignsTypeName}</strong>
-                    <small>{campaign.Description}</small>
+                    <strong>
+                      {campaign.campaignName || campaign.CampaignsTypeName}
+                    </strong>
+                    <small>
+                      {campaign.description || campaign.Description}
+                    </small>
                   </div>
                 </td>
                 <td>
                   <div className="date-range">
-                    <div>{formatDate(campaign.StartDate)}</div>
-                    <small>đến {formatDate(campaign.EndDate)}</small>
+                    <div>
+                      {formatDate(campaign.startDate || campaign.StartDate)}
+                    </div>
+                    <small>
+                      đến {formatDate(campaign.endDate || campaign.EndDate)}
+                    </small>
                   </div>
                 </td>
                 <td>
                   <span className="required-parts">
-                    {campaign.RequiredParts}
+                    {campaign.requiredParts || campaign.RequiredParts || "N/A"}
                   </span>
                 </td>
                 <td>
                   <div className="progress-info">
-
-                    {/* tiến độ sẽ được cập nhật dựa vào số xe được hoàng thành  nó được lưu trong report*/}
+                    {/* tiến độ sẽ được cập nhật dựa vào số xe được hoàn thành */}
                     <div className="progress-text">
-                      {campaign.CompletedVehicles}{" "}
+                      {campaign.completedVehicles ||
+                        campaign.CompletedVehicles ||
+                        0}{" "}
                       xe
                     </div>
                   </div>
                 </td>
                 <td>
                   <div className="status-container">
-                    {getStatusBadge(campaign.Status)}
+                    {getStatusBadge(campaign.status || campaign.Status)}
                     {canUpdateStatus() &&
-                      getAvailableStatuses(campaign.Status).length > 0 && (
+                      getAvailableStatuses(campaign.status || campaign.Status)
+                        .length > 0 && (
                         <div className="status-actions">
-                          {getAvailableStatuses(campaign.Status).map(
-                            (nextStatus) => (
-                              <button
-                                key={nextStatus}
-                                onClick={() =>
-                                  onUpdateStatus(
-                                    campaign.CampaignsID,
-                                    nextStatus
-                                  )
-                                }
-                                className="btn btn-sm status-btn"
-                                title={`Chuyển sang ${nextStatus}`}
-                              >
-                                →{nextStatus}
-                              </button>
-                            )
-                          )}
+                          {getAvailableStatuses(
+                            campaign.status || campaign.Status
+                          ).map((nextStatus) => (
+                            <button
+                              key={nextStatus}
+                              onClick={() =>
+                                onUpdateStatus(
+                                  campaign.campaignId || campaign.CampaignsID,
+                                  nextStatus
+                                )
+                              }
+                              className="btn btn-sm status-btn"
+                              title={`Chuyển sang ${nextStatus}`}
+                            >
+                              →{nextStatus}
+                            </button>
+                          ))}
                         </div>
                       )}
                   </div>
@@ -174,13 +199,11 @@ function CampaignList({ campaigns, onEdit, onView, onUpdateStatus, userRole, onA
                     )}
                   </div>
                 </td>
-
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
     </div>
   );
 }

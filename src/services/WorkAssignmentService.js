@@ -2,46 +2,31 @@
    WORK ASSIGNMENT SERVICE - Phân công công việc cho kỹ thuật viên
    ========================================================================== */
 
-class WorkAssignmentService {
-  constructor() {
-    this.assignments = [];
-    this.workOrders = [];
-    this.technicians = [];
-    this.workResults = [];
-  }
+import apiService from './ApiService';
 
+class WorkAssignmentService {
   // Tạo phân công công việc cho chiến dịch
   async createCampaignWorkAssignments(campaignId, scheduleData, campaignType = 'recall') {
     try {
-      const assignment = {
-        id: this.generateId(),
+      // Prepare assignment data for API
+      const assignmentData = {
         campaignId,
         campaignType,
-        totalCenters: scheduleData.centerSchedules.length,
-        centerAssignments: [],
-        createdAt: new Date().toISOString(),
-        status: 'draft'
+        centerSchedules: scheduleData.centerSchedules
       };
-
-      // Tạo phân công cho từng trung tâm
-      for (const centerSchedule of scheduleData.centerSchedules) {
-        const centerAssignment = await this.createCenterAssignment(
-          centerSchedule,
-          campaignType
-        );
-        assignment.centerAssignments.push(centerAssignment);
-      }
-
-      await this.simulateApiCall(1200);
       
-      assignment.status = 'active';
-      this.assignments.push(assignment);
-
+      // Send work assignment request to API
+      const response = await apiService.post('/work-assignments/campaigns', assignmentData);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to create work assignments');
+      }
+      
       return {
         success: true,
-        assignmentId: assignment.id,
-        centerAssignments: assignment.centerAssignments,
-        summary: this.getAssignmentSummary(assignment)
+        assignmentId: response.data.id,
+        centerAssignments: response.data.centerAssignments,
+        summary: response.data.summary
       };
     } catch (error) {
       return {
@@ -124,190 +109,105 @@ class WorkAssignmentService {
 
   // Cập nhật tiến độ công việc
   async updateWorkProgress(workOrderId, progress, technicianId, note = '') {
-    const assignment = this.assignments.find(a => 
-      a.centerAssignments.some(ca => 
-        ca.workOrders.some(wo => wo.id === workOrderId)
-      )
-    );
-
-    if (!assignment) {
-      return { success: false, error: 'Work order not found' };
-    }
-
-    let workOrder = null;
-    let centerAssignment = null;
-
-    // Tìm work order
-    for (const ca of assignment.centerAssignments) {
-      const wo = ca.workOrders.find(w => w.id === workOrderId);
-      if (wo) {
-        workOrder = wo;
-        centerAssignment = ca;
-        break;
+    try {
+      const progressData = {
+        workOrderId,
+        technicianId,
+        progress,
+        note
+      };
+      
+      // Send update request to API
+      const response = await apiService.put(`/work-orders/${workOrderId}/progress`, progressData);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to update work progress');
       }
+      
+      return {
+        success: true,
+        message: 'Tiến độ công việc đã được cập nhật',
+        workOrder: response.data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
-
-    if (!workOrder || workOrder.technicianId !== technicianId) {
-      return { success: false, error: 'Unauthorized or work order not found' };
-    }
-
-    // Cập nhật tiến độ
-    workOrder.progress = progress;
-    workOrder.lastUpdated = new Date().toISOString();
-    workOrder.progressNote = note;
-
-    // Cập nhật trạng thái
-    if (progress.status === 'completed') {
-      workOrder.status = 'completed';
-      workOrder.completedAt = new Date().toISOString();
-      workOrder.actualDuration = progress.actualDuration;
-      workOrder.workResults = progress.results;
-    } else if (progress.status === 'in_progress') {
-      workOrder.status = 'in_progress';
-      workOrder.startedAt = new Date().toISOString();
-    }
-
-    return {
-      success: true,
-      message: 'Tiến độ công việc đã được cập nhật',
-      workOrder: workOrder
-    };
   }
 
   // Lấy danh sách công việc của kỹ thuật viên
-  getTechnicianWorkload(technicianId, startDate = null, endDate = null) {
-    const workOrders = [];
-    
-    this.assignments.forEach(assignment => {
-      assignment.centerAssignments.forEach(centerAssignment => {
-        centerAssignment.workOrders.forEach(workOrder => {
-          if (workOrder.technicianId === technicianId) {
-            // Filter by date range if provided
-            if (startDate && endDate) {
-              const appointmentDate = new Date(workOrder.appointmentDate);
-              if (appointmentDate >= new Date(startDate) && appointmentDate <= new Date(endDate)) {
-                workOrders.push(workOrder);
-              }
-            } else {
-              workOrders.push(workOrder);
-            }
-          }
-        });
-      });
-    });
-
-    return {
-      technicianId: technicianId,
-      totalWorkOrders: workOrders.length,
-      completedOrders: workOrders.filter(wo => wo.status === 'completed').length,
-      inProgressOrders: workOrders.filter(wo => wo.status === 'in_progress').length,
-      pendingOrders: workOrders.filter(wo => wo.status === 'assigned').length,
-      workOrders: workOrders.sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate))
-    };
+  async getTechnicianWorkload(technicianId, startDate = null, endDate = null) {
+    try {
+      const params = { technicianId };
+      
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      
+      const response = await apiService.get('/technicians/workload', { params });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch technician workload');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching technician workload:', error);
+      return {
+        technicianId,
+        totalWorkOrders: 0,
+        completedOrders: 0,
+        inProgressOrders: 0,
+        pendingOrders: 0,
+        workOrders: []
+      };
+    }
   }
 
   // Reassign công việc
   async reassignWork(workOrderId, newTechnicianId, reason = '') {
-    const assignment = this.assignments.find(a => 
-      a.centerAssignments.some(ca => 
-        ca.workOrders.some(wo => wo.id === workOrderId)
-      )
-    );
-
-    if (!assignment) {
-      return { success: false, error: 'Work order not found' };
-    }
-
-    let workOrder = null;
-    for (const ca of assignment.centerAssignments) {
-      const wo = ca.workOrders.find(w => w.id === workOrderId);
-      if (wo) {
-        workOrder = wo;
-        break;
+    try {
+      const reassignData = {
+        workOrderId,
+        newTechnicianId,
+        reason
+      };
+      
+      // Send reassignment request to API
+      const response = await apiService.put(`/work-orders/${workOrderId}/reassign`, reassignData);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to reassign work');
       }
+      
+      return {
+        success: true,
+        message: 'Công việc đã được phân công lại thành công',
+        workOrder: response.data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
-
-    if (!workOrder) {
-      return { success: false, error: 'Work order not found' };
-    }
-
-    // Kiểm tra kỹ thuật viên mới
-    const newTechnician = this.getTechnicianById(newTechnicianId);
-    if (!newTechnician) {
-      return { success: false, error: 'New technician not found' };
-    }
-
-    const oldTechnicianId = workOrder.technicianId;
-    
-    // Cập nhật phân công
-    workOrder.technicianId = newTechnicianId;
-    workOrder.technicianName = newTechnician.name;
-    workOrder.reassignedAt = new Date().toISOString();
-    workOrder.reassignReason = reason;
-    workOrder.previousTechnicianId = oldTechnicianId;
-
-    return {
-      success: true,
-      message: 'Công việc đã được phân công lại thành công',
-      workOrder: workOrder
-    };
   }
 
   // Lấy báo cáo phân công công việc
-  getAssignmentReport(assignmentId) {
-    const assignment = this.assignments.find(a => a.id === assignmentId);
-    if (!assignment) return null;
-
-    let totalWorkOrders = 0;
-    let completedOrders = 0;
-    let inProgressOrders = 0;
-    let pendingOrders = 0;
-    const technicianStats = new Map();
-
-    assignment.centerAssignments.forEach(ca => {
-      totalWorkOrders += ca.totalWorkOrders;
+  async getAssignmentReport(assignmentId) {
+    try {
+      const response = await apiService.get(`/work-assignments/${assignmentId}/report`);
       
-      ca.workOrders.forEach(wo => {
-        if (wo.status === 'completed') completedOrders++;
-        else if (wo.status === 'in_progress') inProgressOrders++;
-        else if (wo.status === 'assigned') pendingOrders++;
-
-        // Track technician stats
-        if (!technicianStats.has(wo.technicianId)) {
-          technicianStats.set(wo.technicianId, {
-            name: wo.technicianName,
-            total: 0,
-            completed: 0,
-            inProgress: 0,
-            pending: 0
-          });
-        }
-        
-        const stats = technicianStats.get(wo.technicianId);
-        stats.total++;
-        if (wo.status === 'completed') stats.completed++;
-        else if (wo.status === 'in_progress') stats.inProgress++;
-        else if (wo.status === 'assigned') stats.pending++;
-      });
-    });
-
-    return {
-      assignmentId: assignment.id,
-      campaignId: assignment.campaignId,
-      totalCenters: assignment.totalCenters,
-      totalWorkOrders: totalWorkOrders,
-      completedOrders: completedOrders,
-      inProgressOrders: inProgressOrders,
-      pendingOrders: pendingOrders,
-      completionRate: Math.round((completedOrders / totalWorkOrders) * 100),
-      technicianStats: Array.from(technicianStats.entries()).map(([id, stats]) => ({
-        technicianId: id,
-        ...stats,
-        completionRate: Math.round((stats.completed / stats.total) * 100)
-      })),
-      centerAssignments: assignment.centerAssignments,
-      createdAt: assignment.createdAt
-    };
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch assignment report');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching assignment report:', error);
+      return null;
+    }
   }
 
   // Utility methods

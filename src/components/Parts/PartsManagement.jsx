@@ -4,6 +4,7 @@ import PartsList from "./PartsList";
 import PartsForm from "./PartsForm";
 import PartsSearch from "./PartsSearch";
 import PartsRequest from "./PartsRequest";
+import { partsRequestAPI } from "../../services/api";
 import "../../styles/PartsManagement.css";
 
 function PartsManagement() {
@@ -15,59 +16,64 @@ function PartsManagement() {
   const [editingPart, setEditingPart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("inventory");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const mockParts = [
-      {
-        ID_Product_Serial_SC: "PS001",
-        Name_Product: "Pin Lithium 75kWh",
-        Brand: "VinFast",
-        Price: 300000000,
-        Warranty_Period: 96,
-        Description: "Pin chính cho VF8",
-        Year_of_Manufacture: "2023-06-15",
-        Part_Name: "Battery Pack",
-        Total_Amount_Of_Product: 25,
-        Manufacturer: "VinFast",
-        Condition: "Mới",
-        Status: "Có sẵn",
-      },
-      {
-        ID_Product_Serial_SC: "PS002",
-        Name_Product: "Motor điện 150kW",
-        Brand: "VinFast",
-        Price: 180000000,
-        Warranty_Period: 60,
-        Description: "Motor chính cho VF9",
-        Year_of_Manufacture: "2023-07-20",
-        Part_Name: "Electric Motor",
-        Total_Amount_Of_Product: 15,
-        Manufacturer: "VinFast",
-        Condition: "Mới",
-        Status: "Có sẵn",
-      },
-      {
-        ID_Product_Serial_SC: "PS003",
-        Name_Product: "BMS Controller",
-        Brand: "VinFast",
-        Price: 45000000,
-        Warranty_Period: 48,
-        Description: "Bộ quản lý pin",
-        Year_of_Manufacture: "2023-08-10",
-        Part_Name: "BMS",
-        Total_Amount_Of_Product: 8,
-        Manufacturer: "VinFast",
-        Condition: "Mới",
-        Status: "Thiếu hàng",
-      },
-    ];
-
-    setTimeout(() => {
-      setParts(mockParts);
-      setFilteredParts(mockParts);
-      setLoading(false);
-    }, 1000);
+    fetchParts();
   }, []);
+
+  const fetchParts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await partsRequestAPI.getAllPartsRequests({
+        page: 0,
+        size: 100,
+        sortBy: "requestDate",
+        sortDir: "desc",
+      });
+
+      if (response.success && response.data) {
+        const transformedParts = response.data.content.map((part) => ({
+          partsRequestId: part.partsRequestId,
+          ID_Product_Serial_SC: part.partsRequestId,
+          partNumber: part.partNumber,
+          partName: part.partName,
+          Name_Product: part.partName,
+          quantity: part.quantity,
+          Total_Amount_Of_Product: part.quantity,
+          requestDate: part.requestDate,
+          deliveryDate: part.deliveryDate,
+          status: part.status,
+          Status: part.status,
+          partTypeId: part.partTypeId,
+          Part_Name: part.partTypeId,
+          vehicleId: part.vehicleId,
+          // Default values for display
+          Brand: "VinFast",
+          Price: 0,
+          Warranty_Period: 12,
+          Description: part.partName,
+          Condition: "Mới",
+        }));
+
+        setParts(transformedParts);
+        setFilteredParts(transformedParts);
+      } else {
+        setError(response.message || "Không thể tải danh sách phụ tùng");
+        setParts([]);
+        setFilteredParts([]);
+      }
+    } catch (error) {
+      console.error("Fetch parts error:", error);
+      setError("Đã xảy ra lỗi khi tải dữ liệu");
+      setParts([]);
+      setFilteredParts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = (searchTerm, categoryFilter, statusFilter) => {
     let filtered = parts;
@@ -104,36 +110,61 @@ function PartsManagement() {
     setShowForm(true);
   };
 
-  const handleDeletePart = (partId) => {
+  const handleDeletePart = async (partId) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa phụ tùng này?")) {
-      const updatedParts = parts.filter(
-        (p) => p.ID_Product_Serial_SC !== partId
-      );
-      setParts(updatedParts);
-      setFilteredParts(updatedParts);
+      try {
+        setLoading(true);
+        const response = await partsRequestAPI.deletePartsRequest(partId);
+
+        if (response.success) {
+          await fetchParts(); // Reload data
+        } else {
+          alert(response.message || "Không thể xóa phụ tùng");
+        }
+      } catch (error) {
+        console.error("Delete error:", error);
+        alert("Đã xảy ra lỗi khi xóa phụ tùng");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  const handleSavePart = (partData) => {
-    if (editingPart) {
-      const updatedParts = parts.map((p) =>
-        p.ID_Product_Serial_SC === editingPart.ID_Product_Serial_SC
-          ? { ...p, ...partData }
-          : p
-      );
-      setParts(updatedParts);
-      setFilteredParts(updatedParts);
-    } else {
-      const newPart = {
-        ...partData,
-        ID_Product_Serial_SC: `PS${String(parts.length + 1).padStart(3, "0")}`,
-      };
-      const updatedParts = [...parts, newPart];
-      setParts(updatedParts);
-      setFilteredParts(updatedParts);
+  const handleSavePart = async (partData) => {
+    try {
+      setLoading(true);
+
+      if (editingPart) {
+        // Update existing part
+        const response = await partsRequestAPI.updatePartsRequest(
+          editingPart.partsRequestId || editingPart.ID_Product_Serial_SC,
+          partData
+        );
+
+        if (response.success) {
+          await fetchParts(); // Reload data
+        } else {
+          alert(response.message || "Không thể cập nhật phụ tùng");
+        }
+      } else {
+        // Create new part request
+        const response = await partsRequestAPI.createPartsRequest(partData);
+
+        if (response.success) {
+          await fetchParts(); // Reload data
+        } else {
+          alert(response.message || "Không thể tạo yêu cầu phụ tùng");
+        }
+      }
+
+      setShowForm(false);
+      setEditingPart(null);
+    } catch (error) {
+      console.error("Save error:", error);
+      alert("Đã xảy ra lỗi khi lưu phụ tùng");
+    } finally {
+      setLoading(false);
     }
-    setShowForm(false);
-    setEditingPart(null);
   };
 
   const handleCancelForm = () => {
@@ -157,7 +188,7 @@ function PartsManagement() {
         <h1>Quản lý phụ tùng</h1>
         {!showForm && !showRequestForm && (
           <div className="header-actions">
-            {(user?.role === "SC_Staff" || user?.role === "SC_Technician") && (
+            {(user?.role === "SC_STAFF" || user?.role === "SC_TECHNICAL") && (
               <button
                 onClick={() => setShowRequestForm(true)}
                 className="btn btn-secondary"
@@ -166,7 +197,7 @@ function PartsManagement() {
                 Yêu cầu phụ tùng
               </button>
             )}
-            {(user?.role === "EVM_Staff" || user?.role === "Admin") && (
+            {(user?.role === "EVM_STAFF" || user?.role === "EVM_ADMIN") && (
               <button onClick={handleAddPart} className="btn btn-primary">
                 <span>➕</span>
                 Thêm phụ tùng

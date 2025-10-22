@@ -2,46 +2,37 @@
    REPORT CONFIRMATION SERVICE - Xác nhận báo cáo từ nhà sản xuất
    ========================================================================== */
 
+import apiService from './ApiService';
+
 class ReportConfirmationService {
   constructor() {
-    this.pendingReports = [];
-    this.confirmedReports = [];
-    this.manufacturerFeedback = [];
-    this.auditTrail = [];
+    // No need to store data locally - will use API endpoints
   }
 
   // Gửi báo cáo đến nhà sản xuất để xác nhận
   async submitReportForConfirmation(campaignResult, reportType = 'final') {
     try {
-      const report = {
-        id: this.generateId(),
+      const reportData = {
         campaignId: campaignResult.campaignId,
         reportType: reportType,
-        submittedAt: new Date().toISOString(),
-        status: 'pending_confirmation',
         data: this.prepareReportData(campaignResult, reportType),
-        submittedBy: 'system', // In thực tế sẽ lấy từ user context
-        manufacturerResponse: null,
-        confirmationDeadline: this.calculateDeadline(reportType),
-        version: 1,
-        revisions: []
+        submittedBy: apiService.getToken() ? 'authenticated_user' : 'system'
       };
 
-      await this.simulateApiCall(1000);
+      const response = await apiService.post('/reports/confirmation', reportData);
       
-      // Gửi notification đến nhà sản xuất
-      await this.notifyManufacturer(report);
-      
-      this.pendingReports.push(report);
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to submit report for confirmation');
+      }
 
       return {
         success: true,
-        reportId: report.id,
+        reportId: response.data.id,
         submissionDetails: {
-          submittedAt: report.submittedAt,
-          confirmationDeadline: report.confirmationDeadline,
-          reportType: report.reportType,
-          dataPoints: Object.keys(report.data).length
+          submittedAt: response.data.submittedAt,
+          confirmationDeadline: response.data.confirmationDeadline,
+          reportType: response.data.reportType,
+          dataPoints: Object.keys(reportData.data).length
         }
       };
     } catch (error) {
@@ -54,248 +45,186 @@ class ReportConfirmationService {
 
   // Xử lý phản hồi từ nhà sản xuất
   async processManufacturerResponse(reportId, response) {
-    const reportIndex = this.pendingReports.findIndex(r => r.id === reportId);
-    if (reportIndex === -1) {
-      return { success: false, error: 'Report not found' };
+    try {
+      const responseData = {
+        reportId,
+        status: response.status,
+        reviewedBy: response.reviewedBy || 'Unknown',
+        approvalNote: response.approvalNote,
+        rejectionReason: response.rejectionReason,
+        revisionReason: response.revisionReason,
+        revisionRequirements: response.revisionRequirements
+      };
+
+      const result = await apiService.put(`/reports/confirmation/${reportId}/response`, responseData);
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to process manufacturer response');
+      }
+
+      // Get the updated next steps based on response status
+      const nextSteps = this.getNextSteps(result.data);
+      
+      return {
+        success: true,
+        reportStatus: result.data.status,
+        response: result.data.manufacturerResponse,
+        nextSteps: nextSteps
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
-
-    const report = this.pendingReports[reportIndex];
-    
-    // Cập nhật response
-    report.manufacturerResponse = {
-      ...response,
-      respondedAt: new Date().toISOString(),
-      reviewedBy: response.reviewedBy || 'Unknown'
-    };
-
-    if (response.status === 'approved') {
-      report.status = 'confirmed';
-      report.confirmedAt = new Date().toISOString();
-      
-      // Chuyển sang danh sách confirmed
-      this.confirmedReports.push(report);
-      this.pendingReports.splice(reportIndex, 1);
-      
-      // Log audit trail
-      this.logAuditTrail(reportId, 'approved', response.approvalNote);
-      
-    } else if (response.status === 'rejected') {
-      report.status = 'rejected';
-      report.rejectedAt = new Date().toISOString();
-      
-      // Log audit trail
-      this.logAuditTrail(reportId, 'rejected', response.rejectionReason);
-      
-    } else if (response.status === 'revision_required') {
-      report.status = 'revision_required';
-      report.revisionRequestedAt = new Date().toISOString();
-      
-      // Thêm vào revision history
-      report.revisions.push({
-        version: report.version,
-        requestedAt: new Date().toISOString(),
-        reason: response.revisionReason,
-        requirements: response.revisionRequirements || []
-      });
-      
-      // Log audit trail
-      this.logAuditTrail(reportId, 'revision_requested', response.revisionReason);
-    }
-
-    return {
-      success: true,
-      reportStatus: report.status,
-      response: report.manufacturerResponse,
-      nextSteps: this.getNextSteps(report)
-    };
   }
 
   // Gửi báo cáo đã chỉnh sửa
   async submitRevisedReport(reportId, revisedData, revisionNotes) {
-    const reportIndex = this.pendingReports.findIndex(r => r.id === reportId);
-    if (reportIndex === -1) {
-      return { success: false, error: 'Report not found' };
+    try {
+      const revisionData = {
+        reportId,
+        revisedData,
+        revisionNotes
+      };
+
+      const response = await apiService.put(`/reports/confirmation/${reportId}/revise`, revisionData);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to submit revised report');
+      }
+
+      return {
+        success: true,
+        message: 'Báo cáo đã được gửi lại sau chỉnh sửa',
+        reportVersion: response.data.version,
+        newDeadline: response.data.confirmationDeadline
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
-
-    const report = this.pendingReports[reportIndex];
-    
-    if (report.status !== 'revision_required') {
-      return { success: false, error: 'Report is not in revision required status' };
-    }
-
-    // Cập nhật report với data mới
-    report.data = { ...report.data, ...revisedData };
-    report.version += 1;
-    report.status = 'pending_confirmation';
-    report.lastRevisedAt = new Date().toISOString();
-    report.revisionNotes = revisionNotes;
-    
-    // Reset manufacturer response
-    report.manufacturerResponse = null;
-    
-    // Cập nhật deadline
-    report.confirmationDeadline = this.calculateDeadline(report.reportType);
-
-    await this.simulateApiCall(800);
-    
-    // Gửi notification cho nhà sản xuất
-    await this.notifyManufacturerRevision(report);
-    
-    // Log audit trail
-    this.logAuditTrail(reportId, 'revised', revisionNotes);
-
-    return {
-      success: true,
-      message: 'Báo cáo đã được gửi lại sau chỉnh sửa',
-      reportVersion: report.version,
-      newDeadline: report.confirmationDeadline
-    };
   }
 
   // Lấy trạng thái xác nhận báo cáo
-  getReportConfirmationStatus(reportId) {
-    let report = this.pendingReports.find(r => r.id === reportId);
-    if (!report) {
-      report = this.confirmedReports.find(r => r.id === reportId);
+  async getReportConfirmationStatus(reportId) {
+    try {
+      const response = await apiService.get(`/reports/confirmation/${reportId}`);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to get report confirmation status');
+      }
+      
+      // Calculate time remaining if we have a deadline
+      const timeRemaining = response.data.confirmationDeadline 
+        ? this.calculateTimeRemaining(response.data.confirmationDeadline)
+        : null;
+      
+      return {
+        success: true,
+        ...response.data,
+        timeRemaining
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || 'Report not found'
+      };
     }
-    
-    if (!report) {
-      return { success: false, error: 'Report not found' };
-    }
-
-    const timeRemaining = report.confirmationDeadline 
-      ? this.calculateTimeRemaining(report.confirmationDeadline)
-      : null;
-
-    return {
-      success: true,
-      reportId: report.id,
-      campaignId: report.campaignId,
-      status: report.status,
-      submittedAt: report.submittedAt,
-      confirmationDeadline: report.confirmationDeadline,
-      timeRemaining: timeRemaining,
-      currentVersion: report.version,
-      manufacturerResponse: report.manufacturerResponse,
-      revisionHistory: report.revisions,
-      auditTrail: this.getAuditTrailForReport(reportId)
-    };
   }
 
   // Lấy danh sách báo cáo chờ xác nhận
-  getPendingReports(filterOptions = {}) {
-    let reports = [...this.pendingReports];
-    
-    // Filter by campaign
-    if (filterOptions.campaignId) {
-      reports = reports.filter(r => r.campaignId === filterOptions.campaignId);
-    }
-    
-    // Filter by report type
-    if (filterOptions.reportType) {
-      reports = reports.filter(r => r.reportType === filterOptions.reportType);
-    }
-    
-    // Filter by urgency (near deadline)
-    if (filterOptions.urgent) {
-      const urgentThreshold = 24 * 60 * 60 * 1000; // 24 hours
-      reports = reports.filter(r => {
-        const timeRemaining = new Date(r.confirmationDeadline) - new Date();
-        return timeRemaining <= urgentThreshold;
+  async getPendingReports(filterOptions = {}) {
+    try {
+      const response = await apiService.get('/reports/confirmation/pending', {
+        params: filterOptions
       });
-    }
 
-    return {
-      success: true,
-      totalPending: reports.length,
-      reports: reports.map(r => ({
-        id: r.id,
-        campaignId: r.campaignId,
-        reportType: r.reportType,
-        status: r.status,
-        submittedAt: r.submittedAt,
-        confirmationDeadline: r.confirmationDeadline,
-        timeRemaining: this.calculateTimeRemaining(r.confirmationDeadline),
-        version: r.version,
-        isUrgent: this.isUrgent(r.confirmationDeadline)
-      }))
-    };
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to get pending reports');
+      }
+      
+      // Calculate time remaining and urgency for each report
+      const reports = response.data.reports.map(report => ({
+        ...report,
+        timeRemaining: this.calculateTimeRemaining(report.confirmationDeadline),
+        isUrgent: this.isUrgent(report.confirmationDeadline)
+      }));
+      
+      return {
+        success: true,
+        totalPending: response.data.totalPending,
+        reports
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        reports: []
+      };
+    }
   }
 
   // Lấy báo cáo thống kê xác nhận
-  getConfirmationStatistics(timeRange = 'month') {
-    const now = new Date();
-    const rangeStart = this.getTimeRangeStart(now, timeRange);
-    
-    const allReports = [...this.pendingReports, ...this.confirmedReports];
-    const reportsInRange = allReports.filter(r => 
-      new Date(r.submittedAt) >= rangeStart
-    );
+  async getConfirmationStatistics(timeRange = 'month') {
+    try {
+      const response = await apiService.get('/reports/confirmation/statistics', {
+        params: { timeRange }
+      });
 
-    const stats = {
-      totalSubmitted: reportsInRange.length,
-      confirmed: reportsInRange.filter(r => r.status === 'confirmed').length,
-      pending: reportsInRange.filter(r => r.status === 'pending_confirmation').length,
-      rejected: reportsInRange.filter(r => r.status === 'rejected').length,
-      revisionRequired: reportsInRange.filter(r => r.status === 'revision_required').length,
-      averageConfirmationTime: this.calculateAverageConfirmationTime(reportsInRange),
-      confirmationRate: 0,
-      onTimeRate: 0
-    };
-
-    stats.confirmationRate = stats.totalSubmitted > 0 
-      ? Math.round((stats.confirmed / stats.totalSubmitted) * 100)
-      : 0;
-
-    // Calculate on-time confirmation rate
-    const confirmedReports = reportsInRange.filter(r => r.status === 'confirmed');
-    const onTimeConfirmations = confirmedReports.filter(r => 
-      new Date(r.confirmedAt) <= new Date(r.confirmationDeadline)
-    );
-    
-    stats.onTimeRate = confirmedReports.length > 0
-      ? Math.round((onTimeConfirmations.length / confirmedReports.length) * 100)
-      : 0;
-
-    return {
-      success: true,
-      timeRange: timeRange,
-      statistics: stats,
-      reportBreakdown: this.getReportTypeBreakdown(reportsInRange),
-      monthlyTrend: this.getMonthlyTrend(reportsInRange)
-    };
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to get confirmation statistics');
+      }
+      
+      return {
+        success: true,
+        timeRange,
+        statistics: response.data.statistics,
+        reportBreakdown: response.data.reportBreakdown,
+        monthlyTrend: response.data.monthlyTrend
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        statistics: {
+          totalSubmitted: 0,
+          confirmed: 0,
+          pending: 0,
+          rejected: 0,
+          revisionRequired: 0,
+          averageConfirmationTime: 0,
+          confirmationRate: 0,
+          onTimeRate: 0
+        }
+      };
+    }
   }
 
   // Tạo reminder cho báo cáo sắp hết hạn
   async sendConfirmationReminders() {
-    const urgentReports = this.pendingReports.filter(r => 
-      this.isUrgent(r.confirmationDeadline)
-    );
-
-    const reminders = [];
-    
-    for (const report of urgentReports) {
-      const reminder = {
-        reportId: report.id,
-        campaignId: report.campaignId,
-        reportType: report.reportType,
-        timeRemaining: this.calculateTimeRemaining(report.confirmationDeadline),
-        sentAt: new Date().toISOString()
-      };
-
-      // Simulate sending reminder
-      await this.simulateApiCall(200);
-      reminders.push(reminder);
+    try {
+      const response = await apiService.post('/reports/confirmation/reminders');
       
-      // Log reminder
-      this.logAuditTrail(report.id, 'reminder_sent', 'Automatic reminder sent');
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to send confirmation reminders');
+      }
+      
+      return {
+        success: true,
+        remindersSent: response.data.remindersSent,
+        reminders: response.data.reminders
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        remindersSent: 0,
+        reminders: []
+      };
     }
-
-    return {
-      success: true,
-      remindersSent: reminders.length,
-      reminders: reminders
-    };
   }
 
   // Utility methods
@@ -326,20 +255,6 @@ class ReportConfirmationService {
     }
 
     return baseData;
-  }
-
-  calculateDeadline(reportType) {
-    const now = new Date();
-    const deadlineHours = {
-      'final': 72,      // 3 days
-      'progress': 24,   // 1 day
-      'urgent': 12,     // 12 hours
-      'summary': 48     // 2 days
-    };
-
-    const hours = deadlineHours[reportType] || 48;
-    const deadline = new Date(now.getTime() + hours * 60 * 60 * 1000);
-    return deadline.toISOString();
   }
 
   calculateTimeRemaining(deadline) {
@@ -377,102 +292,16 @@ class ReportConfirmationService {
         return ['Chờ phản hồi từ nhà sản xuất'];
     }
   }
-
-  calculateAverageConfirmationTime(reports) {
-    const confirmedReports = reports.filter(r => r.confirmedAt);
-    if (confirmedReports.length === 0) return 0;
-
-    const totalTime = confirmedReports.reduce((sum, r) => {
-      const submitted = new Date(r.submittedAt);
-      const confirmed = new Date(r.confirmedAt);
-      return sum + (confirmed - submitted);
-    }, 0);
-
-    const avgMilliseconds = totalTime / confirmedReports.length;
-    return Math.round(avgMilliseconds / (1000 * 60 * 60)); // Convert to hours
-  }
-
-  getTimeRangeStart(now, range) {
-    const rangeStart = new Date(now);
-    switch (range) {
-      case 'week':
-        rangeStart.setDate(now.getDate() - 7);
-        break;
-      case 'month':
-        rangeStart.setMonth(now.getMonth() - 1);
-        break;
-      case 'quarter':
-        rangeStart.setMonth(now.getMonth() - 3);
-        break;
-      default:
-        rangeStart.setMonth(now.getMonth() - 1);
+  
+  // Get audit trail for a specific report
+  async getAuditTrailForReport(reportId) {
+    try {
+      const response = await apiService.get(`/reports/confirmation/${reportId}/audit`);
+      return response.success ? response.data : [];
+    } catch (error) {
+      console.error(`Error fetching audit trail for report ${reportId}:`, error);
+      return [];
     }
-    return rangeStart;
-  }
-
-  getReportTypeBreakdown(reports) {
-    const breakdown = {};
-    reports.forEach(r => {
-      breakdown[r.reportType] = (breakdown[r.reportType] || 0) + 1;
-    });
-    return breakdown;
-  }
-
-  getMonthlyTrend(reports) {
-    const monthlyData = {};
-    reports.forEach(r => {
-      const month = r.submittedAt.substring(0, 7); // YYYY-MM
-      if (!monthlyData[month]) {
-        monthlyData[month] = { submitted: 0, confirmed: 0 };
-      }
-      monthlyData[month].submitted++;
-      if (r.status === 'confirmed') {
-        monthlyData[month].confirmed++;
-      }
-    });
-    
-    return Object.entries(monthlyData).map(([month, data]) => ({
-      month,
-      ...data,
-      confirmationRate: Math.round((data.confirmed / data.submitted) * 100)
-    }));
-  }
-
-  logAuditTrail(reportId, action, details) {
-    this.auditTrail.push({
-      id: this.generateId(),
-      reportId,
-      action,
-      details,
-      timestamp: new Date().toISOString(),
-      user: 'system' // In thực tế sẽ lấy từ user context
-    });
-  }
-
-  getAuditTrailForReport(reportId) {
-    return this.auditTrail
-      .filter(entry => entry.reportId === reportId)
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }
-
-  async notifyManufacturer(report) {
-    // Mock notification to manufacturer
-    await this.simulateApiCall(500);
-    console.log(`Notification sent to manufacturer for report ${report.id}`);
-  }
-
-  async notifyManufacturerRevision(report) {
-    // Mock notification for revised report
-    await this.simulateApiCall(500);
-    console.log(`Revision notification sent to manufacturer for report ${report.id}`);
-  }
-
-  generateId() {
-    return 'RPT' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
-  }
-
-  async simulateApiCall(delay = 500) {
-    return new Promise(resolve => setTimeout(resolve, delay));
   }
 }
 

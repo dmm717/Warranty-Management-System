@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import VehicleList from "./VehicleList";
 import VehicleForm from "./VehicleForm";
 import VehicleSearch from "./VehicleSearch";
+import { vehicleAPI } from "../../services/api";
+import { VEHICLE_STATUS } from "../../constants";
+import { toast } from "react-toastify";
 import "../../styles/VehicleManagement.css";
 
 function VehicleManagement() {
@@ -11,53 +14,51 @@ function VehicleManagement() {
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock data - replace với API calls
+  // Fetch vehicles từ API
   useEffect(() => {
-    const mockVehicles = [
-      {
-        Vehicle_ID: "VH001",
-        Vehicle_Name: "VinFast VF8",
-        VIN: "VF8ABC12345678901",
-        Owner: "Nguyễn Văn An",
-        Phone_Number: "0912345678",
-        Email: "nguyenvanan@email.com",
-        Status: "Đang sử dụng",
-        Total_KM: 15230.5,
-        Production_Date: "2023-05-15",
-        ID_Electric_Vehicle_Type: "EVT001",
-      },
-      {
-        Vehicle_ID: "VH002",
-        Vehicle_Name: "VinFast VF9",
-        VIN: "VF9DEF12345678902",
-        Owner: "Trần Thị Bình",
-        Phone_Number: "0987654321",
-        Email: "tranthibinh@email.com",
-        Status: "Bảo hành",
-        Total_KM: 8750.2,
-        Production_Date: "2023-08-20",
-        ID_Electric_Vehicle_Type: "EVT002",
-      },
-      {
-        Vehicle_ID: "VH003",
-        Vehicle_Name: "VinFast VF8",
-        VIN: "VF8GHI12345678903",
-        Owner: "Lê Minh Cường",
-        Phone_Number: "0901234567",
-        Email: "leminhcuong@email.com",
-        Status: "Đang sử dụng",
-        Total_KM: 22100.8,
-        Production_Date: "2023-03-10",
-        ID_Electric_Vehicle_Type: "EVT001",
-      },
-    ];
-
-    setTimeout(() => {
-      setVehicles(mockVehicles);
-      setFilteredVehicles(mockVehicles);
-      setLoading(false);
-    }, 1000);
+    fetchVehicles();
   }, []);
+
+  const fetchVehicles = async () => {
+    try {
+      setLoading(true);
+
+      const response = await vehicleAPI.getAllVehicles({
+        page: 0,
+        size: 100,
+        sortBy: "name",
+        sortDir: "asc",
+      });
+
+      if (response.success && response.data) {
+        // Transform data từ BE sang format FE
+        const transformedVehicles = response.data.content.map((vehicle) => ({
+          Vehicle_ID: vehicle.vehicleId,
+          Vehicle_Name: vehicle.vehicleName,
+          VIN: vehicle.vehicleId,
+          Owner: vehicle.owner,
+          Phone_Number: vehicle.phoneNumber,
+          Email: vehicle.email,
+          Status: VEHICLE_STATUS[vehicle.status] || vehicle.status,
+          Total_KM: vehicle.totalKm,
+          Production_Date: vehicle.productionDate,
+          ID_Electric_Vehicle_Type: vehicle.electricVehicleTypeId,
+          Picture: vehicle.picture,
+        }));
+
+        setVehicles(transformedVehicles);
+        setFilteredVehicles(transformedVehicles);
+      } else {
+        console.error("Failed to fetch vehicles:", response.message);
+        toast.error(response.message || "Không thể tải danh sách xe");
+      }
+    } catch (error) {
+      console.error("Error fetching vehicles:", error);
+      toast.error("Đã xảy ra lỗi khi tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = (searchTerm, filterType) => {
     let filtered = vehicles;
@@ -89,38 +90,66 @@ function VehicleManagement() {
     setShowForm(true);
   };
 
-  const handleDeleteVehicle = (vehicleId) => {
+  const handleDeleteVehicle = async (vehicleId) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa xe này?")) {
-      const updatedVehicles = vehicles.filter(
-        (v) => v.Vehicle_ID !== vehicleId
-      );
-      setVehicles(updatedVehicles);
-      setFilteredVehicles(updatedVehicles);
+      try {
+        setLoading(true);
+        const response = await vehicleAPI.deleteVehicle(vehicleId);
+
+        if (response.success) {
+          // Reload vehicles
+          await fetchVehicles();
+          toast.success("Xóa xe thành công!");
+        } else {
+          toast.error(response.message || "Không thể xóa xe");
+        }
+      } catch (error) {
+        console.error("Delete error:", error);
+        toast.error("Đã xảy ra lỗi khi xóa xe");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  const handleSaveVehicle = (vehicleData) => {
-    if (editingVehicle) {
-      // Update existing vehicle
-      const updatedVehicles = vehicles.map((v) =>
-        v.Vehicle_ID === editingVehicle.Vehicle_ID
-          ? { ...v, ...vehicleData }
-          : v
-      );
-      setVehicles(updatedVehicles);
-      setFilteredVehicles(updatedVehicles);
-    } else {
-      // Add new vehicle
-      const newVehicle = {
-        ...vehicleData,
-        Vehicle_ID: `VH${String(vehicles.length + 1).padStart(3, "0")}`,
-      };
-      const updatedVehicles = [...vehicles, newVehicle];
-      setVehicles(updatedVehicles);
-      setFilteredVehicles(updatedVehicles);
+  const handleSaveVehicle = async (vehicleData) => {
+    try {
+      setLoading(true);
+
+      if (editingVehicle) {
+        // Update existing vehicle
+        const response = await vehicleAPI.updateVehicle(
+          editingVehicle.Vehicle_ID,
+          vehicleData
+        );
+
+        if (response.success) {
+          await fetchVehicles();
+          setShowForm(false);
+          setEditingVehicle(null);
+          toast.success("Cập nhật thông tin xe thành công!");
+        } else {
+          toast.error(response.message || "Không thể cập nhật thông tin xe");
+        }
+      } else {
+        // Thêm xe mới
+        const response = await vehicleAPI.createVehicle(vehicleData);
+
+        if (response.success) {
+          await fetchVehicles();
+          setShowForm(false);
+          setEditingVehicle(null);
+          toast.success("Thêm xe mới thành công!");
+        } else {
+          toast.error(response.message || "Không thể thêm xe mới");
+        }
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Đã xảy ra lỗi khi lưu thông tin xe");
+    } finally {
+      setLoading(false);
     }
-    setShowForm(false);
-    setEditingVehicle(null);
   };
 
   const handleCancelForm = () => {

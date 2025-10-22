@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { PARTS_CATEGORIES, PARTS_STATUS } from "../../constants";
 import "../../styles/PartsSearch.css";
 
 function PartsSearch({ onSearch }) {
@@ -6,16 +7,8 @@ function PartsSearch({ onSearch }) {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const categories = [
-    "Battery Pack",
-    "Electric Motor",
-    "BMS",
-    "Inverter",
-    "Charger",
-    "Brake System",
-    "Suspension",
-    "Body Parts",
-  ];
+  const categories = PARTS_CATEGORIES;
+  const statusOptions = PARTS_STATUS;
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -68,8 +61,8 @@ function PartsSearch({ onSearch }) {
           >
             <option value="all">Tất cả</option>
             {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
+              <option key={category.value} value={category.value}>
+                {category.label}
               </option>
             ))}
           </select>
@@ -83,10 +76,11 @@ function PartsSearch({ onSearch }) {
             onChange={handleStatusChange}
           >
             <option value="all">Tất cả</option>
-            <option value="Có sẵn">Có sẵn</option>
-            <option value="Thiếu hàng">Thiếu hàng</option>
-            <option value="Hết hàng">Hết hàng</option>
-            <option value="Ngừng sản xuất">Ngừng sản xuất</option>
+            {statusOptions.map((status) => (
+              <option key={status.value} value={status.value}>
+                {status.label}
+              </option>
+            ))}
           </select>
         </div>
 

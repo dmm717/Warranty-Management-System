@@ -2,47 +2,32 @@
    VEHICLE DISTRIBUTION SERVICE - Phân bổ xe đến các trung tâm dịch vụ
    ========================================================================== */
 
-class VehicleDistributionService {
-  constructor() {
-    this.distributions = [];
-    this.assignments = [];
-  }
+import apiService from './ApiService';
 
+class VehicleDistributionService {
   // Phân bổ danh sách xe đến các trung tâm dịch vụ
   async distributeVehiclesToCenters(campaignId, vehicleList, distributionRules = {}) {
     try {
-      const serviceCenters = this.getServiceCenters();
-      const distribution = {
-        id: this.generateId(),
+      // Prepare distribution data for API
+      const distributionData = {
         campaignId,
-        totalVehicles: vehicleList.length,
-        distributions: [],
-        createdAt: new Date().toISOString(),
-        status: 'pending'
+        vehicles: vehicleList,
+        distributionMethod: distributionRules.method || 'geographic',
+        rules: distributionRules
       };
-
-      // Phân bổ theo quy tắc địa lý hoặc công suất
-      const distributionMethod = distributionRules.method || 'geographic';
       
-      if (distributionMethod === 'geographic') {
-        distribution.distributions = this.distributeByGeography(vehicleList, serviceCenters);
-      } else if (distributionMethod === 'capacity') {
-        distribution.distributions = this.distributeByCapacity(vehicleList, serviceCenters);
-      } else {
-        distribution.distributions = this.distributeEvenly(vehicleList, serviceCenters);
+      // Send distribution request to API
+      const response = await apiService.post('/vehicle-distributions', distributionData);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to distribute vehicles');
       }
-
-      // Simulate API processing
-      await this.simulateApiCall(1500);
       
-      distribution.status = 'completed';
-      this.distributions.push(distribution);
-
       return {
         success: true,
-        distributionId: distribution.id,
-        distributions: distribution.distributions,
-        summary: this.getDistributionSummary(distribution)
+        distributionId: response.data.id,
+        distributions: response.data.distributions,
+        summary: response.data.summary
       };
     } catch (error) {
       return {
@@ -141,61 +126,63 @@ class VehicleDistributionService {
 
   // Lấy danh sách xe theo chiến dịch
   async getVehiclesByCampaign(campaignId, campaignType = 'recall') {
-    // Mock data - trong thực tế sẽ call API
-    const mockVehicles = [
-      { id: 'VH001', vin: 'VF8ABC12345678901', model: 'VF8', owner: 'Nguyễn Văn An', location: 'Hà Nội', phone: '0912345678' },
-      { id: 'VH002', vin: 'VF8DEF12345678902', model: 'VF8', owner: 'Trần Thị Bình', location: 'TP.HCM', phone: '0987654321' },
-      { id: 'VH003', vin: 'VF9GHI12345678903', model: 'VF9', owner: 'Lê Minh Cường', location: 'Đà Nẵng', phone: '0901234567' },
-      { id: 'VH004', vin: 'VF8JKL12345678904', model: 'VF8', owner: 'Phạm Thị Dung', location: 'Hải Phòng', phone: '0976543210' },
-      { id: 'VH005', vin: 'VF9MNO12345678905', model: 'VF9', owner: 'Hoàng Văn Em', location: 'Cần Thơ', phone: '0965432109' }
-    ];
-    
-    await this.simulateApiCall(800);
-    return mockVehicles;
+    try {
+      const response = await apiService.get(`/campaigns/${campaignId}/vehicles`, {
+        params: { campaignType }
+      });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch campaign vehicles');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching campaign vehicles:', error);
+      return [];
+    }
   }
 
   // Xác nhận phân bổ từ Service Center
   async confirmDistribution(distributionId, centerId, confirmation) {
-    const distribution = this.distributions.find(d => d.id === distributionId);
-    if (!distribution) {
-      return { success: false, error: 'Distribution not found' };
+    try {
+      const confirmationData = {
+        centerId,
+        confirmationNote: confirmation.note,
+        estimatedStartDate: confirmation.estimatedStartDate
+      };
+      
+      const response = await apiService.post(`/vehicle-distributions/${distributionId}/confirm`, confirmationData);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to confirm distribution');
+      }
+      
+      return {
+        success: true,
+        message: 'Xác nhận phân bổ thành công'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
-    
-    const centerDistribution = distribution.distributions.find(d => d.centerId === centerId);
-    if (!centerDistribution) {
-      return { success: false, error: 'Center distribution not found' };
-    }
-    
-    centerDistribution.confirmed = true;
-    centerDistribution.confirmedAt = new Date().toISOString();
-    centerDistribution.confirmationNote = confirmation.note;
-    centerDistribution.estimatedStartDate = confirmation.estimatedStartDate;
-    
-    return {
-      success: true,
-      message: 'Xác nhận phân bổ thành công'
-    };
   }
 
   // Lấy báo cáo phân bổ
-  getDistributionReport(distributionId) {
-    const distribution = this.distributions.find(d => d.id === distributionId);
-    if (!distribution) return null;
-    
-    const totalConfirmed = distribution.distributions.filter(d => d.confirmed).length;
-    const totalPending = distribution.distributions.length - totalConfirmed;
-    
-    return {
-      distributionId: distribution.id,
-      campaignId: distribution.campaignId,
-      totalVehicles: distribution.totalVehicles,
-      totalCenters: distribution.distributions.length,
-      confirmedCenters: totalConfirmed,
-      pendingCenters: totalPending,
-      completionRate: Math.round((totalConfirmed / distribution.distributions.length) * 100),
-      distributions: distribution.distributions,
-      createdAt: distribution.createdAt
-    };
+  async getDistributionReport(distributionId) {
+    try {
+      const response = await apiService.get(`/vehicle-distributions/${distributionId}/report`);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to get distribution report');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching distribution report:', error);
+      return null;
+    }
   }
 
   // Utility methods

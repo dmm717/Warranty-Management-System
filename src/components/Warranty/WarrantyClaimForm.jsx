@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { vehicleAPI } from "../../services/api";
+import { transformClaimToBackend } from "../../services/api";
 import "../../styles/WarrantyClaimForm.css";
 
 function WarrantyClaimForm({ claim, onSave, onCancel }) {
@@ -10,49 +12,59 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
     VIN: "",
     VehicleName: "",
     IssueDescription: "",
-    Priority: "Trung bình",
-    EstimatedCost: 0,
-    DiagnosisResult: "",
-    Status: "Chờ duyệt",
+    RequiredPart: "",
   });
 
   const [errors, setErrors] = useState({});
   const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Mock vehicles data - replace with API call
-    const mockVehicles = [
-      {
-        Vehicle_ID: "VH001",
-        VIN: "VF8ABC12345678901",
-        Vehicle_Name: "VinFast VF8",
-        Owner: "Nguyễn Văn An",
-        Phone_Number: "0912345678",
-        Email: "nguyenvanan@email.com",
-      },
-      {
-        Vehicle_ID: "VH002",
-        VIN: "VF9DEF12345678902",
-        Vehicle_Name: "VinFast VF9",
-        Owner: "Trần Thị Bình",
-        Phone_Number: "0987654321",
-        Email: "tranthibinh@email.com",
-      },
-      {
-        Vehicle_ID: "VH003",
-        VIN: "VF8GHI12345678903",
-        Vehicle_Name: "VinFast VF8",
-        Owner: "Lê Minh Cường",
-        Phone_Number: "0901234567",
-        Email: "leminhcuong@email.com",
-      },
-    ];
-    setVehicles(mockVehicles);
+    fetchVehicles();
 
     if (claim) {
-      setFormData(claim);
+      setFormData({
+        CustomerName: claim.CustomerName || "",
+        CustomerPhone: claim.CustomerPhone || "",
+        Email: claim.Email || "",
+        Vehicle_ID: claim.Vehicle_ID || "",
+        VIN: claim.VIN || "",
+        VehicleName: claim.VehicleName || "",
+        IssueDescription: claim.IssueDescription || "",
+        RequiredPart: claim.RequiredPart || "",
+      });
     }
   }, [claim]);
+
+  const fetchVehicles = async () => {
+    try {
+      setLoading(true);
+      const response = await vehicleAPI.getAllVehicles({
+        page: 0,
+        size: 100,
+        sortBy: "name",
+        sortDir: "asc",
+      });
+
+      if (response.success && response.data) {
+        // Transform data từ BE sang format FE
+        const transformedVehicles = response.data.content.map((vehicle) => ({
+          Vehicle_ID: vehicle.vehicleId,
+          VIN: vehicle.vehicleId,
+          Vehicle_Name: vehicle.vehicleName,
+          Owner: vehicle.owner,
+          Phone_Number: vehicle.phoneNumber,
+          Email: vehicle.email,
+        }));
+
+        setVehicles(transformedVehicles);
+      }
+    } catch (error) {
+      console.error("Error fetching vehicles:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -137,7 +149,9 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      onSave(formData);
+      // Transform data sang format backend
+      const backendData = transformClaimToBackend(formData);
+      onSave(backendData);
     }
   };
 

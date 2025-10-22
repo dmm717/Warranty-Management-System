@@ -10,6 +10,11 @@ function WarrantyClaimList({
 }) {
   const getStatusBadge = (status) => {
     const statusClasses = {
+      PENDING: "status-pending",
+      APPROVED: "status-approved",
+      REJECTED: "status-rejected",
+      IN_PROGRESS: "status-processing",
+      COMPLETED: "status-completed",
       "Chờ duyệt": "status-pending",
       "Đã duyệt": "status-approved",
       "Từ chối": "status-rejected",
@@ -17,11 +22,25 @@ function WarrantyClaimList({
       "Hoàn thành": "status-completed",
     };
 
+    const statusLabels = {
+      PENDING: "Chờ duyệt",
+      APPROVED: "Đã duyệt",
+      REJECTED: "Từ chối",
+      IN_PROGRESS: "Đang xử lý",
+      COMPLETED: "Hoàn thành",
+    };
+
+    const displayStatus = statusLabels[status] || status;
+
     return (
       <span
-        className={`status-badge ${statusClasses[status] || "status-pending"}`}
+        className={`status-badge ${
+          statusClasses[status] ||
+          statusClasses[displayStatus] ||
+          "status-pending"
+        }`}
       >
-        {status}
+        {displayStatus}
       </span>
     );
   };
@@ -56,10 +75,10 @@ function WarrantyClaimList({
   };
 
   const canUpdateStatus = (status) => {
-    if (userRole === "EVM_Staff" || userRole === "Admin") {
+    if (userRole === "EVM_STAFF" || userRole === "EVM_ADMIN") {
       return ["Chờ duyệt", "Đã duyệt"].includes(status);
     }
-    if (userRole === "SC_Staff" || userRole === "SC_Technician") {
+    if (userRole === "SC_STAFF" || userRole === "SC_TECHNICAL") {
       return ["Đã duyệt", "Đang xử lý"].includes(status);
     }
     return false;
@@ -103,33 +122,46 @@ function WarrantyClaimList({
           </thead>
           <tbody>
             {claims.map((claim) => (
-              <tr key={claim.ClaimID}>
+              <tr key={claim.claimId || claim.ClaimID}>
                 <td>
                   <div className="claim-id">
-                    <strong>{claim.ClaimID}</strong>
+                    <strong>{claim.claimId || claim.ClaimID}</strong>
                   </div>
                 </td>
                 <td>
                   <div className="customer-info">
-                    <strong>{claim.CustomerName}</strong>
-                    <small>{claim.CustomerPhone}</small>
+                    <strong>{claim.customerName || claim.CustomerName}</strong>
+                    <small>{claim.phoneNumber || claim.CustomerPhone}</small>
                   </div>
                 </td>
                 <td>
                   <div className="vehicle-info">
-                    <strong>{claim.VehicleName}</strong>
-                    <small>{claim.VIN}</small>
+                    <strong>
+                      {claim.vehicleName || claim.VehicleName || "N/A"}
+                    </strong>
+                    <small>{claim.vehicleId || claim.VIN || "N/A"}</small>
                   </div>
                 </td>
                 <td>
                   <div className="issue-description">
-                    {claim.IssueDescription.length > 50
-                      ? `${claim.IssueDescription.substring(0, 50)}...`
-                      : claim.IssueDescription}
+                    {(claim.issueDescription || claim.IssueDescription || "")
+                      .length > 50
+                      ? `${(
+                          claim.issueDescription || claim.IssueDescription
+                        ).substring(0, 50)}...`
+                      : claim.issueDescription || claim.IssueDescription}
                   </div>
                 </td>
-                <td>{formatDate(claim.ClaimDate)}</td>
-                <td>{getPriorityBadge(claim.Priority)}</td>
+                <td>{formatDate(claim.claimDate || claim.ClaimDate)}</td>
+                <td>
+                  {claim.Priority ? (
+                    getPriorityBadge(claim.Priority)
+                  ) : (
+                    <span className="priority-badge priority-medium">
+                      Trung bình
+                    </span>
+                  )}
+                </td>
                 <td>
                   <div className="cost-info">
                     {claim.EstimatedCost
@@ -139,21 +171,26 @@ function WarrantyClaimList({
                 </td>
                 <td>
                   <div className="status-container">
-                    {getStatusBadge(claim.Status)}
-                    {canUpdateStatus(claim.Status) && (
+                    {getStatusBadge(claim.status || claim.Status)}
+                    {canUpdateStatus(claim.status || claim.Status) && (
                       <div className="status-actions">
-                        {getNextStatus(claim.Status).map((nextStatus) => (
-                          <button
-                            key={nextStatus}
-                            onClick={() =>
-                              onUpdateStatus(claim.ClaimID, nextStatus)
-                            }
-                            className="btn btn-sm status-btn"
-                            title={`Chuyển sang ${nextStatus}`}
-                          >
-                            →{nextStatus}
-                          </button>
-                        ))}
+                        {getNextStatus(claim.status || claim.Status).map(
+                          (nextStatus) => (
+                            <button
+                              key={nextStatus}
+                              onClick={() =>
+                                onUpdateStatus(
+                                  claim.claimId || claim.ClaimID,
+                                  nextStatus
+                                )
+                              }
+                              className="btn btn-sm status-btn"
+                              title={`Chuyển sang ${nextStatus}`}
+                            >
+                              →{nextStatus}
+                            </button>
+                          )
+                        )}
                       </div>
                     )}
                   </div>

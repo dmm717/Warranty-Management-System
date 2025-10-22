@@ -4,6 +4,8 @@ import WarrantyClaimList from "./WarrantyClaimList";
 import WarrantyClaimForm from "./WarrantyClaimForm";
 import WarrantyClaimDetail from "./WarrantyClaimDetail";
 import ClaimSearch from "./ClaimSearch";
+import { warrantyClaimAPI } from "../../services/api";
+import { WARRANTY_CLAIM_STATUS } from "../../constants";
 import "../../styles/WarrantyClaimManagement.css";
 
 function WarrantyClaimManagement() {
@@ -14,66 +16,56 @@ function WarrantyClaimManagement() {
   const [showDetail, setShowDetail] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock data - replace với API calls
+  // Fetch claims từ API
   useEffect(() => {
-    const mockClaims = [
-      {
-        ClaimID: "WC001",
-        CustomerName: "Nguyễn Văn An",
-        CustomerPhone: "0912345678",
-        ClaimDate: "2024-10-01",
-        IssueDescription: "Pin không sạc được, hiển thị lỗi trên màn hình",
-        Status: "Chờ duyệt",
-        Email: "nguyenvanan@email.com",
-        Vehicle_ID: "VH001",
-        SC_StaffID: "SC001",
-        VIN: "VF8ABC12345678901",
-        VehicleName: "VinFast VF8",
-        Priority: "Cao",
-        EstimatedCost: 15000000,
-        DiagnosisResult: "Pin bị lỗi cell, cần thay thế",
-      },
-      {
-        ClaimID: "WC002",
-        CustomerName: "Trần Thị Bình",
-        CustomerPhone: "0987654321",
-        ClaimDate: "2024-09-28",
-        IssueDescription: "Motor phát ra tiếng ồn bất thường khi tăng tốc",
-        Status: "Đã duyệt",
-        Email: "tranthibinh@email.com",
-        Vehicle_ID: "VH002",
-        SC_StaffID: "SC001",
-        VIN: "VF9DEF12345678902",
-        VehicleName: "VinFast VF9",
-        Priority: "Trung bình",
-        EstimatedCost: 8500000,
-        DiagnosisResult: "Bạc đạn motor bị mòn",
-      },
-      {
-        ClaimID: "WC003",
-        CustomerName: "Lê Minh Cường",
-        CustomerPhone: "0901234567",
-        ClaimDate: "2024-09-25",
-        IssueDescription: "Hệ thống sạc nhanh không hoạt động",
-        Status: "Hoàn thành",
-        Email: "leminhcuong@email.com",
-        Vehicle_ID: "VH003",
-        SC_StaffID: "SC002",
-        VIN: "VF8GHI12345678903",
-        VehicleName: "VinFast VF8",
-        Priority: "Thấp",
-        EstimatedCost: 3200000,
-        DiagnosisResult: "Cáp sạc bị đứt, đã thay thế",
-      },
-    ];
-
-    setTimeout(() => {
-      setClaims(mockClaims);
-      setFilteredClaims(mockClaims);
-      setLoading(false);
-    }, 1000);
+    fetchClaims();
   }, []);
+
+  const fetchClaims = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await warrantyClaimAPI.getAllClaims({
+        page: 0,
+        size: 100, // Lấy nhiều records để hiển thị
+        sortBy: "claimDate",
+        sortDir: "desc",
+      });
+
+      if (response.success && response.data) {
+        // Transform data từ BE sang format FE
+        const transformedClaims = response.data.content.map((claim) => ({
+          ClaimID: claim.claimId,
+          CustomerName: claim.customerName,
+          CustomerPhone: claim.phoneNumber,
+          ClaimDate: claim.claimDate,
+          IssueDescription: claim.issueDescription,
+          Status: WARRANTY_CLAIM_STATUS[claim.status] || claim.status,
+          Email: claim.email,
+          Vehicle_ID: claim.vehicleId,
+          VIN: claim.vin || claim.vehicleId,
+          VehicleName: claim.vehicleName || "N/A",
+          RequiredPart: claim.requiredPart,
+          SC_TechID: claim.scTechId,
+        }));
+
+        setClaims(transformedClaims);
+        setFilteredClaims(transformedClaims);
+      } else {
+        setError(
+          response.message || "Không thể tải danh sách yêu cầu bảo hành"
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching claims:", error);
+      setError("Đã xảy ra lỗi khi tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = (searchTerm, statusFilter, priorityFilter) => {
     let filtered = claims;
@@ -117,36 +109,77 @@ function WarrantyClaimManagement() {
     setShowForm(false);
   };
 
-  const handleSaveClaim = (claimData) => {
-    if (selectedClaim) {
-      // Update existing claim
-      const updatedClaims = claims.map((c) =>
-        c.ClaimID === selectedClaim.ClaimID ? { ...c, ...claimData } : c
-      );
-      setClaims(updatedClaims);
-      setFilteredClaims(updatedClaims);
-    } else {
-      // Add new claim
-      const newClaim = {
-        ...claimData,
-        ClaimID: `WC${String(claims.length + 1).padStart(3, "0")}`,
-        ClaimDate: new Date().toISOString().split("T")[0],
-        SC_StaffID: user.id,
-      };
-      const updatedClaims = [...claims, newClaim];
-      setClaims(updatedClaims);
-      setFilteredClaims(updatedClaims);
+  const handleSaveClaim = async (claimData) => {
+    try {
+      setLoading(true);
+
+      if (selectedClaim) {
+        // Update existing claim
+        const response = await warrantyClaimAPI.updateClaim(
+          selectedClaim.ClaimID,
+          claimData
+        );
+
+        if (response.success) {
+          // Reload claims để có data mới nhất
+          await fetchClaims();
+          setShowForm(false);
+          setSelectedClaim(null);
+        } else {
+          alert(response.message || "Không thể cập nhật yêu cầu bảo hành");
+        }
+      } else {
+        // Create new claim
+        const response = await warrantyClaimAPI.createClaim(claimData);
+
+        if (response.success) {
+          // Reload claims để có data mới nhất
+          await fetchClaims();
+          setShowForm(false);
+          setSelectedClaim(null);
+        } else {
+          alert(response.message || "Không thể tạo yêu cầu bảo hành");
+        }
+      }
+    } catch (error) {
+      console.error("Error saving claim:", error);
+      alert("Đã xảy ra lỗi khi lưu yêu cầu bảo hành");
+    } finally {
+      setLoading(false);
     }
-    setShowForm(false);
-    setSelectedClaim(null);
   };
 
-  const handleUpdateStatus = (claimId, newStatus) => {
-    const updatedClaims = claims.map((c) =>
-      c.ClaimID === claimId ? { ...c, Status: newStatus } : c
-    );
-    setClaims(updatedClaims);
-    setFilteredClaims(updatedClaims);
+  const handleUpdateStatus = async (claimId, newStatus) => {
+    try {
+      setLoading(true);
+
+      // Convert Vietnamese status to backend enum
+      const statusMap = {
+        "Chờ duyệt": "PENDING",
+        "Đã duyệt": "APPROVED",
+        "Đang xử lý": "IN_PROGRESS",
+        "Hoàn thành": "COMPLETED",
+        "Từ chối": "REJECTED",
+      };
+
+      const backendStatus = statusMap[newStatus] || newStatus;
+      const response = await warrantyClaimAPI.updateClaimStatus(
+        claimId,
+        backendStatus
+      );
+
+      if (response.success) {
+        // Reload claims để có data mới nhất
+        await fetchClaims();
+      } else {
+        alert(response.message || "Không thể cập nhật trạng thái");
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      alert("Đã xảy ra lỗi khi cập nhật trạng thái");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBack = () => {
