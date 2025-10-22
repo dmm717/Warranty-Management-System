@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import PropTypes from "prop-types";
 import authService from "../services/AuthService";
 
@@ -13,14 +20,16 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const storedUser = localStorage.getItem("user");
+    // Check if user is logged in from localStorage or sessionStorage
+    const storedUser =
+      localStorage.getItem("user") || sessionStorage.getItem("user");
     if (storedUser && authService.isAuthenticated()) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
         console.error("Error parsing stored user:", error);
         localStorage.removeItem("user");
+        sessionStorage.removeItem("user");
       }
     }
     setLoading(false);
@@ -31,22 +40,23 @@ export function AuthProvider({ children }) {
       // Validate credentials trước khi gọi API
       const validation = authService.validateCredentials(credentials);
       if (!validation.isValid) {
-        const errorMessage = validation.errors.map(e => e.message).join(', ');
+        const errorMessage = validation.errors.map((e) => e.message).join(", ");
         return {
           success: false,
           message: errorMessage,
-          errors: validation.errors
+          errors: validation.errors,
         };
       }
 
-      // Gọi API login
+      // Gọi API login với rememberMe option
       const response = await authService.login(credentials);
 
       if (response.success && response.data) {
         // Lấy role đầu tiên từ danh sách roles
-        const primaryRole = response.data.roles && response.data.roles.length > 0
-          ? response.data.roles[0]
-          : null;
+        const primaryRole =
+          response.data.roles && response.data.roles.length > 0
+            ? response.data.roles[0]
+            : null;
 
         // Tạo user object theo format cũ để tương thích với code hiện tại
         const userInfo = {
@@ -57,24 +67,27 @@ export function AuthProvider({ children }) {
         };
 
         setUser(userInfo);
-        localStorage.setItem("user", JSON.stringify(userInfo));
+
+        // Lưu vào localStorage hoặc sessionStorage dựa vào rememberMe
+        const storage = credentials.rememberMe ? localStorage : sessionStorage;
+        storage.setItem("user", JSON.stringify(userInfo));
 
         return {
           success: true,
-          message: response.message
+          message: response.message,
         };
       } else {
         return {
           success: false,
           message: response.message || "Email hoặc mật khẩu không đúng",
-          errors: response.errors
+          errors: response.errors,
         };
       }
     } catch (error) {
       console.error("Login error:", error);
       return {
         success: false,
-        message: "Không thể kết nối đến server. Vui lòng thử lại sau."
+        message: "Không thể kết nối đến server. Vui lòng thử lại sau.",
       };
     }
   }, []);
@@ -83,17 +96,27 @@ export function AuthProvider({ children }) {
     try {
       await authService.logout();
       setUser(null);
+      // Clear both storage options
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
     } catch (error) {
       console.error("Logout error:", error);
       // Vẫn clear state dù có lỗi
       setUser(null);
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
     }
   }, []);
 
   const updateProfile = useCallback((updatedInfo) => {
     setUser((currentUser) => {
       const updatedUser = { ...currentUser, ...updatedInfo };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+      // Update in whichever storage was used
+      if (localStorage.getItem("user")) {
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      } else if (sessionStorage.getItem("user")) {
+        sessionStorage.setItem("user", JSON.stringify(updatedUser));
+      }
       return updatedUser;
     });
     return { success: true };

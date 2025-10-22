@@ -42,6 +42,12 @@ class ApiService {
       const response = await fetch(url, config);
       const data = await response.json();
 
+      console.log(`API ${options.method || 'GET'} ${endpoint}:`, {
+        status: response.status,
+        ok: response.ok,
+        data: data
+      });
+
       // Xử lý response theo format backend
       if (response.ok) {
         return {
@@ -53,6 +59,7 @@ class ApiService {
         // Response có lỗi
         return {
           success: false,
+          status: response.status,
           message: data.message || 'An error occurred',
           errors: data.errors || null,
         };
@@ -121,24 +128,26 @@ class ApiService {
   }
 
   /**
-   * Lưu token vào localStorage
+   * Lưu token vào localStorage hoặc sessionStorage
    */
-  setToken(token) {
-    localStorage.setItem('authToken', token);
+  setToken(token, rememberMe = false) {
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem('authToken', token);
   }
 
   /**
-   * Lấy token từ localStorage
+   * Lấy token từ localStorage hoặc sessionStorage
    */
   getToken() {
-    return localStorage.getItem('authToken');
+    return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
   }
 
   /**
-   * Xóa token khỏi localStorage
+   * Xóa token khỏi cả localStorage và sessionStorage
    */
   removeToken() {
     localStorage.removeItem('authToken');
+    sessionStorage.removeItem('authToken');
   }
 
   /**

@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { dashboardAPI, warrantyClaimAPI, vehicleAPI } from "../../services/api";
 import StatsCard from "./StatsCard";
 import ChartComponent from "./ChartComponent";
 import RecentActivity from "./RecentActivity";
@@ -7,56 +8,176 @@ import "../../styles/Dashboard.css";
 
 function Dashboard() {
   const { user } = useAuth();
+  const [statsData, setStatsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock data - replace with real API calls
-  const statsData = {
-    SC_Staff: [
-      {
-        title: "Tổng số xe đăng ký",
-        value: "1,234",
-        icon: "🚗",
-        color: "blue",
-      },
-      { title: "Yêu cầu bảo hành", value: "89", icon: "🔧", color: "orange" },
-      { title: "Đã hoàn thành", value: "56", icon: "✅", color: "green" },
-      { title: "Đang xử lý", value: "33", icon: "⏳", color: "yellow" },
-    ],
-    SC_Technician: [
-      { title: "Nhiệm vụ được giao", value: "15", icon: "🔧", color: "blue" },
-      { title: "Đã hoàn thành", value: "12", icon: "✅", color: "green" },
-      { title: "Đang thực hiện", value: "3", icon: "⏳", color: "orange" },
-      { title: "Quá hạn", value: "0", icon: "⚠️", color: "red" },
-    ],
-    EVM_Staff: [
-      { title: "Yêu cầu chờ duyệt", value: "25", icon: "📋", color: "orange" },
-      { title: "Đã phê duyệt", value: "156", icon: "✅", color: "green" },
-      { title: "Từ chối", value: "8", icon: "❌", color: "red" },
-      { title: "Phụ tùng thiếu", value: "5", icon: "📦", color: "yellow" },
-    ],
-    Admin: [
-      { title: "Tổng người dùng", value: "342", icon: "👥", color: "blue" },
-      { title: "Trung tâm dịch vụ", value: "25", icon: "🏢", color: "green" },
-      {
-        title: "Chiến dịch đang chạy",
-        value: "3",
-        icon: "📢",
-        color: "orange",
-      },
-      { title: "Báo cáo mới", value: "12", icon: "📊", color: "purple" },
-    ],
+  useEffect(() => {
+    const loadDashboard = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Thử gọi API dashboard nếu BE có implement
+        // Nếu chưa có API, sẽ fallback sang tính toán từ các API khác
+        const statsResponse = await dashboardAPI.getStats();
+
+        if (statsResponse.success && statsResponse.data) {
+          setStatsData(statsResponse.data.stats || []);
+        } else {
+          // Fallback: Tính toán stats từ các API khác
+          await fetchStatsFromOtherAPIs();
+        }
+      } catch {
+        console.log(
+          "Dashboard API not available, using fallback stats calculation"
+        );
+        // Fallback: Tính toán stats từ các API khác
+        await fetchStatsFromOtherAPIs();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role]);
+
+  const fetchStatsFromOtherAPIs = async () => {
+    try {
+      const role = user?.role;
+      let stats = [];
+
+      // Lấy dữ liệu từ các API có sẵn
+      const [vehiclesResponse, claimsResponse] = await Promise.all([
+        vehicleAPI.getAllVehicles({ page: 0, size: 1000 }),
+        warrantyClaimAPI.getAllClaims({ page: 0, size: 1000 }),
+      ]);
+
+      const vehicles = vehiclesResponse.success
+        ? vehiclesResponse.data.content
+        : [];
+      const claims = claimsResponse.success ? claimsResponse.data.content : [];
+
+      // Tính toán stats dựa trên role
+      if (
+        role === "SC_STAFF" ||
+        role === "SC_TECHNICAL" ||
+        role === "SC_ADMIN"
+      ) {
+        stats = [
+          {
+            title: "Tổng số xe đăng ký",
+            value: vehicles.length.toString(),
+            icon: "🚗",
+            color: "blue",
+          },
+          {
+            title: "Yêu cầu bảo hành",
+            value: claims.length.toString(),
+            icon: "🔧",
+            color: "orange",
+          },
+          {
+            title: "Đã hoàn thành",
+            value: claims
+              .filter((c) => c.status === "COMPLETED")
+              .length.toString(),
+            icon: "✅",
+            color: "green",
+          },
+          {
+            title: "Đang xử lý",
+            value: claims
+              .filter(
+                (c) => c.status === "PENDING" || c.status === "IN_PROGRESS"
+              )
+              .length.toString(),
+            icon: "⏳",
+            color: "yellow",
+          },
+        ];
+      } else if (role === "EVM_STAFF" || role === "EVM_ADMIN") {
+        stats = [
+          {
+            title: "Yêu cầu chờ duyệt",
+            value: claims
+              .filter((c) => c.status === "PENDING")
+              .length.toString(),
+            icon: "📋",
+            color: "orange",
+          },
+          {
+            title: "Đã phê duyệt",
+            value: claims
+              .filter(
+                (c) => c.status === "APPROVED" || c.status === "COMPLETED"
+              )
+              .length.toString(),
+            icon: "✅",
+            color: "green",
+          },
+          {
+            title: "Từ chối",
+            value: claims
+              .filter((c) => c.status === "REJECTED")
+              .length.toString(),
+            icon: "❌",
+            color: "red",
+          },
+          {
+            title: "Tổng số xe",
+            value: vehicles.length.toString(),
+            icon: "�",
+            color: "blue",
+          },
+        ];
+      }
+
+      setStatsData(stats);
+    } catch (err) {
+      console.error("Error fetching stats from other APIs:", err);
+      setError("Không thể tải dữ liệu thống kê");
+      // Set default empty stats để tránh crash
+      setStatsData([]);
+    }
   };
 
-  const currentStats = statsData[user?.role] || statsData.SC_Staff;
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <div className="dashboard-header">
+          <h1>Dashboard</h1>
+          <p>Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
       <div className="dashboard-header">
         <h1>Dashboard</h1>
-        <p>Chào mừng trở lại, {user?.name}!</p>
+        <p>Chào mừng trở lại, {user?.name || user?.username}!</p>
       </div>
 
+      {error && (
+        <div
+          className="error-message"
+          style={{
+            padding: "12px",
+            backgroundColor: "#fee",
+            color: "#c00",
+            borderRadius: "4px",
+            marginBottom: "16px",
+          }}
+        >
+          {error}
+        </div>
+      )}
+
       <div className="stats-grid">
-        {currentStats.map((stat, index) => (
+        {statsData.map((stat, index) => (
           <StatsCard key={index} {...stat} />
         ))}
       </div>

@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from "react";
+import {
+  USER_ROLES,
+  ROLE_DESCRIPTIONS,
+  PASSWORD_REQUIREMENTS,
+} from "../../constants";
 import "../../styles/UserForm.css";
 
 function UserForm({ user, onSave, onCancel }) {
@@ -15,16 +20,7 @@ function UserForm({ user, onSave, onCancel }) {
   const [errors, setErrors] = useState({});
   const [passwordStrength, setPasswordStrength] = useState("");
 
-  const roles = [
-    { value: "SC_Staff", label: "Nhân viên SC", department: "Service Center" },
-    {
-      value: "SC_Technician",
-      label: "Kỹ thuật viên SC",
-      department: "Service Center",
-    },
-    { value: "EVM_Staff", label: "Nhân viên EVM", department: "Manufacturing" },
-    { value: "Admin", label: "Quản trị viên", department: "IT" },
-  ];
+  const roles = USER_ROLES;
 
   useEffect(() => {
     if (user) {
@@ -129,24 +125,14 @@ function UserForm({ user, onSave, onCancel }) {
   };
 
   const getPasswordRequirements = () => {
-    const requirements = [
-      { text: "Ít nhất 6 ký tự", met: formData.password.length >= 6 },
-      { text: "Chứa chữ hoa", met: /[A-Z]/.test(formData.password) },
-      { text: "Chứa chữ thường", met: /[a-z]/.test(formData.password) },
-      { text: "Chứa số", met: /\d/.test(formData.password) },
-    ];
-    return requirements;
+    return PASSWORD_REQUIREMENTS.map((req) => ({
+      text: req.text,
+      met: req.regex.test(formData.password),
+    }));
   };
 
   const getRoleInfo = (roleValue) => {
-    const roleDescriptions = {
-      SC_Staff: "Quản lý hồ sơ xe, tạo yêu cầu bảo hành, thực hiện chiến dịch",
-      SC_Technician:
-        "Thực hiện sửa chữa, bảo dưỡng, cập nhật tiến độ công việc",
-      EVM_Staff: "Quản lý sản phẩm, phê duyệt bảo hành, tạo chiến dịch recall",
-      Admin: "Quản lý toàn bộ hệ thống, người dùng, báo cáo và phân quyền",
-    };
-    return roleDescriptions[roleValue] || "";
+    return ROLE_DESCRIPTIONS[roleValue] || "";
   };
 
   return (

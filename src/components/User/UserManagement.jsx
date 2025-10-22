@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import UserList from "./UserList";
 import UserForm from "./UserForm";
+import { authAPI, userAPI } from "../../services/api";
+import { toast } from "react-toastify";
 import "../../styles/UserManagement.css";
 
 function UserManagement() {
@@ -10,25 +12,36 @@ function UserManagement() {
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // TODO: Replace with real API call
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        // const response = await fetch('/api/users');
-        // const data = await response.json();
-        // setUsers(data);
-        setUsers([]); // Set empty initially, replace with API data
-      } catch (error) {
-        // Handle error (show notification, etc.)
-        console.error('Fetch users error:', error);
-        setUsers([]);
-      }
-      setLoading(false);
-    };
     fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // TODO: Backend team cần implement endpoint này
+      // GET /api/users - Lấy danh sách tất cả users
+      const response = await userAPI.getAllUsers();
+
+      if (response.success && response.data) {
+        setUsers(response.data);
+      } else {
+        console.warn("Failed to fetch users:", response.message);
+        setUsers([]);
+      }
+    } catch (error) {
+      console.error("Fetch users error:", error);
+      setError(
+        "Backend chưa có API GET /api/users. Vui lòng yêu cầu Backend team implement endpoint này."
+      );
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddUser = () => {
     setEditingUser(null);
@@ -43,65 +56,91 @@ function UserManagement() {
   const handleDeleteUser = async (userId) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) {
       try {
-        // await fetch(`/api/users/${userId}`, { method: 'DELETE' });
-        // After successful delete, refetch or update state
-        setUsers(users.filter((u) => u.id !== userId));
+        setLoading(true);
+        const response = await userAPI.deleteUserById(userId);
+
+        if (response.success) {
+          await fetchUsers();
+          toast.success("Xóa người dùng thành công!");
+        } else {
+          toast.error(response.message || "Không thể xóa người dùng");
+        }
       } catch (error) {
-        // Handle error (show notification, etc.)
-        console.error('Delete user error:', error);
+        console.error("Delete user error:", error);
+        toast.error("Đã xảy ra lỗi khi xóa người dùng");
+      } finally {
+        setLoading(false);
       }
     }
   };
 
   const handleSaveUser = async (userData) => {
     try {
+      setLoading(true);
+
       if (editingUser) {
-        // await fetch(`/api/users/${editingUser.id}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(userData),
-        // });
-        // Refetch or update state after success
-        setUsers(users.map((u) =>
-          u.id === editingUser.id ? { ...u, ...userData } : u
-        ));
+        // Update existing user
+        const response = await userAPI.updateUser(userData);
+
+        if (response.success) {
+          await fetchUsers();
+          setShowForm(false);
+          setEditingUser(null);
+          toast.success("Cập nhật người dùng thành công!");
+        } else {
+          toast.error(response.message || "Không thể cập nhật người dùng");
+        }
       } else {
-        // const response = await fetch('/api/users', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(userData),
-        // });
-        // const newUser = await response.json();
-        // setUsers([...users, newUser]);
-        setUsers([...users, {
-          ...userData,
-          id: `USR${String(users.length + 1).padStart(3, "0")}`,
-          joinDate: new Date().toISOString().split("T")[0],
-          lastLogin: "Chưa đăng nhập",
-          status: "Hoạt động",
-        }]);
+        // Create new user - sử dụng register API
+        const registerData = {
+          username: userData.name,
+          email: userData.email,
+          password: userData.password,
+          roles: [userData.role], // Backend expects array of roles
+          createdByEmail: user.email, // Email của user đang đăng nhập (EVM_ADMIN)
+        };
+
+        console.log("Creating user with data:", registerData);
+        console.log("Current user email:", user.email);
+
+        const response = await authAPI.register(registerData);
+
+        console.log("Register response:", response);
+
+        if (response.success) {
+          await fetchUsers();
+          setShowForm(false);
+          setEditingUser(null);
+          toast.success("Tạo người dùng thành công!");
+        } else {
+          const errorMsg = response.message || "Không thể tạo người dùng mới";
+          toast.error(errorMsg);
+          if (response.errors) {
+            console.error("Validation errors:", response.errors);
+          }
+        }
       }
     } catch (error) {
-      // Handle error (show notification, etc.)
-      console.error('Save user error:', error);
+      console.error("Save user error:", error);
+      toast.error("Đã xảy ra lỗi khi lưu người dùng");
+    } finally {
+      setLoading(false);
     }
-    setShowForm(false);
-    setEditingUser(null);
   };
 
   const handleUpdateStatus = async (userId, newStatus) => {
     try {
-      // await fetch(`/api/users/${userId}/status`, {
-      //   method: 'PATCH',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ status: newStatus }),
-      // });
+      setLoading(true);
+      // Note: Backend chưa có endpoint update status
+      // Tạm thời update local state
       setUsers(
         users.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
       );
     } catch (error) {
-      // Handle error (show notification, etc.)
-      console.error('Update status error:', error);
+      console.error("Update status error:", error);
+      alert("Đã xảy ra lỗi khi cập nhật trạng thái");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -110,7 +149,7 @@ function UserManagement() {
     setEditingUser(null);
   };
 
-  if (user?.role !== "Admin" && user?.role !== "SC_Admin") {
+  if (user?.role !== "EVM_ADMIN" && user?.role !== "SC_ADMIN") {
     return (
       <div className="access-denied">
         <div className="access-denied-icon">🚫</div>
@@ -131,8 +170,8 @@ function UserManagement() {
 
   // Lọc danh sách user theo role nếu là SC_Admin
   const filteredUsers =
-    user?.role === "SC_Admin"
-      ? users.filter((u) => u.role === "SC_Staff" || u.role === "SC_Technician")
+    user?.role === "SC_ADMIN"
+      ? users.filter((u) => u.role === "SC_STAFF" || u.role === "SC_TECHNICAL")
       : users;
 
   return (
@@ -146,6 +185,27 @@ function UserManagement() {
           </button>
         )}
       </div>
+
+      {/* Hiển thị error nếu Backend chưa có API */}
+      {error && (
+        <div
+          className="error-message"
+          style={{
+            padding: "12px 16px",
+            backgroundColor: "#f8d7da",
+            border: "1px solid #f5c6cb",
+            borderRadius: "4px",
+            marginBottom: "16px",
+            color: "#721c24",
+          }}
+        >
+          <strong>⚠️ Lỗi:</strong> {error}
+          <br />
+          <small>
+            Backend team cần thêm endpoint: <code>GET /api/users</code>
+          </small>
+        </div>
+      )}
 
       {!showForm ? (
         <UserList

@@ -2,32 +2,75 @@
    AUTHENTICATION SERVICE - Xử lý các API liên quan đến xác thực
    ========================================================================== */
 
+import { authAPI } from './api';
 import apiService from './ApiService';
 
 class AuthService {
   /**
+   * Đăng ký user mới
+   * @param {object} userData - { username, email, password, role, phoneNumber }
+   * @returns {Promise<object>} Response với thông tin user mới
+   */
+  async register(userData) {
+    try {
+      const response = await authAPI.register(userData);
+
+      if (response.success && response.data) {
+        return {
+          success: true,
+          data: response.data,
+          message: response.message || 'Đăng ký thành công',
+        };
+      } else {
+        return {
+          success: false,
+          message: response.message || 'Đăng ký thất bại',
+          errors: response.errors,
+        };
+      }
+    } catch (error) {
+      console.error('Register error:', error);
+      return {
+        success: false,
+        message: 'Không thể kết nối đến server. Vui lòng thử lại sau.',
+        errors: null,
+      };
+    }
+  }
+
+  /**
    * Đăng nhập
-   * @param {object} credentials - { email, password }
+   * @param {object} credentials - { email, password, rememberMe }
    * @returns {Promise<object>} Response với token và thông tin user
    */
   async login(credentials) {
     try {
-      const response = await apiService.post('/auth/login', credentials);
+      const response = await authAPI.login(credentials);
 
       if (response.success && response.data) {
-        // Lưu token vào localStorage
-        apiService.setToken(response.data.token);
+        // Lưu token vào localStorage hoặc sessionStorage
+        if (response.data.token) {
+          apiService.setToken(response.data.token, credentials.rememberMe);
+        }
 
         // Lưu thông tin user
         const userInfo = {
+          id: response.data.id,
           username: response.data.username,
-          roles: response.data.roles,
+          email: response.data.email,
+          role: response.data.role,
+          roles: response.data.roles || [response.data.role],
+          phoneNumber: response.data.phoneNumber,
         };
+        
+        // Lưu vào localStorage hoặc sessionStorage dựa vào rememberMe
+        const storage = credentials.rememberMe ? localStorage : sessionStorage;
+        storage.setItem('user', JSON.stringify(userInfo));
 
         return {
           success: true,
           data: userInfo,
-          message: response.message,
+          message: response.message || 'Đăng nhập thành công',
         };
       } else {
         return {
@@ -54,9 +97,10 @@ class AuthService {
       // Gọi API logout nếu backend có endpoint này
       // await apiService.post('/auth/logout');
 
-      // Xóa token và thông tin user
+      // Xóa token và thông tin user từ cả localStorage và sessionStorage
       apiService.removeToken();
       localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
 
       return { success: true };
     } catch (error) {
@@ -64,6 +108,7 @@ class AuthService {
       // Vẫn xóa token local dù API call fail
       apiService.removeToken();
       localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
       return { success: true };
     }
   }
@@ -76,10 +121,10 @@ class AuthService {
   }
 
   /**
-   * Lấy thông tin user từ localStorage
+   * Lấy thông tin user từ localStorage hoặc sessionStorage
    */
   getCurrentUser() {
-    const userStr = localStorage.getItem('user');
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
     if (userStr) {
       try {
         return JSON.parse(userStr);

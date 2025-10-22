@@ -1,48 +1,65 @@
 import React, { useState, useEffect } from "react";
+import {
+  partsRequestAPI,
+  transformPartsRequestToBackend,
+} from "../../services/api";
 import "../../styles/PartsRequest.css";
 
 function PartsRequest({ userRole, onCancel, isModal = false }) {
   const [requests, setRequests] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     PartNumber: "",
     PartName: "",
     Quantity: 1,
-    Priority: "Trung bình",
-    Notes: "",
+    PartTypeID: "PT001", // Default part type
+    VehicleID: "",
     RequestReason: "",
   });
 
   useEffect(() => {
-    const mockRequests = [
-      {
-        RequestID: "PR001",
-        PartNumber: "PS001",
-        PartName: "Pin Lithium 75kWh",
-        Quantity: 2,
-        RequestDate: "2025-10-05",
-        Status: "Chờ duyệt",
-        DeliveryDate: null,
-        Priority: "Cao",
-        RequestReason: "Thay thế pin lỗi cho VF8ABC123456",
-        SC_StaffID: "SC001",
-      },
-      {
-        RequestID: "PR002",
-        PartNumber: "PS002",
-        PartName: "Motor điện 150kW",
-        Quantity: 1,
-        RequestDate: "2025-10-03",
-        Status: "Đã duyệt",
-        DeliveryDate: "2025-10-10",
-        Priority: "Trung bình",
-        RequestReason: "Bảo trì định kỳ",
-        SC_StaffID: "SC002",
-      },
-    ];
-
-    setRequests(mockRequests);
+    fetchPartsRequests();
   }, []);
+
+  const fetchPartsRequests = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await partsRequestAPI.getAllPartsRequests({
+        page: 0,
+        size: 100,
+        sortBy: "requestDate",
+        sortDir: "desc",
+      });
+
+      if (response.success && response.data) {
+        // Transform data từ BE sang format FE
+        const transformedRequests = response.data.content.map((request) => ({
+          RequestID: request.id,
+          PartNumber: request.partNumber,
+          PartName: request.partName,
+          Quantity: request.quantity,
+          RequestDate: request.requestDate,
+          Status: request.status || "Chờ duyệt",
+          DeliveryDate: request.deliveryDate,
+          PartTypeID: request.partTypeId,
+          VehicleID: request.vehicleId,
+        }));
+
+        setRequests(transformedRequests);
+      } else {
+        setError(response.message || "Không thể tải danh sách yêu cầu");
+      }
+    } catch (error) {
+      console.error("Error fetching parts requests:", error);
+      setError("Đã xảy ra lỗi khi tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusBadge = (status) => {
     const statusClasses = {
@@ -83,28 +100,39 @@ function PartsRequest({ userRole, onCancel, isModal = false }) {
     return dateString ? new Date(dateString).toLocaleDateString("vi-VN") : "-";
   };
 
-  const handleSubmitRequest = (e) => {
+  const handleSubmitRequest = async (e) => {
     e.preventDefault();
 
-    const newRequest = {
-      ...formData,
-      RequestID: `PR${String(requests.length + 1).padStart(3, "0")}`,
-      RequestDate: new Date().toISOString().split("T")[0],
-      Status: "Chờ duyệt",
-      DeliveryDate: null,
-      SC_StaffID: "SC001",
-    };
+    try {
+      setLoading(true);
 
-    setRequests([...requests, newRequest]);
-    setFormData({
-      PartNumber: "",
-      PartName: "",
-      Quantity: 1,
-      Priority: "Trung bình",
-      Notes: "",
-      RequestReason: "",
-    });
-    setShowForm(false);
+      // Transform data sang format backend
+      const backendData = transformPartsRequestToBackend(formData);
+      const response = await partsRequestAPI.createPartsRequest(backendData);
+
+      if (response.success) {
+        // Reload danh sách
+        await fetchPartsRequests();
+
+        // Reset form
+        setFormData({
+          PartNumber: "",
+          PartName: "",
+          Quantity: 1,
+          PartTypeID: "PT001",
+          VehicleID: "",
+          RequestReason: "",
+        });
+        setShowForm(false);
+      } else {
+        alert(response.message || "Không thể tạo yêu cầu phụ tùng");
+      }
+    } catch (error) {
+      console.error("Error creating parts request:", error);
+      alert("Đã xảy ra lỗi khi tạo yêu cầu");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -115,21 +143,55 @@ function PartsRequest({ userRole, onCancel, isModal = false }) {
     }));
   };
 
-  const updateRequestStatus = (requestId, newStatus) => {
-    setRequests(
-      requests.map((req) =>
-        req.RequestID === requestId
-          ? {
-              ...req,
-              Status: newStatus,
-              DeliveryDate:
-                newStatus === "Đã giao"
-                  ? new Date().toISOString().split("T")[0]
-                  : req.DeliveryDate,
-            }
-          : req
-      )
-    );
+  const updateRequestStatus = async (requestId, newStatus) => {
+    try {
+      setLoading(true);
+
+      const updateData = {
+        status: newStatus,
+        deliveryDate:
+          newStatus === "Đã giao"
+            ? new Date().toISOString().split("T")[0]
+            : null,
+      };
+
+      const response = await partsRequestAPI.updatePartsRequest(
+        requestId,
+        updateData
+      );
+
+      if (response.success) {
+        // Reload danh sách
+        await fetchPartsRequests();
+      } else {
+        alert(response.message || "Không thể cập nhật trạng thái");
+      }
+    } catch (error) {
+      console.error("Error updating request status:", error);
+      alert("Đã xảy ra lỗi khi cập nhật trạng thái");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteRequest = async (requestId) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa yêu cầu này?")) {
+      try {
+        setLoading(true);
+        const response = await partsRequestAPI.deletePartsRequest(requestId);
+
+        if (response.success) {
+          await fetchPartsRequests();
+        } else {
+          alert(response.message || "Không thể xóa yêu cầu");
+        }
+      } catch (error) {
+        console.error("Error deleting request:", error);
+        alert("Đã xảy ra lỗi khi xóa yêu cầu");
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const containerClass = isModal ? "parts-request-modal" : "parts-request";
@@ -139,7 +201,7 @@ function PartsRequest({ userRole, onCancel, isModal = false }) {
       <div className="request-header">
         <h3>Yêu cầu phụ tùng</h3>
         {!showForm &&
-          (userRole === "SC_Staff" || userRole === "SC_Technician") && (
+          (userRole === "SC_STAFF" || userRole === "SC_TECHNICAL") && (
             <button
               onClick={() => setShowForm(true)}
               className="btn btn-primary"
@@ -268,7 +330,7 @@ function PartsRequest({ userRole, onCancel, isModal = false }) {
                   <th>Độ ưu tiên</th>
                   <th>Trạng thái</th>
                   <th>Ngày giao dự kiến</th>
-                  {(userRole === "EVM_Staff" || userRole === "Admin") && (
+                  {(userRole === "EVM_STAFF" || userRole === "EVM_ADMIN") && (
                     <th>Thao tác</th>
                   )}
                 </tr>
@@ -292,7 +354,7 @@ function PartsRequest({ userRole, onCancel, isModal = false }) {
                     <td>{getPriorityBadge(request.Priority)}</td>
                     <td>{getStatusBadge(request.Status)}</td>
                     <td>{formatDate(request.DeliveryDate)}</td>
-                    {(userRole === "EVM_Staff" || userRole === "Admin") && (
+                    {(userRole === "EVM_STAFF" || userRole === "EVM_ADMIN") && (
                       <td>
                         <div className="status-actions">
                           {request.Status === "Chờ duyệt" && (

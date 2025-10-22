@@ -61,10 +61,10 @@ function WarrantyClaimDetail({ claim, onEdit, onUpdateStatus, userRole }) {
   };
 
   const canUpdateStatus = () => {
-    if (userRole === "EVM_Staff" || userRole === "Admin") {
+    if (userRole === "EVM_STAFF" || userRole === "EVM_ADMIN") {
       return ["Chờ duyệt", "Đã duyệt"].includes(claim.Status);
     }
-    if (userRole === "SC_Staff" || userRole === "SC_Technician") {
+    if (userRole === "SC_STAFF" || userRole === "SC_TECHNICAL") {
       return ["Đã duyệt", "Đang xử lý"].includes(claim.Status);
     }
     return false;

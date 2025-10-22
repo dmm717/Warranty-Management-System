@@ -16,9 +16,6 @@ function RecallForm({ vehicleList = [], recall, onSave, onCancel }) {
     AffectedVehicles: recall?.AffectedVehicles || 0,
   });
 
-
-
-
   const [errors, setErrors] = useState({});
   // ✅ Khi tick chọn xe
   const handleSelectVehicle = (vehicleId) => {
@@ -49,8 +46,6 @@ function RecallForm({ vehicleList = [], recall, onSave, onCancel }) {
       setSelectedVehicles(allIds);
     }
   };
-
-
 
   // ✅ Khi nhận prop recall (chỉnh sửa), điền dữ liệu vào form
   useEffect(() => {
@@ -147,29 +142,29 @@ function RecallForm({ vehicleList = [], recall, onSave, onCancel }) {
   };
 
   const handleSubmit = (e) => {
-  e.preventDefault();
-  if (!validateForm()) return;
+    e.preventDefault();
+    if (!validateForm()) return;
 
-  const dataToSave = {
-    ...formData,
-    selectedVehicles,
-    AffectedVehicles: selectedVehicles.length,
+    const dataToSave = {
+      ...formData,
+      selectedVehicles,
+      AffectedVehicles: selectedVehicles.length,
+    };
+
+    console.log("RecallForm -> onSave dataToSave:", dataToSave);
+    onSave(dataToSave);
   };
 
-  console.log("RecallForm -> onSave dataToSave:", dataToSave);
-  onSave(dataToSave);
-};
-
-
+  // Sử dụng constants thay vì hardcoded
   const severityLevels = [
-    { value: "Thấp", label: "Thấp - Vấn đề nhỏ, không ảnh hưởng an toàn" },
+    { value: "LOW", label: "Thấp - Vấn đề nhỏ, không ảnh hưởng an toàn" },
     {
-      value: "Trung bình",
+      value: "MEDIUM",
       label: "Trung bình - Ảnh hưởng hiệu suất hoặc tính năng",
     },
-    { value: "Cao", label: "Cao - Ảnh hưởng an toàn hoặc nguy cơ hư hại" },
+    { value: "HIGH", label: "Cao - Ảnh hưởng an toàn hoặc nguy cơ hư hại" },
     {
-      value: "Cực cao",
+      value: "CRITICAL",
       label: "Cực cao - Nguy hiểm nghiêm trọng, cần xử lý ngay",
     },
   ];
@@ -248,8 +243,6 @@ function RecallForm({ vehicleList = [], recall, onSave, onCancel }) {
         </div>
         <h3>Thông tin đợt Recall</h3>
 
-
-
         {/* số xe thực hiện recall */}
         <div className="form-row">
           <div className="form-group">
@@ -296,11 +289,7 @@ function RecallForm({ vehicleList = [], recall, onSave, onCancel }) {
           ) : (
             <p>Không có xe nào trong danh sách.</p>
           )}
-
         </div>
-
-
-
 
         <div className="form-section">
           <h4 className="section-title">Chi tiết vấn đề</h4>
@@ -311,8 +300,9 @@ function RecallForm({ vehicleList = [], recall, onSave, onCancel }) {
                 name="IssueDescription"
                 value={formData.IssueDescription}
                 onChange={handleChange}
-                className={`form-control ${errors.IssueDescription ? "error" : ""
-                  }`}
+                className={`form-control ${
+                  errors.IssueDescription ? "error" : ""
+                }`}
                 placeholder="Mô tả chi tiết vấn đề đã phát hiện, nguyên nhân và tác động..."
                 rows="4"
               />
@@ -323,7 +313,6 @@ function RecallForm({ vehicleList = [], recall, onSave, onCancel }) {
             </div>
           </div>
 
-
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Hành động yêu cầu *</label>
@@ -331,8 +320,9 @@ function RecallForm({ vehicleList = [], recall, onSave, onCancel }) {
                 name="RequiredAction"
                 value={formData.RequiredAction}
                 onChange={handleChange}
-                className={`form-control ${errors.RequiredAction ? "error" : ""
-                  }`}
+                className={`form-control ${
+                  errors.RequiredAction ? "error" : ""
+                }`}
                 placeholder="Mô tả các bước cần thực hiện để xử lý vấn đề..."
                 rows="3"
               />
@@ -350,8 +340,9 @@ function RecallForm({ vehicleList = [], recall, onSave, onCancel }) {
                 name="PartsRequired"
                 value={formData.PartsRequired}
                 onChange={handleChange}
-                className={`form-control ${errors.PartsRequired ? "error" : ""
-                  }`}
+                className={`form-control ${
+                  errors.PartsRequired ? "error" : ""
+                }`}
                 placeholder="Pin Lithium 75kWh, Cáp sạc..."
               />
               {errors.PartsRequired && (
