@@ -160,8 +160,6 @@ function Dashboard() {
         <h1>Dashboard</h1>
         <p>Chào mừng trở lại, {user?.name || user?.username}!</p>
       </div>
-<<<<<<< HEAD
-=======
 
       {error && (
         <div
@@ -184,7 +182,6 @@ function Dashboard() {
         ))}
       </div>
 
->>>>>>> origin/main
       <div className="dashboard-content">
         <div className="dashboard-row">
           <div className="dashboard-col-8">

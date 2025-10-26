@@ -5,16 +5,10 @@ import CampaignForm from "./CampaignForm";
 import CampaignDetail from "./CampaignDetail";
 import RecallList from "./RecallList";
 import RecallForm from "./RecallForm";
-<<<<<<< HEAD
-import AssignTechnicianModal from "../AssignTechnicianModal/AssignTechnicianModal";
-import { mockTechnicians } from "../Technician/TechnicianManagement";
-import "../../styles/CampaignManagement.css";
-=======
 import { serviceCampaignAPI, vehicleAPI } from "../../services/api";
-import "./CampaignManagement.css";
+import "../../styles/CampaignManagement.css";
 import AssignTechnicianModal from "../AssignTechnicianModal/AssignTechnicianModal";
 import { mockTechnicians } from "../Technician/TechnicianManagement";
->>>>>>> origin/main
 
 
 function CampaignManagement() {
@@ -35,17 +29,7 @@ function CampaignManagement() {
     { CampaignsID: "SC001", SC_TechnicianID: "T002" },
   ]);
   const [vehicles, setVehicles] = useState([]);
-<<<<<<< HEAD
-  const [recallVehicleMap, setRecallVehicleMap] = useState([]); // 🟡 Mảng mapping recall-vehicle
-  // Modal & assignment state (previously missing)
-  const [assignments, setAssignments] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState(null);
-
-  
-=======
   const [recallVehicleMap, setRecallVehicleMap] = useState([]);
->>>>>>> origin/main
 
   useEffect(() => {
     fetchData();
