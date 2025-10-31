@@ -1,221 +1,260 @@
 import React from "react";
+import { AlertTriangle, FileText, Eye, Edit, Plus } from "lucide-react";
 import "../../styles/RecallList.css";
+import { VEHICLE_TYPES, REGIONS } from "../../constants";
 
-function RecallList({ recalls, onEdit, onView, onUpdateStatus, userRole }) {
+function RecallList({ recalls, onEdit, onView, userRole }) {
+  const isEVMAdmin = userRole === "EVM_ADMIN";
+  const isEVMStaff = userRole === "EVM_STAFF";
+
   const getStatusBadge = (status) => {
     const statusClasses = {
-      "Chuẩn bị": "status-preparing",
-      "Đang thực hiện": "status-active",
-      "Tạm dừng": "status-paused",
-      "Hoàn thành": "status-completed",
-      "Hủy bỏ": "status-cancelled", 
+      Pending: "status-pending",
+      "In Progress": "status-active",
+      Completed: "status-completed",
+      Cancelled: "status-cancelled",
+    };
+
+    const statusLabels = {
+      Pending: "Chờ xử lý",
+      "In Progress": "Đang xử lý",
+      Completed: "Hoàn thành",
+      Cancelled: "Đã hủy",
     };
 
     return (
       <span
-        className={`status-badge ${
-          statusClasses[status] || "status-preparing"
-        }`}
+        className={`status-badge ${statusClasses[status] || "status-pending"}`}
       >
-        {status}
-      </span>
-    );
-  };
-
-  const getApprovalBadge = (approvalStatus) => {
-    const approvalClasses = {
-      "Chờ phê duyệt": "approval-pending",
-      "Đã phê duyệt": "approval-approved",
-      "Từ chối": "approval-rejected",
-    };
-
-    return (
-      <span
-        className={`approval-badge ${
-          approvalClasses[approvalStatus] || "approval-pending"
-        }`}
-      >
-        {approvalStatus}
+        {statusLabels[status] || status}
       </span>
     );
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
-  const getProgressPercentage = (completed, total) => {
-    return total > 0 ? Math.round((completed / total) * 100) : 0;
+  const getModelNames = (modelIds) => {
+    if (!Array.isArray(modelIds) || modelIds.length === 0) return "N/A";
+    return modelIds
+      .map((id) => {
+        const vehicle = VEHICLE_TYPES.find((v) => v.id === id);
+        return vehicle ? vehicle.name : id;
+      })
+      .join(", ");
   };
 
-  const canUpdateStatus = () => {
-    return userRole === "EVM_Staff" || userRole === "Admin";
-  };
-
-  const getAvailableStatuses = (currentStatus, approvalStatus) => {
-    if (approvalStatus !== "Đã phê duyệt") return [];
-
-    const statusFlow = {
-      "Chuẩn bị": ["Đang thực hiện", "Hủy bỏ"],
-      "Đang thực hiện": ["Tạm dừng", "Hoàn thành"],
-      "Tạm dừng": ["Đang thực hiện", "Hủy bỏ"],
-      "Hoàn thành": [],
-      "Hủy bỏ": [],
-    };
-    return statusFlow[currentStatus] || [];
-  };
-
-  const getSeverityIcon = (issueDescription) => {
-    const lowerDescription = issueDescription.toLowerCase();
-    if (
-      lowerDescription.includes("cháy") ||
-      lowerDescription.includes("nổ") ||
-      lowerDescription.includes("quá nhiệt")
-    ) {
-      return "🔥"; // High severity
-    } else if (
-      lowerDescription.includes("phanh") ||
-      lowerDescription.includes("lái") ||
-      lowerDescription.includes("an toàn")
-    ) {
-      return "⚠️"; // Medium severity
-    }
-    return "🔧"; // Low severity
+  const getRegionNames = (regionIds) => {
+    if (!Array.isArray(regionIds) || regionIds.length === 0) return "N/A";
+    return regionIds
+      .map((id) => {
+        const region = REGIONS.find((r) => r.value === id);
+        return region ? region.label : id;
+      })
+      .join(", ");
   };
 
   if (recalls.length === 0) {
     return (
       <div className="no-data-container">
-        <div className="no-data-icon">🚨</div>
+        <div className="no-data-icon">
+          <AlertTriangle size={48} />
+        </div>
         <h3>Chưa có recall nào</h3>
-        <p>Tạo recall đầu tiên khi phát hiện vấn đề cần thu hồi</p>
+        <p>
+          {isEVMAdmin
+            ? "Tạo recall mới khi phát hiện vấn đề"
+            : "Chưa có recall nào cần xử lý"}
+        </p>
       </div>
     );
   }
 
-  return (
-    <div className="recall-list">
-      <div className="table-container">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Mã recall</th>
-              <th>Tên recall</th>
-              <th>Vấn đề</th>
-              <th>Ngày bắt đầu</th>
-              <th>Tiến độ</th>
-              <th>Phê duyệt</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recalls.map((recall) => (
-              <tr key={recall.Recall_ID}>
-                <td>
-                  <div className="recall-id">
-                    <strong>{recall.Recall_ID}</strong>
-                  </div>
-                </td>
-                <td>
-                  <div className="recall-info">
+  // ============================================
+  // VIEW FOR EVM_ADMIN
+  // ============================================
+  if (isEVMAdmin) {
+    return (
+      <div className="recall-list">
+        <div className="table-container">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Mã Recall</th>
+                <th>Tên Recall</th>
+                <th>Model xe</th>
+                <th>Phạm vi</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recalls.map((recall) => (
+                <tr key={recall.Recall_ID}>
+                  <td>
+                    <div className="recall-id">
+                      <strong>{recall.Recall_ID}</strong>
+                    </div>
+                  </td>
+                  <td>
                     <div className="recall-name">
-                      <span className="severity-icon">
-                        {getSeverityIcon(recall.IssueDescription)}
-                      </span>
-                      <strong>{recall.RecallName}</strong>
+                      <strong>{recall.RecallName || "N/A"}</strong>
                     </div>
-                    <small>Phụ tùng: {recall.PartsRequired}</small>
-                  </div>
-                </td>
-                <td>
-                  <div className="issue-description">
-                    {recall.IssueDescription.length > 60
-                      ? `${recall.IssueDescription.substring(0, 60)}...`
-                      : recall.IssueDescription}
-                  </div>
-                </td>
-                <td>
-                  <div className="start-date">
-                    {formatDate(recall.StartDate)}
-                  </div>
-                </td>
-                <td>
-                  <div className="progress-info">
-                    <div className="progress-bar">
-                      <div
-                        className="progress-fill"
-                        style={{
-                          width: `${getProgressPercentage(
-                            recall.CompletedVehicles,
-                            recall.AffectedVehicles
-                          )}%`,
-                        }}
-                      ></div>
+                  </td>
+                  <td>
+                    <div className="model-info">
+                      {getModelNames(recall.VehicleModels)}
                     </div>
-                    <div className="progress-text">
-                      {recall.CompletedVehicles}/{recall.AffectedVehicles} xe (
-                      {getProgressPercentage(
-                        recall.CompletedVehicles,
-                        recall.AffectedVehicles
-                      )}
-                      %)
+                  </td>
+                  <td>
+                    <div className="scope-info">
+                      <div>
+                        <strong>Năm:</strong>{" "}
+                        {recall.ProductionYears?.join(", ") || "N/A"}
+                      </div>
+                      <div>
+                        <strong>Quận:</strong> {getRegionNames(recall.Regions)}
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td>{getApprovalBadge(recall.EVMApprovalStatus)}</td>
-                <td>
-                  <div className="status-container">
-                    {getStatusBadge(recall.Status)}
-                    {canUpdateStatus() &&
-                      getAvailableStatuses(
-                        recall.Status,
-                        recall.EVMApprovalStatus
-                      ).length > 0 && (
-                        <div className="status-actions">
-                          {getAvailableStatuses(
-                            recall.Status,
-                            recall.EVMApprovalStatus
-                          ).map((nextStatus) => (
-                            <button
-                              key={nextStatus}
-                              onClick={() =>
-                                onUpdateStatus(recall.Recall_ID, nextStatus)
-                              }
-                              className="btn btn-sm status-btn"
-                              title={`Chuyển sang ${nextStatus}`}
-                            >
-                              →{nextStatus}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                  </div>
-                </td>
-                <td>
-                  <div className="action-buttons">
-                    <button
-                      onClick={() => onView(recall)}
-                      className="btn btn-sm btn-outline"
-                      title="Xem chi tiết"
-                    >
-                      👁️
-                    </button>
-                    {canUpdateStatus() && (
+                  </td>
+                  <td>{getStatusBadge(recall.Status)}</td>
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        onClick={() => onView(recall)}
+                        className="btn btn-sm btn-outline"
+                        title="Xem chi tiết"
+                      >
+                        <Eye size={16} />
+                      </button>
                       <button
                         onClick={() => onEdit(recall)}
                         className="btn btn-sm btn-outline"
                         title="Chỉnh sửa"
                       >
-                        ✏️
+                        <Edit size={16} />
                       </button>
-                    )}
-                  </div>
-                </td>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================
+  // VIEW FOR EVM_STAFF
+  // ============================================
+  if (isEVMStaff) {
+    // Filter only recalls that have basic info (created by EVM_ADMIN)
+    const availableRecalls = recalls.filter(
+      (r) => r.RecallName && r.VehicleModels
+    );
+
+    if (availableRecalls.length === 0) {
+      return (
+        <div className="no-data-container">
+          <div className="no-data-icon">
+            <FileText size={48} />
+          </div>
+          <h3>Chưa có recall nào</h3>
+          <p>Đang chờ EVM_ADMIN tạo recall mới</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="recall-list">
+        <div className="table-container">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Mã Recall</th>
+                <th>Tên Recall</th>
+                <th>Vấn đề</th>
+                <th>Ngày bắt đầu</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {availableRecalls.map((recall) => (
+                <tr key={recall.Recall_ID}>
+                  <td>
+                    <div className="recall-id">
+                      <strong>{recall.Recall_ID}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="recall-name-cell">
+                      <strong>{recall.RecallName}</strong>
+                      {!recall.IssueDescription && (
+                        <span className="badge badge-warning">
+                          Chưa bổ sung
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="issue-cell">
+                      {recall.IssueDescription ? (
+                        recall.IssueDescription.length > 60 ? (
+                          `${recall.IssueDescription.substring(0, 60)}...`
+                        ) : (
+                          recall.IssueDescription
+                        )
+                      ) : (
+                        <em className="text-muted">Chưa có thông tin</em>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="date-cell">
+                      {formatDate(recall.StartDate)}
+                    </div>
+                  </td>
+                  <td>{getStatusBadge(recall.Status)}</td>
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        onClick={() => onView(recall)}
+                        className="btn btn-sm btn-outline"
+                        title="Xem chi tiết"
+                      >
+                        <Eye size={16} />
+                      </button>
+                      <button
+                        onClick={() => onEdit(recall)}
+                        className="btn btn-sm btn-primary"
+                        title={
+                          recall.IssueDescription
+                            ? "Chỉnh sửa"
+                            : "Bổ sung thông tin"
+                        }
+                      >
+                        {recall.IssueDescription ? <Edit size={16} /> : <Plus size={16} />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // Default view
+  return (
+    <div className="recall-list">
+      <div className="no-data-container">
+        <p>Không có quyền xem danh sách Recall</p>
       </div>
     </div>
   );

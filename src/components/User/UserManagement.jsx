@@ -4,6 +4,7 @@ import UserList from "./UserList";
 import UserForm from "./UserForm";
 import { authAPI, userAPI } from "../../services/api";
 import { toast } from "react-toastify";
+import { confirmStatusChange } from "./ConfirmStatusToast";
 import "../../styles/UserManagement.css";
 
 function UserManagement() {
@@ -22,20 +23,33 @@ function UserManagement() {
     setLoading(true);
     setError(null);
     try {
-      // TODO: Backend team cần implement endpoint này
+      // Check token trước khi gọi API
+      const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+
+      if (!token) {
+        console.error("❌ NO TOKEN FOUND! User needs to login.");
+        setError("Bạn chưa đăng nhập. Vui lòng đăng nhập lại.");
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+
       // GET /api/users - Lấy danh sách tất cả users
       const response = await userAPI.getAllUsers();
 
       if (response.success && response.data) {
         setUsers(response.data);
       } else {
-        console.warn("Failed to fetch users:", response.message);
+        setError(response.message || "Không thể tải danh sách người dùng");
         setUsers([]);
       }
     } catch (error) {
-      console.error("Fetch users error:", error);
+      console.error("❌ Fetch users error:", error);
       setError(
-        "Backend chưa có API GET /api/users. Vui lòng yêu cầu Backend team implement endpoint này."
+        "Lỗi khi tải danh sách người dùng: " +
+          (error.message || "Unknown error")
       );
       setUsers([]);
     } finally {
@@ -79,8 +93,30 @@ function UserManagement() {
       setLoading(true);
 
       if (editingUser) {
-        // Update existing user
-        const response = await userAPI.updateUser(userData);
+        // Update existing user - EVM_ADMIN update user khác
+        // Backend UserResponse: id, username, email, phoneNumber, branchOffice, dateOfBirth, roles
+        // Convert date from yyyy-MM-dd to dd-MM-yyyy format
+        let formattedDate = editingUser.dateOfBirth;
+        if (userData.dateOfBirth) {
+          const [year, month, day] = userData.dateOfBirth.split("-");
+          formattedDate = `${day}-${month}-${year}`;
+        }
+
+        const updateData = {
+          username: userData.name || editingUser.username,
+          email: userData.email || editingUser.email,
+          phoneNumber: userData.phone || editingUser.phoneNumber,
+          branchOffice: userData.department && userData.department.trim() 
+            ? userData.department 
+            : null, // Gửi null nếu rỗng, backend sẽ validate cho SC roles
+          dateOfBirth: formattedDate,
+          specialty: null,
+        };
+
+        const response = await userAPI.adminUpdateUser(
+          editingUser.id,
+          updateData
+        );
 
         if (response.success) {
           await fetchUsers();
@@ -91,21 +127,23 @@ function UserManagement() {
           toast.error(response.message || "Không thể cập nhật người dùng");
         }
       } else {
-        // Create new user - sử dụng register API
+        // Create new user - Convert date from yyyy-MM-dd to dd-MM-yyyy
+        const [year, month, day] = userData.dateOfBirth.split("-");
+        const formattedDate = `${day}-${month}-${year}`;
+
         const registerData = {
           username: userData.name,
           email: userData.email,
           password: userData.password,
-          roles: [userData.role], // Backend expects array of roles
-          createdByEmail: user.email, // Email của user đang đăng nhập (EVM_ADMIN)
+          roles: [userData.role],
+          createdByEmail: user.email,
+          phoneNumber: userData.phone,
+          branchOffice: userData.department,
+          dateOfBirth: formattedDate,
+          specialty: null,
         };
 
-        console.log("Creating user with data:", registerData);
-        console.log("Current user email:", user.email);
-
         const response = await authAPI.register(registerData);
-
-        console.log("Register response:", response);
 
         if (response.success) {
           await fetchUsers();
@@ -129,16 +167,51 @@ function UserManagement() {
   };
 
   const handleUpdateStatus = async (userId, newStatus) => {
+    // Chỉ EVM_ADMIN mới được phép
+    if (user?.role !== "EVM_ADMIN") {
+      toast.error("Chỉ EVM_ADMIN mới có quyền thay đổi trạng thái người dùng");
+      return;
+    }
+
+    // Map từ Vietnamese sang backend enum
+    const statusMap = {
+      "Tạm khóa": "LOCKED",
+      "Ngừng hoạt động": "INACTIVE",
+      "Hoạt động": "ACTIVE",
+    };
+
+    const backendStatus = statusMap[newStatus];
+    if (!backendStatus) {
+      toast.error("Trạng thái không hợp lệ");
+      return;
+    }
+
+    // Show custom confirm toast and wait for user response
+    const result = await confirmStatusChange(userId, newStatus);
+
+    // If user cancelled, stop here
+    if (!result.confirmed) {
+      return;
+    }
+
+    // User confirmed, proceed with API call
     try {
       setLoading(true);
-      // Note: Backend chưa có endpoint update status
-      // Tạm thời update local state
-      setUsers(
-        users.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
+      const response = await userAPI.updateUserStatus(
+        userId,
+        backendStatus,
+        result.reason
       );
+
+      if (response.success) {
+        await fetchUsers();
+        toast.success(`Đã chuyển trạng thái sang "${newStatus}"`);
+      } else {
+        toast.error(response.message || "Không thể cập nhật trạng thái");
+      }
     } catch (error) {
       console.error("Update status error:", error);
-      alert("Đã xảy ra lỗi khi cập nhật trạng thái");
+      toast.error("Đã xảy ra lỗi khi cập nhật trạng thái");
     } finally {
       setLoading(false);
     }

@@ -1,21 +1,28 @@
 .campaign-management {
-  width: 100%;
-  max-width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
+  /* glassy card background to match app theme */
+  background: rgba(255,255,255,0.06) !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
 }
 
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--border-color);
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 24px !important;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
 }
 
 .page-header h1 {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--dark-color);
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  color: rgba(255,255,255,0.96) !important;
+  margin: 0 !important;
 }
 
 .header-actions {
@@ -27,7 +34,9 @@
   display: flex;
   gap: 4px;
   margin-bottom: 24px;
-  border-bottom: 2px solid var(--border-color);
+  margin-left: 8px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 0;
 }
 
 .tab-btn {
@@ -35,24 +44,30 @@
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: none;
-  border: none;
-  font-weight: 600;
-  color: #6b7280;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 1.5px;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
   transition: all 0.3s ease;
+  text-transform: uppercase;
+  font-size: 14px;
 }
 
 .tab-btn:hover {
-  color: var(--primary-color);
-  background-color: #f8fafc;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .tab-btn.active {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-  background-color: #eff6ff;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  font-weight: 400;
 }
 
 .tab-btn span {

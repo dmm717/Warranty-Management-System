@@ -1,12 +1,32 @@
 .vehicle-list {
-  background: white;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .table-container {
   overflow-x: auto;
+}
+
+/* Custom scrollbar for table container */
+.table-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .vin-cell {
@@ -17,31 +37,121 @@
 .vin-cell strong {
   font-family: 'Courier New', monospace;
   font-size: 13px;
-  color: var(--primary-color);
+  color: #60a5fa;
+  font-weight: 300;
+  letter-spacing: 1px;
 }
 
 .vin-cell small {
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 11px;
+  font-weight: 300;
 }
 
 .vehicle-name {
-  font-weight: 600;
-  color: var(--dark-color);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 1px;
 }
 
 .owner-cell strong {
-  color: var(--dark-color);
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 400;
+  letter-spacing: 1px;
 }
 
 .contact-cell {
   display: flex;
   flex-direction: column;
+  /* smooth hover/brighten effect */
+  transition: transform 0.18s ease, box-shadow 0.22s ease, filter 0.18s ease;
 }
 
 .contact-cell small {
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 12px;
+  font-weight: 300;
+}
+
+/* Hover / focus effect: brighten text and add subtle glow */
+.contact-cell:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.06);
+  border-radius: 4px;
+}
+
+.contact-cell:hover small {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Targeted phone/email styles with higher specificity to override generic table td rules */
+.vehicle-list .contact-cell .contact-phone {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  font-family: var(--vf-font-sans);
+  transition: color 0.18s ease, text-shadow 0.18s ease;
+}
+
+.vehicle-list .contact-cell .contact-email {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 300;
+}
+
+/* Accent on hover */
+.vehicle-list .contact-cell:hover .contact-phone {
+  color: #60a5fa; /* VinFast-ish accent, adjust if needed */
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.18);
+}
+
+/* If global table td rules still win due to load order, increase specificity or use !important as last resort */
+/* If you still see global table rules override these styles, we can
+   either increase selector specificity further or use `!important` on
+   the properties as a last resort. */
+
+/* KM and Purchase Date specific styles */
+.vehicle-list .table td.km-cell {
+  /* left-align number horizontally, keep vertical centering */
+  
+  align-items: center; /* vertical center */
+  justify-content: flex-start; /* align content to the left */
+  text-align: left;
+  /* ensure the td fills the full row height */
+  height: 100%;
+  box-sizing: border-box;
+  font-family: 'Courier New', monospace; /* make numbers easier to scan */
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  padding-left: 16px; /* give breathing room from the left edge */
+  min-width: 110px; /* keep column width stable */
+}
+
+/* Make sure child inline content stretches vertically if needed */
+.vehicle-list .table td.km-cell > * {
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+}
+
+.vehicle-list .table td .purchase-date-cell,
+.vehicle-list .table td.purchase-date-cell {
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 300;
+}
+
+@media (max-width: 768px) {
+  .vehicle-list .table td.km-cell {
+    /* on small screens, keep left-aligned and reduce min-width */
+    min-width: 70px;
+    padding-left: 12px;
+  }
 }
 
 .action-buttons {
@@ -52,48 +162,84 @@
 .action-buttons .btn {
   padding: 6px 10px;
   font-size: 14px;
+  font-weight: 300;
+  letter-spacing: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.action-buttons .btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
 }
 
 .status-active {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
 }
 
 .status-warranty {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
 }
 
 .status-maintenance {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: rgba(245, 158, 11, 0.3);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
 }
 
 .status-inactive {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
 }
 
 .no-data-container {
   text-align: center;
-  padding: 60px 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 80px 40px;
+  background: rgba(255, 255, 255, 0.08)!important;
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  margin: 40px 0;
 }
 
 .no-data-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
+  font-size: 64px;
+  margin-bottom: 24px;
+  color: rgba(255, 255, 255, 0.3);
+  opacity: 0.8;
 }
 
 .no-data-container h3 {
-  color: var(--dark-color);
-  margin-bottom: 8px;
+  color: #ffffff !important;
+  margin-bottom: 12px !important;
+  font-weight: 300 !important;
+  letter-spacing: 3px !important;
+  font-size: 24px !important;
+  text-transform: uppercase;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .no-data-container p {
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-weight: 300 !important;
+  letter-spacing: 1.5px !important;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 @media (max-width: 768px) {

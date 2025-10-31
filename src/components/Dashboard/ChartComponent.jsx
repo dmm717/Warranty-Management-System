@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { dashboardAPI, warrantyClaimAPI } from "../../services/api";
+import { warrantyClaimAPI } from "../../services/api";
 import "../../styles/ChartComponent.css";
 
 function ChartComponent({ userRole }) {
@@ -10,18 +10,10 @@ function ChartComponent({ userRole }) {
     const loadChartData = async () => {
       setLoading(true);
       try {
-        // Thử gọi API chart data nếu BE có implement
-        const response = await dashboardAPI.getChartData("warranty");
-
-        if (response.success && response.data) {
-          setChartData(response.data);
-        } else {
-          // Fallback: Tính toán từ warranty claims
-          await calculateChartFromClaims();
-        }
-      } catch {
-        // Fallback: Tính toán từ warranty claims
+        // Tính toán chart data từ warranty claims
         await calculateChartFromClaims();
+      } catch (err) {
+        console.error("Error loading chart data:", err);
       } finally {
         setLoading(false);
       }
@@ -38,24 +30,44 @@ function ChartComponent({ userRole }) {
         size: 1000,
       });
 
-      if (response.success && response.data.content) {
-        // In future, we can analyze actual claims data
-        // For now, use mock data for chart visualization
+      if (response.success && response.data?.content) {
+        const claims = response.data.content;
 
-        // Group claims by month (simplified - last 6 months)
-        const months = ["T1", "T2", "T3", "T4", "T5", "T6"];
-        const data = months.map(() => ({
-          pending: Math.floor(Math.random() * 30) + 10,
-          approved: Math.floor(Math.random() * 40) + 20,
-          rejected: Math.floor(Math.random() * 8) + 1,
-        }));
+        // Phân tích data THỰC từ claims
+        // Group theo tháng từ claimDate
+        const now = new Date();
+        const monthsData = [];
+
+        for (let i = 5; i >= 0; i--) {
+          const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthName = `T${targetDate.getMonth() + 1}`;
+
+          // Lọc claims trong tháng này
+          const monthClaims = claims.filter((claim) => {
+            if (!claim.claimDate) return false;
+            const claimDate = new Date(claim.claimDate);
+            return (
+              claimDate.getMonth() === targetDate.getMonth() &&
+              claimDate.getFullYear() === targetDate.getFullYear()
+            );
+          });
+
+          monthsData.push({
+            month: monthName,
+            pending: monthClaims.filter((c) => c.status === "PENDING").length,
+            approved: monthClaims.filter(
+              (c) => c.status === "APPROVED" || c.status === "COMPLETED"
+            ).length,
+            rejected: monthClaims.filter((c) => c.status === "REJECTED").length,
+          });
+        }
 
         setChartData({
           title:
             userRole === "EVM_STAFF" || userRole === "EVM_ADMIN"
-              ? "Phân tích hỏng hóc theo loại phụ tùng"
-              : "Thống kê yêu cầu bảo hành theo tháng",
-          data: months.map((month, index) => ({ month, ...data[index] })),
+              ? "Phân tích yêu cầu bảo hành 6 tháng gần đây"
+              : "Thống kê yêu cầu bảo hành 6 tháng gần đây",
+          data: monthsData,
         });
       }
     } catch (error) {

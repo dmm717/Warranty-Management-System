@@ -1,24 +1,28 @@
 import React from "react";
+import { Car, Phone, Mail, Edit, Trash2 } from "lucide-react";
 import "../../styles/VehicleList.css";
 
 function VehicleList({ vehicles, onEdit, onDelete }) {
   const getStatusBadge = (status) => {
     const statusClasses = {
       ACTIVE: "status-active",
+      IN_WARRANTY: "status-warranty",
       INACTIVE: "status-inactive",
-      MAINTENANCE: "status-maintenance",
-      WARRANTY: "status-warranty",
+      RECALLED: "status-recalled",
+      RETIRED: "status-retired",
       "Đang sử dụng": "status-active",
-      "Bảo hành": "status-warranty",
-      "Bảo dưỡng": "status-maintenance",
+      "Trong bảo hành": "status-warranty",
       "Ngừng hoạt động": "status-inactive",
+      "Đã triệu hồi": "status-recalled",
+      "Đã thanh lý": "status-retired",
     };
 
     const statusLabels = {
       ACTIVE: "Đang sử dụng",
+      IN_WARRANTY: "Trong bảo hành",
       INACTIVE: "Ngừng hoạt động",
-      MAINTENANCE: "Bảo dưỡng",
-      WARRANTY: "Bảo hành",
+      RECALLED: "Đã triệu hồi",
+      RETIRED: "Đã thanh lý",
     };
 
     const displayStatus = statusLabels[status] || status;
@@ -47,7 +51,9 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
   if (vehicles.length === 0) {
     return (
       <div className="no-data-container">
-        <div className="no-data-icon">🚗</div>
+        <div className="no-data-icon">
+          <Car size={48} />
+        </div>
         <h3>Không tìm thấy xe nào</h3>
         <p>Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
       </div>
@@ -65,43 +71,53 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
               <th>Chủ xe</th>
               <th>Liên hệ</th>
               <th>Số KM</th>
-              <th>Ngày sản xuất</th>
+              <th>Ngày mua</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {vehicles.map((vehicle) => (
-              <tr key={vehicle.vehicleId || vehicle.Vehicle_ID}>
+              <tr key={vehicle.vehicleId}>
                 <td>
                   <div className="vin-cell">
-                    <strong>{vehicle.vehicleId || vehicle.VIN}</strong>
-                    <small>ID: {vehicle.vehicleId || vehicle.Vehicle_ID}</small>
+                    <strong>{vehicle.VIN}</strong>
                   </div>
                 </td>
                 <td>
                   <div className="vehicle-name">
-                    {vehicle.vehicleName || vehicle.Vehicle_Name}
+                    {vehicle.Vehicle_Name}
+                    {vehicle.Vehicle_Type && (
+                      <small className="vehicle-type">
+                        ({vehicle.Vehicle_Type})
+                      </small>
+                    )}
                   </div>
                 </td>
                 <td>
                   <div className="owner-cell">
-                    <strong>{vehicle.owner || vehicle.Owner}</strong>
+                    <strong>{vehicle.Owner}</strong>
                   </div>
                 </td>
                 <td>
                   <div className="contact-cell">
-                    <div>{vehicle.phoneNumber || vehicle.Phone_Number}</div>
-                    <small>{vehicle.email || vehicle.Email}</small>
+                    <div className="contact-phone">
+                      <Phone size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                      {vehicle.Phone_Number || '—'}
+                    </div>
+                    <small className="contact-email">
+                      <Mail size={12} style={{ display: 'inline', marginRight: '4px' }} />
+                      {vehicle.Email || '—'}
+                    </small>
                   </div>
                 </td>
-                <td>{formatKM(vehicle.totalKm || vehicle.Total_KM || 0)}</td>
+                <td className="km-cell">{formatKM(vehicle.Total_KM || 0)}</td>
                 <td>
-                  {formatDate(
-                    vehicle.productionDate || vehicle.Production_Date
-                  )}
+                  {vehicle.Purchase_Date
+                    ? <span className="purchase-date-cell">{formatDate(vehicle.Purchase_Date)}</span>
+                    : <span className="purchase-date-cell">N/A</span>}
                 </td>
-                <td>{getStatusBadge(vehicle.status || vehicle.Status)}</td>
+                <td>{getStatusBadge(vehicle.Status)}</td>
                 <td>
                   <div className="action-buttons">
                     <button
@@ -109,16 +125,14 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
                       className="btn btn-sm btn-outline"
                       title="Chỉnh sửa"
                     >
-                      ✏️
+                      <Edit size={16} />
                     </button>
                     <button
-                      onClick={() =>
-                        onDelete(vehicle.vehicleId || vehicle.Vehicle_ID)
-                      }
+                      onClick={() => onDelete(vehicle.vehicleId)}
                       className="btn btn-sm btn-danger"
                       title="Xóa"
                     >
-                      🗑️
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </td>

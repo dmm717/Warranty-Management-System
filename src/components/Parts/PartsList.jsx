@@ -1,59 +1,43 @@
 import React from "react";
+import { PARTS_REQUEST_STATUS } from "../../constants";
 import "../../styles/PartsList.css";
 
-function PartsList({ parts, onEdit, onDelete, userRole }) {
-  const getStatusBadge = (status, quantity) => {
-    let statusClass = "status-available";
-    let displayStatus = status;
-
-    // Map BE status to display
-    const statusLabels = {
-      AVAILABLE: "Có sẵn",
-      OUT_OF_STOCK: "Hết hàng",
-      LOW_STOCK: "Thiếu hàng",
-      ORDERED: "Đang đặt hàng",
+function PartsList({ parts, onEdit, onDelete, userRole}) {
+  const getStatusBadge = (status) => {
+    const statusClasses = {
+      PENDING: "status-pending",
+      APPROVED: "status-approved",
+      REJECTED: "status-rejected",
+      ORDERED: "status-ordered",
+      IN_TRANSIT: "status-in-transit",
+      DELIVERED: "status-delivered",
+      COMPLETED: "status-completed",
+      CANCELLED: "status-cancelled",
     };
 
-    const displayText = statusLabels[status] || status;
-
-    if (quantity === 0) {
-      statusClass = "status-out-of-stock";
-      displayStatus = "Hết hàng";
-    } else if (quantity < 10) {
-      statusClass = "status-low-stock";
-      displayStatus = "Thiếu hàng";
-    } else if (status === "Có sẵn" || status === "AVAILABLE") {
-      statusClass = "status-available";
-      displayStatus = displayText;
-    } else {
-      displayStatus = displayText;
-    }
+    const displayStatus = PARTS_REQUEST_STATUS[status] || status;
 
     return (
-      <span className={`status-badge ${statusClass}`}>{displayStatus}</span>
+      <span className={`status-badge ${statusClasses[status] || "status-pending"}`}>
+        {displayStatus}
+      </span>
     );
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
-
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
   const canEditDelete = () => {
-    return userRole === "EVM_Staff" || userRole === "Admin";
+    return userRole === "EVM_STAFF" || userRole === "EVM_ADMIN";
   };
 
   if (parts.length === 0) {
     return (
       <div className="no-data-container">
         <div className="no-data-icon">⚙️</div>
-        <h3>Không tìm thấy phụ tùng nào</h3>
+        <h3>Không tìm thấy yêu cầu phụ tùng nào</h3>
         <p>Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
       </div>
     );
@@ -65,88 +49,73 @@ function PartsList({ parts, onEdit, onDelete, userRole }) {
         <table className="table">
           <thead>
             <tr>
-              <th>Mã sản phẩm</th>
-              <th>Tên sản phẩm</th>
-              <th>Danh mục</th>
-              <th>Hãng</th>
+              <th>Mã yêu cầu</th>
+              <th>Mã phụ tùng</th>
+              <th>Tên phụ tùng</th>
+              <th>Loại</th>
               <th>Số lượng</th>
-              <th>Giá</th>
-              <th>Bảo hành</th>
+              <th>Xe</th>
+              <th>Ngày yêu cầu</th>
               <th>Trạng thái</th>
               {canEditDelete() && <th>Thao tác</th>}
             </tr>
           </thead>
           <tbody>
-            {parts.map((part) => (
-              <tr key={part.partsRequestId || part.ID_Product_Serial_SC}>
+            {parts.map((request) => (
+              <tr key={request.id}>
                 <td>
-                  <div className="part-id">
-                    <strong>
-                      {part.partNumber || part.ID_Product_Serial_SC}
-                    </strong>
+                  <div className="request-id">
+                    <strong>{request.id}</strong>
+                  </div>
+                </td>
+                <td>
+                  <div className="part-number">
+                    {request.partNumber}
                   </div>
                 </td>
                 <td>
                   <div className="part-info">
-                    <strong>{part.partName || part.Name_Product}</strong>
-                    <small>
-                      {part.description || part.Description || "N/A"}
-                    </small>
+                    <strong>{request.partName}</strong>
                   </div>
                 </td>
                 <td>
-                  <span className="category-badge">
-                    {part.partTypeId || part.Part_Name || "N/A"}
-                  </span>
-                </td>
-                <td>{part.Brand || "N/A"}</td>
-                <td>
-                  <div className="quantity-info">
-                    <strong
-                      className={
-                        (part.quantity || part.Total_Amount_Of_Product || 0) <
-                        10
-                          ? "low-quantity"
-                          : ""
-                      }
-                    >
-                      {part.quantity || part.Total_Amount_Of_Product || 0}
-                    </strong>
-                    <small>đơn vị</small>
+                  <div className="part-type">
+                    {request.partTypeName}
                   </div>
                 </td>
                 <td>
-                  <div className="price-info">
-                    {formatCurrency(part.Price || 0)}
+                  <div className="quantity">
+                    <strong>{request.quantity}</strong>
                   </div>
                 </td>
                 <td>
-                  <div className="warranty-info">
-                    {part.Warranty_Period || "N/A"} tháng
+                  <div className="vehicle-info">
+                    {request.vehicle ? (
+                      <>
+                        <strong>{request.vehicle.vehicleName}</strong>
+                        <small>{request.vehicle.owner}</small>
+                      </>
+                    ) : (
+                      "N/A"
+                    )}
                   </div>
                 </td>
+                <td>{formatDate(request.requestDate)}</td>
                 <td>
-                  {getStatusBadge(
-                    part.status || part.Status,
-                    part.quantity || part.Total_Amount_Of_Product || 0
-                  )}
+                  {getStatusBadge(request.status)}
                 </td>
                 {canEditDelete() && (
                   <td>
                     <div className="action-buttons">
                       <button
-                        onClick={() => onEdit(part)}
+                        onClick={() => onEdit(request)}
                         className="btn btn-sm btn-outline"
                         title="Chỉnh sửa"
                       >
                         ✏️
                       </button>
                       <button
-                        onClick={() =>
-                          onDelete(
-                            part.partsRequestId || part.ID_Product_Serial_SC
-                          )
-                        }
+                        onClick={() => onDelete(request.id)}
                         className="btn btn-sm btn-danger"
                         title="Xóa"
                       >

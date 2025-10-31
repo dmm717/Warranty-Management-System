@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { BarChart3, Settings, TrendingUp, FileText, Mail } from "lucide-react";
 import "../../styles/ReportChart.css";
 
 function ReportChart({ reportData }) {
@@ -44,13 +45,22 @@ function ReportChart({ reportData }) {
         </div>
 
         <div className="pie-chart">
-          <div className="pie-chart-container">
-            <div
-              className="pie-slice approved-slice"
-              style={{
-                "--percentage": `${total > 0 ? (approved / total) * 100 : 0}%`,
-              }}
-            ></div>
+          <div 
+            className="pie-chart-container"
+            style={{
+              background: total > 0 
+                ? `conic-gradient(
+                    from 0deg,
+                    #4ade80 0deg,
+                    #4ade80 ${(approved / total) * 360}deg,
+                    #f87171 ${(approved / total) * 360}deg,
+                    #f87171 ${((approved + rejected) / total) * 360}deg,
+                    #fbbf24 ${((approved + rejected) / total) * 360}deg,
+                    #fbbf24 360deg
+                  )`
+                : 'conic-gradient(rgba(255, 255, 255, 0.1) 0deg, rgba(255, 255, 255, 0.1) 360deg)'
+            }}
+          >
             <div className="pie-center">
               <div className="pie-total">{total}</div>
               <div className="pie-label">Claims</div>
@@ -149,19 +159,19 @@ function ReportChart({ reportData }) {
           className={`chart-tab ${activeChart === "warranty" ? "active" : ""}`}
           onClick={() => setActiveChart("warranty")}
         >
-          📊 Bảo hành
+          <BarChart3 size={18} style={{ display: 'inline', marginRight: '6px' }} /> Bảo hành
         </button>
         <button
           className={`chart-tab ${activeChart === "parts" ? "active" : ""}`}
           onClick={() => setActiveChart("parts")}
         >
-          ⚙️ Phụ tùng
+          <Settings size={18} style={{ display: 'inline', marginRight: '6px' }} /> Phụ tùng
         </button>
         <button
           className={`chart-tab ${activeChart === "trends" ? "active" : ""}`}
           onClick={() => setActiveChart("trends")}
         >
-          📈 Xu hướng
+          <TrendingUp size={18} style={{ display: 'inline', marginRight: '6px' }} /> Xu hướng
         </button>
       </div>
 
@@ -173,15 +183,15 @@ function ReportChart({ reportData }) {
 
       <div className="chart-actions">
         <button className="btn btn-outline">
-          <span>📄</span>
+          <FileText size={16} />
           Xuất PDF
         </button>
         <button className="btn btn-outline">
-          <span>📊</span>
+          <BarChart3 size={16} />
           Xuất Excel
         </button>
         <button className="btn btn-primary">
-          <span>📧</span>
+          <Mail size={16} />
           Chia sẻ
         </button>
       </div>

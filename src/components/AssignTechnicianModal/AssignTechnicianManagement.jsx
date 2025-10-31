@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { FileText } from "lucide-react";
 import AssignTechnicianModal from "./AssignTechnicianModal";
 
 const AssignTechnicianManagement = ({ campaigns = [], technicians = [] }) => {
@@ -6,14 +7,7 @@ const AssignTechnicianManagement = ({ campaigns = [], technicians = [] }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [assignments, setAssignments] = useState([]);
   const [notification, setNotification] = useState(null);
-
-  console.log("✅ Component rendered");
-  console.log("📊 Campaigns:", campaigns);
-  console.log("👨‍💼 Technicians:", technicians);
-
-  const openModal = (campaign) => {
-    console.log("🔓 Opening modal for:", campaign.CampaignsTypeName);
-    setSelectedCampaign(campaign);
+  const openModal = (campaign) => {    setSelectedCampaign(campaign);
     setIsModalOpen(true);
   };
 
@@ -43,11 +37,8 @@ const AssignTechnicianManagement = ({ campaigns = [], technicians = [] }) => {
             SC_TechnicianID: technicianId,
             CampaignsID: campaignId
           }
-        ]);
-        console.log("✅ Assigned:", { SC_TechnicianID: technicianId, CampaignsID: campaignId });
-        console.log("📊 All assignments:", assignments);
-        showNotification(
-          `✅ Assigned ${technician.SC_TechnicianName} to ${campaign.CampaignsTypeName}`,
+        ]);        showNotification(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg> Assigned ${technician.SC_TechnicianName} to ${campaign.CampaignsTypeName}`,
           "success"
         );
       } else {
@@ -62,9 +53,7 @@ const AssignTechnicianManagement = ({ campaigns = [], technicians = [] }) => {
       assignments.filter(
         a => !(a.CampaignsID === campaignId && a.SC_TechnicianID === technicianId)
       )
-    );
-    console.log("❌ Removed:", { SC_TechnicianID: technicianId, CampaignsID: campaignId });
-    showNotification(
+    );    showNotification(
       `❌ Removed ${technician.SC_TechnicianName}`,
       "success"
     );
@@ -112,7 +101,10 @@ const AssignTechnicianManagement = ({ campaigns = [], technicians = [] }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Campaign Table */}
         <div>
-          <h3 className="text-lg font-bold mb-3">📋 Campaigns ({campaigns.length})</h3>
+          <h3 className="text-lg font-bold mb-3">
+            <FileText size={18} style={{ display: 'inline', marginRight: '6px' }} />
+            Campaigns ({campaigns.length})
+          </h3>
           <div className="overflow-x-auto border border-gray-300 rounded">
             <table className="w-full text-sm">
               <thead>

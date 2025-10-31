@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { dashboardAPI, warrantyClaimAPI } from "../../services/api";
+import { warrantyClaimAPI } from "../../services/api";
+import { Wrench, Car, Package, Megaphone, Check, Truck, BarChart3, FileText } from "lucide-react";
 import "../../styles/RecentActivity.css";
 
 function RecentActivity({ userRole }) {
@@ -10,18 +11,10 @@ function RecentActivity({ userRole }) {
     const loadActivities = async () => {
       setLoading(true);
       try {
-        // Thử gọi API recent activities nếu BE có implement
-        const response = await dashboardAPI.getRecentActivities(10);
-
-        if (response.success && response.data) {
-          setActivities(response.data);
-        } else {
-          // Fallback: Lấy recent claims
-          await fetchRecentClaims();
-        }
-      } catch {
-        // Fallback: Lấy recent claims
+        // Lấy recent claims
         await fetchRecentClaims();
+      } catch (err) {
+        console.error("Error loading activities:", err);
       } finally {
         setLoading(false);
       }
@@ -40,7 +33,7 @@ function RecentActivity({ userRole }) {
         sortDir: "desc",
       });
 
-      if (response.success && response.data.content) {
+      if (response.success && response.data?.content) {
         const claims = response.data.content;
 
         // Transform claims to activities
@@ -91,15 +84,15 @@ function RecentActivity({ userRole }) {
 
   const getActivityIcon = (type) => {
     const icons = {
-      warranty_claim: "🔧",
-      vehicle_register: "🚗",
-      parts_request: "📦",
-      campaign: "📢",
-      claim_approval: "✅",
-      parts_allocation: "🚚",
-      report_analysis: "📊",
+      warranty_claim: <Wrench size={20} className="activity-icon-svg" />,
+      vehicle_register: <Car size={20} className="activity-icon-svg" />,
+      parts_request: <Package size={20} className="activity-icon-svg" />,
+      campaign: <Megaphone size={20} className="activity-icon-svg" />,
+      claim_approval: <Check size={20} className="activity-icon-svg" />,
+      parts_allocation: <Truck size={20} className="activity-icon-svg" />,
+      report_analysis: <BarChart3 size={20} className="activity-icon-svg" />,
     };
-    return icons[type] || "📋";
+    return icons[type] || <FileText size={20} className="activity-icon-svg" />;
   };
 
   const getStatusClass = (status) => {

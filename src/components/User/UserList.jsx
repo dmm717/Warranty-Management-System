@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Edit, Trash2 } from "lucide-react";
 import "../../styles/UserList.css";
 
 function UserList({ users, onEdit, onDelete, onUpdateStatus }) {
@@ -6,7 +7,16 @@ function UserList({ users, onEdit, onDelete, onUpdateStatus }) {
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (accountStatus) => {
+    // Map backend enum sang Vietnamese
+    const statusMap = {
+      ACTIVE: "Hoạt động",
+      LOCKED: "Tạm khóa",
+      INACTIVE: "Ngừng hoạt động",
+    };
+
+    const status = statusMap[accountStatus] || "Hoạt động";
+
     const statusClasses = {
       "Hoạt động": "status-active",
       "Tạm khóa": "status-locked",
@@ -24,17 +34,19 @@ function UserList({ users, onEdit, onDelete, onUpdateStatus }) {
 
   const getRoleBadge = (role) => {
     const roleClasses = {
-      Admin: "role-admin",
-      EVM_Staff: "role-evm",
-      SC_Staff: "role-sc-staff",
-      SC_Technician: "role-sc-tech",
+      EVM_ADMIN: "role-admin",
+      EVM_STAFF: "role-evm",
+      SC_ADMIN: "role-admin",
+      SC_STAFF: "role-sc-staff",
+      SC_TECHNICAL: "role-sc-tech",
     };
 
     const roleNames = {
-      Admin: "Quản trị viên",
-      EVM_Staff: "Nhân viên EVM",
-      SC_Staff: "Nhân viên SC",
-      SC_Technician: "Kỹ thuật viên SC",
+      EVM_ADMIN: "Quản lý EVM",
+      EVM_STAFF: "Nhân viên EVM",
+      SC_ADMIN: "Quản lý SC",
+      SC_STAFF: "Nhân viên SC",
+      SC_TECHNICAL: "Kỹ thuật viên SC",
     };
 
     return (
@@ -50,18 +62,46 @@ function UserList({ users, onEdit, onDelete, onUpdateStatus }) {
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.id.toLowerCase().includes(searchTerm.toLowerCase());
+      (user.username?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (user.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      String(user.id || "").includes(searchTerm);
 
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    const matchesStatus =
-      statusFilter === "all" || user.status === statusFilter;
+    // Backend trả về roles là Set, lấy role đầu tiên
+    const userRole = user.roles && user.roles.length > 0 ? user.roles[0] : null;
+    const matchesRole = roleFilter === "all" || userRole === roleFilter;
+
+    // Map backend accountStatus sang Vietnamese để filter
+    const statusMap = {
+      ACTIVE: "Hoạt động",
+      LOCKED: "Tạm khóa",
+      INACTIVE: "Ngừng hoạt động",
+    };
+    const userStatus = statusMap[user.accountStatus] || "Hoạt động";
+    const matchesStatus = statusFilter === "all" || userStatus === statusFilter;
 
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const getAvailableStatuses = (currentStatus) => {
+  // Kiểm tra có user nào là SC role không để hiển thị cột Khu vực
+  const hasSCUsers = filteredUsers.some((user) => {
+    const userRole = user.roles && user.roles.length > 0 ? user.roles[0] : null;
+    return (
+      userRole === "SC_ADMIN" ||
+      userRole === "SC_STAFF" ||
+      userRole === "SC_TECHNICAL"
+    );
+  });
+
+  const getAvailableStatuses = (accountStatus) => {
+    // Map backend enum sang Vietnamese
+    const statusMap = {
+      ACTIVE: "Hoạt động",
+      LOCKED: "Tạm khóa",
+      INACTIVE: "Ngừng hoạt động",
+    };
+
+    const currentStatus = statusMap[accountStatus] || "Hoạt động";
+
     const statusFlow = {
       "Hoạt động": ["Tạm khóa", "Ngừng hoạt động"],
       "Tạm khóa": ["Hoạt động", "Ngừng hoạt động"],
@@ -141,88 +181,121 @@ function UserList({ users, onEdit, onDelete, onUpdateStatus }) {
                 <th>Tên người dùng</th>
                 <th>Email</th>
                 <th>Vai trò</th>
-                <th>Phòng ban</th>
+                {hasSCUsers && <th>Khu vực</th>}
                 <th>Số điện thoại</th>
-                <th>Ngày tham gia</th>
-                <th>Đăng nhập cuối</th>
+                <th>Ngày sinh</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <div className="user-id">
-                      <strong>{user.id}</strong>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="user-info">
-                      <div className="user-avatar">
-                        {user.name.charAt(0).toUpperCase()}
+              {filteredUsers.map((user) => {
+                // Backend trả về roles là Set/Array
+                const userRole =
+                  user.roles && user.roles.length > 0
+                    ? user.roles[0]
+                    : "Unknown";
+                const userName = user.username || "N/A";
+                const isSCRole =
+                  userRole === "SC_ADMIN" ||
+                  userRole === "SC_STAFF" ||
+                  userRole === "SC_TECHNICAL";
+
+                return (
+                  <tr key={user.id}>
+                    <td>
+                      <div className="user-id">
+                        <strong>{user.id}</strong>
                       </div>
-                      <strong>{user.name}</strong>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="user-email">{user.email}</div>
-                  </td>
-                  <td>{getRoleBadge(user.role)}</td>
-                  <td>
-                    <div className="department">{user.department}</div>
-                  </td>
-                  <td>
-                    <div className="phone">{user.phone}</div>
-                  </td>
-                  <td>{formatDate(user.joinDate)}</td>
-                  <td>
-                    <div className="last-login">
-                      {user.lastLogin === "Chưa đăng nhập" ? (
-                        <span className="never-login">Chưa đăng nhập</span>
-                      ) : (
-                        formatDate(user.lastLogin)
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="status-container">
-                      {getStatusBadge(user.status)}
-                      <div className="status-actions">
-                        {getAvailableStatuses(user.status).map((newStatus) => (
-                          <button
-                            key={newStatus}
-                            onClick={() => onUpdateStatus(user.id, newStatus)}
-                            className="btn btn-sm status-btn"
-                            title={`Chuyển sang ${newStatus}`}
-                          >
-                            →{newStatus}
-                          </button>
-                        ))}
+                    </td>
+                    <td>
+                      <div className="user-info">
+                        <div className="user-avatar">
+                          {userName.charAt(0).toUpperCase()}
+                        </div>
+                        <strong>{userName}</strong>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      <button
-                        onClick={() => onEdit(user)}
-                        className="btn btn-sm btn-outline"
-                        title="Chỉnh sửa"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => onDelete(user.id)}
-                        className="btn btn-sm btn-danger"
-                        title="Xóa"
-                        disabled={user.role === "Admin"}
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td>
+                      <div className="user-email">{user.email}</div>
+                    </td>
+                    <td>{getRoleBadge(userRole)}</td>
+                    {hasSCUsers && (
+                      <td>
+                        <div className="branch-office">
+                          {isSCRole ? user.branchOffice || "N/A" : "—"}
+                        </div>
+                      </td>
+                    )}
+                    <td>
+                      <div className="phone">{user.phoneNumber || "N/A"}</div>
+                    </td>
+                    <td>
+                      <div className="date-of-birth">
+                        {user.dateOfBirth
+                          ? formatDate(user.dateOfBirth)
+                          : "N/A"}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="status-container">
+                        <div
+                          className="status-badge-wrapper"
+                          title={
+                            user.statusChangeReason
+                              ? `Lý do: ${
+                                  user.statusChangeReason
+                                }\nThay đổi lúc: ${
+                                  user.statusChangedAt
+                                    ? new Date(
+                                        user.statusChangedAt
+                                      ).toLocaleString("vi-VN")
+                                    : "N/A"
+                                }`
+                              : "Không có lý do"
+                          }
+                        >
+                          {getStatusBadge(user.accountStatus)}
+                        </div>
+                        <div className="status-actions">
+                          {getAvailableStatuses(user.accountStatus).map(
+                            (newStatus) => (
+                              <button
+                                key={newStatus}
+                                onClick={() =>
+                                  onUpdateStatus(user.id, newStatus)
+                                }
+                                className="btn btn-sm status-btn"
+                                title={`Chuyển sang ${newStatus}`}
+                              >
+                                →{newStatus}
+                              </button>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          onClick={() => onEdit(user)}
+                          className="btn btn-sm btn-outline"
+                          title="Chỉnh sửa"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => onDelete(user.id)}
+                          className="btn btn-sm btn-danger"
+                          title="Xóa"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

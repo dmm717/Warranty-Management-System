@@ -45,7 +45,7 @@ const TechnicianManagement = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="technician-management p-6">
       <h2 className="text-2xl font-bold mb-4">Quản lý kỹ thuật viên</h2>
       <TechnicianForm
         onSave={handleSave}

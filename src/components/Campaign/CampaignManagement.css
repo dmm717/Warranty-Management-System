@@ -1,45 +1,47 @@
-/* Campaign Management Styles */
-.campaign-management {
+/* Campaign Management Styles - increased specificity to avoid global overrides */
+.App .campaign-management {
   padding: 2rem;
-  background: #f8fafc;
+  /* keep background consistent with global theme (dark glass) */
+  background: rgba(255, 255, 255, 0.06);
   min-height: 100vh;
 }
 
-.page-header {
+.App .campaign-management .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 2rem;
 }
 
-.header-actions {
+.App .campaign-management .header-actions {
   display: flex;
   gap: 1rem;
 }
 
-.campaign-tabs {
+.App .campaign-management .campaign-tabs {
   display: flex;
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.tab-btn {
+.App .campaign-management .tab-btn {
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
-  border: none;
-  background: #e0e7ef;
-  color: #3c4de7;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.88);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.15s;
 }
 
-.tab-btn.active {
-  background: #3c4de7;
-  color: #fff;
+.App .campaign-management .tab-btn.active {
+  background: rgba(255,255,255,0.10);
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
 }
 
-.loading-container {
+.App .campaign-management .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -47,48 +49,64 @@
   height: 60vh;
 }
 
-.loading-spinner {
+.App .campaign-management .loading-spinner {
   width: 48px;
   height: 48px;
   border: 6px solid #e0e7ef;
   border-top: 6px solid #3c4de7;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: cm-spin 1s linear infinite;
   margin-bottom: 1rem;
 }
 
-@keyframes spin {
+@keyframes cm-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
-.btn {
+
+.App .campaign-management .btn {
   padding: 0.5rem 1.25rem;
   border-radius: 6px;
-  border: none;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.92);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.18s, transform 0.12s;
 }
 
-.btn-primary {
-  background: #3c4de7;
+.App .campaign-management .btn-primary {
+  /* subtle highlighted primary using translucent tint */
+  background: linear-gradient(180deg, rgba(99,102,241,0.16), rgba(79,70,229,0.12));
   color: #fff;
+  border-color: rgba(79,70,229,0.18);
+  box-shadow: 0 6px 14px rgba(79,70,229,0.08);
 }
 
-.btn-secondary {
-  background: #06b6d4;
+.App .campaign-management .btn-primary:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(99,102,241,0.22), rgba(79,70,229,0.16));
+}
+
+.App .campaign-management .btn-secondary {
+  background: linear-gradient(180deg, rgba(6,182,212,0.12), rgba(6,182,212,0.08));
   color: #fff;
+  border-color: rgba(6,182,212,0.14);
 }
 
-.btn-outline {
+.App .campaign-management .btn-secondary:hover {
+  transform: translateY(-1px);
+}
+
+.App .campaign-management .btn-outline {
   background: transparent;
-  color: #3c4de7;
-  border: 2px solid #3c4de7;
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.12);
 }
 
-.btn-outline:hover {
+.App .campaign-management .btn-outline:hover {
   background: #3c4de7;
   color: #fff;
 }

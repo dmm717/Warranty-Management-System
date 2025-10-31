@@ -6,7 +6,7 @@
 .form-section {
   margin-bottom: 32px;
   padding-bottom: 24px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .form-section:last-of-type {
@@ -15,13 +15,15 @@
 }
 
 .section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--dark-color);
+  font-size: 19px;
+  font-weight: 700;
+  color: #ffffff !important;
   margin-bottom: 20px;
   padding-bottom: 8px;
   border-bottom: 2px solid var(--primary-color);
   display: inline-block;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 12px rgba(96, 165, 250, 0.3);
+  letter-spacing: 0.5px;
 }
 
 .form-row {
@@ -172,18 +174,21 @@
 }
 
 .user-preview {
-  background: #f8fafc;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  /* dark glass card matching current theme */
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
   padding: 24px;
   margin-bottom: 32px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
 }
 
 .preview-content {
-  background: white;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .preview-header {
@@ -192,31 +197,32 @@
   gap: 16px;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .preview-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--primary-color);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(96, 165, 250, 0.95));
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: 18px;
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.3);
 }
 
 .preview-info h5 {
-  color: var(--dark-color);
+  color: rgba(255, 255, 255, 0.96);
   font-weight: 600;
   font-size: 16px;
   margin: 0 0 4px 0;
 }
 
 .preview-email {
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.68);
   font-size: 14px;
 }
 
@@ -234,7 +240,7 @@
 
 .preview-label {
   font-size: 12px;
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.62);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -242,7 +248,7 @@
 
 .preview-value {
   font-size: 14px;
-  color: var(--dark-color);
+  color: rgba(255, 255, 255, 0.94);
   font-weight: 500;
 }
 
@@ -251,7 +257,7 @@
   gap: 16px;
   justify-content: flex-end;
   padding-top: 32px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   margin-top: 32px;
 }
 

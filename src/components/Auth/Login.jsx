@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import vinLogo from "../../assets/Vin.jfif";
+import vinLogo from "../../assets/logovin.png";
+import loginPage from "../../assets/loginPage.jpg";
 import { toast } from "react-toastify";
 import "../../styles/Login.css";
 
@@ -66,7 +67,7 @@ function Login() {
     <div className="login-container">
       <div className="login-background">
         <img
-          src={vinLogo}
+          src={loginPage}
           alt="VinFast Background"
           className="background-image"
         />
@@ -114,6 +115,7 @@ function Login() {
                 value={credentials.password}
                 onChange={handleChange}
                 placeholder="Nhập mật khẩu"
+                autoComplete="current-password"
               />
               {fieldErrors.password && (
                 <div className="field-error">{fieldErrors.password}</div>

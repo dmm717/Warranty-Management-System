@@ -1,4 +1,5 @@
 import React from "react";
+import { Check, Wrench, X, Play, Eye, Edit } from 'lucide-react';
 import "../../styles/WarrantyClaimList.css";
 
 function WarrantyClaimList({
@@ -11,54 +12,29 @@ function WarrantyClaimList({
   const getStatusBadge = (status) => {
     const statusClasses = {
       PENDING: "status-pending",
+      IN_PROGRESS: "status-processing",
       APPROVED: "status-approved",
       REJECTED: "status-rejected",
-      IN_PROGRESS: "status-processing",
       COMPLETED: "status-completed",
-      "Chờ duyệt": "status-pending",
-      "Đã duyệt": "status-approved",
-      "Từ chối": "status-rejected",
-      "Đang xử lý": "status-processing",
-      "Hoàn thành": "status-completed",
+      CANCELLED: "status-cancelled",
     };
 
     const statusLabels = {
       PENDING: "Chờ duyệt",
+      IN_PROGRESS: "Đang xử lý",
       APPROVED: "Đã duyệt",
       REJECTED: "Từ chối",
-      IN_PROGRESS: "Đang xử lý",
       COMPLETED: "Hoàn thành",
+      CANCELLED: "Đã hủy",
     };
 
     const displayStatus = statusLabels[status] || status;
 
     return (
       <span
-        className={`status-badge ${
-          statusClasses[status] ||
-          statusClasses[displayStatus] ||
-          "status-pending"
-        }`}
+        className={`status-badge ${statusClasses[status] || "status-pending"}`}
       >
         {displayStatus}
-      </span>
-    );
-  };
-
-  const getPriorityBadge = (priority) => {
-    const priorityClasses = {
-      Cao: "priority-high",
-      "Trung bình": "priority-medium",
-      Thấp: "priority-low",
-    };
-
-    return (
-      <span
-        className={`priority-badge ${
-          priorityClasses[priority] || "priority-medium"
-        }`}
-      >
-        {priority}
       </span>
     );
   };
@@ -67,36 +43,57 @@ function WarrantyClaimList({
     return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
-
   const canUpdateStatus = (status) => {
     if (userRole === "EVM_STAFF" || userRole === "EVM_ADMIN") {
-      return ["Chờ duyệt", "Đã duyệt"].includes(status);
+      return ["PENDING"].includes(status);
     }
     if (userRole === "SC_STAFF" || userRole === "SC_TECHNICAL") {
-      return ["Đã duyệt", "Đang xử lý"].includes(status);
+      return ["APPROVED", "IN_PROGRESS"].includes(status);
     }
     return false;
   };
 
   const getNextStatus = (currentStatus) => {
     const statusFlow = {
-      "Chờ duyệt": ["Đã duyệt", "Từ chối"],
-      "Đã duyệt": ["Đang xử lý"],
-      "Đang xử lý": ["Hoàn thành"],
+      PENDING: ["APPROVED", "REJECTED"],
+      APPROVED: ["IN_PROGRESS"],
+      IN_PROGRESS: ["COMPLETED"],
     };
     return statusFlow[currentStatus] || [];
+  };
+
+  const getStatusButtonConfig = (status) => {
+    const configs = {
+      APPROVED: {
+        label: "Duyệt",
+        className: "btn-approve",
+        icon: <Check size={14} />,
+      },
+      REJECTED: {
+        label: "Từ chối",
+        className: "btn-reject",
+        icon: <X size={14} />,
+      },
+      IN_PROGRESS: {
+        label: "Bắt đầu xử lý",
+        className: "btn-process",
+        icon: <Play size={14} />,
+      },
+      COMPLETED: {
+        label: "Hoàn thành",
+        className: "btn-complete",
+        icon: <Check size={14} />,
+      },
+    };
+    return configs[status] || { label: status, className: "", icon: "" };
   };
 
   if (claims.length === 0) {
     return (
       <div className="no-data-container">
-        <div className="no-data-icon">🔧</div>
+        <div className="no-data-icon">
+          <Wrench size={48} />
+        </div>
         <h3>Không tìm thấy yêu cầu bảo hành nào</h3>
         <p>Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
       </div>
@@ -112,85 +109,52 @@ function WarrantyClaimList({
               <th>Mã claim</th>
               <th>Khách hàng</th>
               <th>Xe</th>
-              <th>Vấn đề</th>
               <th>Ngày tạo</th>
-              <th>Độ ưu tiên</th>
-              <th>Chi phí ước tính</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {claims.map((claim) => (
-              <tr key={claim.claimId || claim.ClaimID}>
+              <tr key={claim.claimId}>
                 <td>
                   <div className="claim-id">
-                    <strong>{claim.claimId || claim.ClaimID}</strong>
+                    <strong>{claim.claimId}</strong>
                   </div>
                 </td>
                 <td>
                   <div className="customer-info">
-                    <strong>{claim.customerName || claim.CustomerName}</strong>
-                    <small>{claim.phoneNumber || claim.CustomerPhone}</small>
+                    <strong>{claim.customerName}</strong>
+                    <small>{claim.customerPhone}</small>
                   </div>
                 </td>
                 <td>
                   <div className="vehicle-info">
-                    <strong>
-                      {claim.vehicleName || claim.VehicleName || "N/A"}
-                    </strong>
-                    <small>{claim.vehicleId || claim.VIN || "N/A"}</small>
+                    <strong>{claim.vehicleName || "N/A"}</strong>
                   </div>
                 </td>
-                <td>
-                  <div className="issue-description">
-                    {(claim.issueDescription || claim.IssueDescription || "")
-                      .length > 50
-                      ? `${(
-                          claim.issueDescription || claim.IssueDescription
-                        ).substring(0, 50)}...`
-                      : claim.issueDescription || claim.IssueDescription}
-                  </div>
-                </td>
-                <td>{formatDate(claim.claimDate || claim.ClaimDate)}</td>
-                <td>
-                  {claim.Priority ? (
-                    getPriorityBadge(claim.Priority)
-                  ) : (
-                    <span className="priority-badge priority-medium">
-                      Trung bình
-                    </span>
-                  )}
-                </td>
-                <td>
-                  <div className="cost-info">
-                    {claim.EstimatedCost
-                      ? formatCurrency(claim.EstimatedCost)
-                      : "Chưa ước tính"}
-                  </div>
-                </td>
+                <td>{formatDate(claim.claimDate)}</td>
                 <td>
                   <div className="status-container">
-                    {getStatusBadge(claim.status || claim.Status)}
-                    {canUpdateStatus(claim.status || claim.Status) && (
+                    {getStatusBadge(claim.status)}
+                    {canUpdateStatus(claim.status) && (
                       <div className="status-actions">
-                        {getNextStatus(claim.status || claim.Status).map(
-                          (nextStatus) => (
+                        {getNextStatus(claim.status).map((nextStatus) => {
+                          const config = getStatusButtonConfig(nextStatus);
+                          return (
                             <button
                               key={nextStatus}
                               onClick={() =>
-                                onUpdateStatus(
-                                  claim.claimId || claim.ClaimID,
-                                  nextStatus
-                                )
+                                onUpdateStatus(claim.claimId, nextStatus)
                               }
-                              className="btn btn-sm status-btn"
-                              title={`Chuyển sang ${nextStatus}`}
+                              className={`btn btn-sm status-action-btn ${config.className}`}
+                              title={config.label}
                             >
-                              →{nextStatus}
+                              <span className="btn-icon">{config.icon}</span>
+                              <span className="btn-text">{config.label}</span>
                             </button>
-                          )
-                        )}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -202,14 +166,14 @@ function WarrantyClaimList({
                       className="btn btn-sm btn-outline"
                       title="Xem chi tiết"
                     >
-                      👁️
+                      <Eye size={16} />
                     </button>
                     <button
                       onClick={() => onEdit(claim)}
                       className="btn btn-sm btn-outline"
                       title="Chỉnh sửa"
                     >
-                      ✏️
+                      <Edit size={16} />
                     </button>
                   </div>
                 </td>

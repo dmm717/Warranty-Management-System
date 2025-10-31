@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { dashboardAPI, warrantyClaimAPI, vehicleAPI } from "../../services/api";
+import { warrantyClaimAPI, vehicleAPI } from "../../services/api";
 import StatsCard from "./StatsCard";
 import ChartComponent from "./ChartComponent";
 import RecentActivity from "./RecentActivity";
+import EVMStaffDashboard from "./EVMStaffDashboard";
+import { Check, X, FileClock, Bike, Wrench, Clock } from 'lucide-react';
 import "../../styles/Dashboard.css";
 
 function Dashboard() {
@@ -18,32 +20,29 @@ function Dashboard() {
       setError(null);
 
       try {
-        // Thử gọi API dashboard nếu BE có implement
-        // Nếu chưa có API, sẽ fallback sang tính toán từ các API khác
-        const statsResponse = await dashboardAPI.getStats();
-
-        if (statsResponse.success && statsResponse.data) {
-          setStatsData(statsResponse.data.stats || []);
-        } else {
-          // Fallback: Tính toán stats từ các API khác
-          await fetchStatsFromOtherAPIs();
-        }
-      } catch {
-        console.log(
-          "Dashboard API not available, using fallback stats calculation"
-        );
-        // Fallback: Tính toán stats từ các API khác
-        await fetchStatsFromOtherAPIs();
+        // Tính toán stats trực tiếp từ ElectricVehicle và WarrantyClaim APIs
+        await fetchStatsFromAPIs();
+      } catch (err) {
+        console.error("Error loading dashboard:", err);
+        setError("Không thể tải dữ liệu dashboard");
       } finally {
         setLoading(false);
       }
     };
 
-    loadDashboard();
+    // Skip loading for EVM_STAFF as they have dedicated dashboard
+    if (user?.role !== "EVM_STAFF") {
+      loadDashboard();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role]);
 
-  const fetchStatsFromOtherAPIs = async () => {
+  // If user is EVM_STAFF, show specialized dashboard
+  if (user?.role === "EVM_STAFF") {
+    return <EVMStaffDashboard />;
+  }
+
+  const fetchStatsFromAPIs = async () => {
     try {
       const role = user?.role;
       let stats = [];
@@ -54,10 +53,17 @@ function Dashboard() {
         warrantyClaimAPI.getAllClaims({ page: 0, size: 1000 }),
       ]);
 
-      const vehicles = vehiclesResponse.success
-        ? vehiclesResponse.data.content
-        : [];
-      const claims = claimsResponse.success ? claimsResponse.data.content : [];
+      // ApiService trả về response.data = backend's data.data
+      // Backend trả: { success: true, data: { content: [...], totalElements: 100 }, message: "..." }
+      // ApiService xử lý: { success: true, data: { content: [...], totalElements: 100 }, message: "..." }
+      const vehicles =
+        vehiclesResponse.success && vehiclesResponse.data?.content
+          ? vehiclesResponse.data.content
+          : [];
+      const claims =
+        claimsResponse.success && claimsResponse.data?.content
+          ? claimsResponse.data.content
+          : [];
 
       // Tính toán stats dựa trên role
       if (
@@ -69,13 +75,13 @@ function Dashboard() {
           {
             title: "Tổng số xe đăng ký",
             value: vehicles.length.toString(),
-            icon: "🚗",
+            icon: <Bike size={31} className="bike-icon" />,
             color: "blue",
           },
           {
             title: "Yêu cầu bảo hành",
             value: claims.length.toString(),
-            icon: "🔧",
+            icon: <Wrench size={30} className="wrench-icon" />,
             color: "orange",
           },
           {
@@ -83,7 +89,7 @@ function Dashboard() {
             value: claims
               .filter((c) => c.status === "COMPLETED")
               .length.toString(),
-            icon: "✅",
+            icon: <Check size={30} className="check-icon" />,
             color: "green",
           },
           {
@@ -93,7 +99,7 @@ function Dashboard() {
                 (c) => c.status === "PENDING" || c.status === "IN_PROGRESS"
               )
               .length.toString(),
-            icon: "⏳",
+            icon: <Clock size={30} className="clock-icon" />,
             color: "yellow",
           },
         ];
@@ -104,7 +110,7 @@ function Dashboard() {
             value: claims
               .filter((c) => c.status === "PENDING")
               .length.toString(),
-            icon: "📋",
+            icon: <FileClock size={30} className="fileclock-icon" />,
             color: "orange",
           },
           {
@@ -114,7 +120,7 @@ function Dashboard() {
                 (c) => c.status === "APPROVED" || c.status === "COMPLETED"
               )
               .length.toString(),
-            icon: "✅",
+            icon: <Check size={30} className="check-icon" />,
             color: "green",
           },
           {
@@ -122,13 +128,13 @@ function Dashboard() {
             value: claims
               .filter((c) => c.status === "REJECTED")
               .length.toString(),
-            icon: "❌",
+            icon: <X size={30} className="x-icon" />,
             color: "red",
           },
           {
             title: "Tổng số xe",
             value: vehicles.length.toString(),
-            icon: "�",
+            icon: <Bike size={24} className="bike-icon" />,
             color: "blue",
           },
         ];
@@ -136,8 +142,7 @@ function Dashboard() {
 
       setStatsData(stats);
     } catch (err) {
-      console.error("Error fetching stats from other APIs:", err);
-      setError("Không thể tải dữ liệu thống kê");
+      console.error("Error fetching stats:", err);
       // Set default empty stats để tránh crash
       setStatsData([]);
     }
@@ -176,22 +181,22 @@ function Dashboard() {
         </div>
       )}
 
-      <div className="stats-grid">
-        {statsData.map((stat, index) => (
-          <StatsCard key={index} {...stat} />
-        ))}
-      </div>
+      
 
-      <div className="dashboard-content">
-        <div className="dashboard-row">
+      <div className="dashboard-row">
           <div className="dashboard-col-8">
+            
+            <div className="stats-grid">
+              {statsData.map((stat, index) => (
+                <StatsCard key={index} {...stat} />
+              ))}
+            </div>
             <ChartComponent userRole={user?.role} />
           </div>
           <div className="dashboard-col-4">
             <RecentActivity userRole={user?.role} />
           </div>
         </div>
-      </div>
     </div>
   );
 }

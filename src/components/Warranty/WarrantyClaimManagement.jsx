@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { ArrowLeft, Plus } from "lucide-react";
 import WarrantyClaimList from "./WarrantyClaimList";
 import WarrantyClaimForm from "./WarrantyClaimForm";
 import WarrantyClaimDetail from "./WarrantyClaimDetail";
@@ -35,21 +36,18 @@ function WarrantyClaimManagement() {
         sortDir: "desc",
       });
 
-      if (response.success && response.data) {
-        // Transform data từ BE sang format FE
+      if (response.success && response.data?.content) {
+        // Debug: Xem data thực tế từ Backend
+        // Transform data từ BE sang format FE - match với Backend DTOs
         const transformedClaims = response.data.content.map((claim) => ({
-          ClaimID: claim.claimId,
-          CustomerName: claim.customerName,
-          CustomerPhone: claim.phoneNumber,
-          ClaimDate: claim.claimDate,
-          IssueDescription: claim.issueDescription,
-          Status: WARRANTY_CLAIM_STATUS[claim.status] || claim.status,
-          Email: claim.email,
-          Vehicle_ID: claim.vehicleId,
-          VIN: claim.vin || claim.vehicleId,
-          VehicleName: claim.vehicleName || "N/A",
-          RequiredPart: claim.requiredPart,
-          SC_TechID: claim.scTechId,
+          claimId: claim.claimId,
+          customerName: claim.customerName,
+          customerPhone: claim.customerPhone,
+          // claimDate: Backend trả LocalDate "yyyy-MM-dd", có thể null
+          claimDate: claim.claimDate || new Date().toISOString().split("T")[0],
+          // status: Backend có thể trả enum string hoặc null
+          status: claim.status || "PENDING",
+          vehicleName: claim.vehicleName || "N/A",
         }));
 
         setClaims(transformedClaims);
@@ -67,25 +65,21 @@ function WarrantyClaimManagement() {
     }
   };
 
-  const handleSearch = (searchTerm, statusFilter, priorityFilter) => {
+  const handleSearch = (searchTerm, statusFilter) => {
     let filtered = claims;
 
     if (searchTerm) {
       filtered = filtered.filter(
         (claim) =>
-          claim.ClaimID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          claim.CustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          claim.VIN.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          claim.CustomerPhone.includes(searchTerm)
+          claim.claimId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          claim.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          claim.customerPhone.includes(searchTerm) ||
+          claim.vehicleName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (statusFilter && statusFilter !== "all") {
-      filtered = filtered.filter((claim) => claim.Status === statusFilter);
-    }
-
-    if (priorityFilter && priorityFilter !== "all") {
-      filtered = filtered.filter((claim) => claim.Priority === priorityFilter);
+      filtered = filtered.filter((claim) => claim.status === statusFilter);
     }
 
     setFilteredClaims(filtered);
@@ -116,12 +110,11 @@ function WarrantyClaimManagement() {
       if (selectedClaim) {
         // Update existing claim
         const response = await warrantyClaimAPI.updateClaim(
-          selectedClaim.ClaimID,
+          selectedClaim.claimId,
           claimData
         );
 
         if (response.success) {
-          // Reload claims để có data mới nhất
           await fetchClaims();
           setShowForm(false);
           setSelectedClaim(null);
@@ -133,7 +126,6 @@ function WarrantyClaimManagement() {
         const response = await warrantyClaimAPI.createClaim(claimData);
 
         if (response.success) {
-          // Reload claims để có data mới nhất
           await fetchClaims();
           setShowForm(false);
           setSelectedClaim(null);
@@ -153,23 +145,13 @@ function WarrantyClaimManagement() {
     try {
       setLoading(true);
 
-      // Convert Vietnamese status to backend enum
-      const statusMap = {
-        "Chờ duyệt": "PENDING",
-        "Đã duyệt": "APPROVED",
-        "Đang xử lý": "IN_PROGRESS",
-        "Hoàn thành": "COMPLETED",
-        "Từ chối": "REJECTED",
-      };
-
-      const backendStatus = statusMap[newStatus] || newStatus;
+      // newStatus đã là Backend enum (PENDING, IN_PROGRESS, etc.)
       const response = await warrantyClaimAPI.updateClaimStatus(
         claimId,
-        backendStatus
+        newStatus
       );
 
       if (response.success) {
-        // Reload claims để có data mới nhất
         await fetchClaims();
       } else {
         alert(response.message || "Không thể cập nhật trạng thái");
@@ -203,13 +185,13 @@ function WarrantyClaimManagement() {
         <h1>Quản lý yêu cầu bảo hành</h1>
         {!showForm && !showDetail && (
           <button onClick={handleCreateClaim} className="btn btn-primary">
-            <span>➕</span>
+            <Plus size={16} />
             Tạo yêu cầu mới
           </button>
         )}
         {(showForm || showDetail) && (
           <button onClick={handleBack} className="btn btn-outline">
-            <span>⬅️</span>
+            <ArrowLeft size={16} />
             Quay lại
           </button>
         )}

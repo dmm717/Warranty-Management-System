@@ -1,17 +1,55 @@
 .parts-list {
-  background: white;
+  /* stronger glass so rows read more clearly */
+  background: rgba(255,255,255,0.10);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
 .table-container {
   overflow-x: auto;
 }
 
+.parts-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+}
+
+.parts-table thead th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.96);
+  background: linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.06));
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.parts-table tbody td {
+  padding: 12px 16px;
+  vertical-align: middle;
+  color: rgba(255,255,255,0.92);
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+  /* keep cell transparent, row handles faint background */
+  background: transparent;
+}
+
+/* give rows a slightly visible translucent background for legibility */
+.parts-table tbody tr {
+  background: rgba(255,255,255,0.03);
+  transition: all 160ms ease;
+}
+
+.parts-table tbody tr:hover {
+  background: rgba(255,255,255,0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.55);
+}
+
 .part-id strong {
   font-family: 'Courier New', monospace;
-  color: var(--primary-color);
+  color: var(--vf-primary-400);
   font-size: 13px;
 }
 
@@ -21,25 +59,35 @@
 }
 
 .part-info strong {
-  color: var(--dark-color);
+  color: rgba(255,255,255,0.95);
   font-size: 14px;
   margin-bottom: 4px;
 }
 
 .part-info small {
-  color: #6b7280;
+  color: rgba(255,255,255,0.62);
   font-size: 12px;
   line-height: 1.3;
 }
 
+.serial-cell code {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.86);
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
 .category-badge {
-  background: #e0f2fe;
-  color: #0c4a6e;
+  background: rgba(99,102,241,0.10);
+  color: #c7d2fe;
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
+  border: 1px solid rgba(99,102,241,0.12);
 }
 
 .quantity-info {
@@ -50,7 +98,7 @@
 
 .quantity-info strong {
   font-size: 16px;
-  color: var(--dark-color);
+  color: rgba(255,255,255,0.95);
 }
 
 .quantity-info strong.low-quantity {
@@ -59,34 +107,53 @@
 }
 
 .quantity-info small {
-  color: #6b7280;
+  color: rgba(255,255,255,0.62);
   font-size: 11px;
 }
 
 .price-info {
   font-weight: 600;
-  color: var(--primary-color);
+  color: var(--vf-primary-300);
   font-size: 13px;
 }
 
 .warranty-info {
   text-align: center;
   font-weight: 500;
+  color: rgba(255,255,255,0.88);
 }
 
-.status-available {
-  background-color: #d1fae5;
-  color: #065f46;
+.stock-badge {
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  min-width: 72px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.9);
 }
 
-.status-low-stock {
-  background-color: #fef3c7;
-  color: #92400e;
+.stock-high {
+  background: rgba(16,185,129,0.12);
+  color: #6ee7b7;
+  border-color: rgba(16,185,129,0.2);
 }
 
-.status-out-of-stock {
-  background-color: #fee2e2;
-  color: #991b1b;
+.stock-low {
+  /* Treat low stock as warning -> red per request */
+  background: rgba(239,68,68,0.10);
+  color: #fca5a5;
+  border-color: rgba(239,68,68,0.18);
+}
+
+.stock-out {
+  /* Out of stock - stronger red */
+  background: rgba(185,28,28,0.18);
+  color: #ffd4d4;
+  border-color: rgba(185,28,28,0.26);
 }
 
 .action-buttons {
@@ -99,12 +166,78 @@
   font-size: 14px;
 }
 
+/* Style the inline select used to change stock status in the inventory list */
+.status-select {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.94);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 140px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 20 20' fill='none'><path d='M6 8l4 4 4-4' stroke='%23FFFFFF' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+}
+
+.status-select:focus {
+  outline: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+  border-color: var(--vf-primary-300);
+}
+
+/* Option styling is limited; keep options readable in the native popup */
+.status-select option {
+  background: #0b1220; /* dark popup background where supported */
+  color: #ffffff;
+}
+
+/* Status badges inside parts table (span used when not editing) */
+.parts-table .status-badge {
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  min-width: 96px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.92);
+  cursor: pointer;
+}
+
+/* Map statuses to requested colors: low_stock -> red (thiếu hàng), in_stock -> green (còn hàng), out_of_stock -> stronger red */
+.parts-table .status-low_stock {
+  background: rgba(239,68,68,0.12);
+  color: #fca5a5;
+  border-color: rgba(239,68,68,0.18);
+}
+
+.parts-table .status-out_of_stock {
+  background: rgba(185,28,28,0.18);
+  color: #ffd4d4;
+  border-color: rgba(185,28,28,0.26);
+}
+
+.parts-table .status-in_stock {
+  background: rgba(16,185,129,0.12);
+  color: #6ee7b7;
+  border-color: rgba(16,185,129,0.2);
+}
+
 .no-data-container {
   text-align: center;
   padding: 60px 20px;
-  background: white;
+  background: rgba(255,255,255,0.03);
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
 .no-data-icon {

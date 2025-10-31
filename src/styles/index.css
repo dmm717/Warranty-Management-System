@@ -46,6 +46,7 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
+  color: rgba(255, 255, 255, 0.87);
 }
 button:hover {
   border-color: #646cff;
@@ -55,6 +56,8 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* Disabled light mode - using dark glass morphism theme only */
+/*
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -67,3 +70,4 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+*/

@@ -1,8 +1,9 @@
 .warranty-claim-list {
-  background: white;
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .table-container {
@@ -11,7 +12,7 @@
 
 .claim-id strong {
   font-family: 'Courier New', monospace;
-  color: var(--primary-color);
+  color: var(--vf-primary-400);
   font-size: 13px;
 }
 
@@ -23,26 +24,26 @@
 
 .customer-info strong,
 .vehicle-info strong {
-  color: var(--dark-color);
+  color: rgba(255,255,255,0.95);
   font-size: 14px;
 }
 
 .customer-info small,
 .vehicle-info small {
-  color: #6b7280;
+  color: rgba(255,255,255,0.6);
   font-size: 12px;
 }
 
 .issue-description {
   max-width: 200px;
   font-size: 13px;
-  color: #374151;
+  color: rgba(255,255,255,0.78);
   line-height: 1.4;
 }
 
 .cost-info {
   font-weight: 600;
-  color: var(--primary-color);
+  color: var(--vf-primary-300);
   font-size: 13px;
 }
 
@@ -52,21 +53,27 @@
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.92);
+  border: 1px solid rgba(255,255,255,0.04);
 }
 
 .priority-high {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: rgba(239,68,68,0.12);
+  color: #fca5a5;
+  border-color: rgba(239,68,68,0.25);
 }
 
 .priority-medium {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: rgba(245,158,11,0.10);
+  color: #fcd34d;
+  border-color: rgba(245,158,11,0.2);
 }
 
 .priority-low {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: rgba(16,185,129,0.08);
+  color: #6ee7b7;
+  border-color: rgba(16,185,129,0.18);
 }
 
 .status-container {
@@ -74,29 +81,102 @@
   flex-direction: column;
   gap: 8px;
   align-items: center;
-  min-width: 120px;
+  min-width: 150px;
 }
 
 .status-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  gap: 6px;
+  width: 100%;
+  justify-content: center;
+}
+
+.status-action-btn {
+  display: flex;
+  align-items: center;
   gap: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.status-action-btn .btn-icon {
+  font-size: 14px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+.status-action-btn .btn-text {
+  font-size: 12px;
+}
+
+.btn-approve {
+  background-color: rgba(16,185,129,0.14);
+  color: #6ee7b7;
+  border: 1px solid rgba(16,185,129,0.22);
+}
+
+.btn-approve:hover {
+  background-color: rgba(16,185,129,0.18);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.06);
+}
+
+.btn-reject {
+  background-color: rgba(239,68,68,0.12);
+  color: #fca5a5;
+  border: 1px solid rgba(239,68,68,0.22);
+}
+
+.btn-reject:hover {
+  background-color: rgba(239,68,68,0.16);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(239, 68, 68, 0.06);
+}
+
+.btn-process {
+  background-color: rgba(59,130,246,0.12);
+  color: #93c5fd;
+  border: 1px solid rgba(59,130,246,0.18);
+}
+
+.btn-process:hover {
+  background-color: rgba(59,130,246,0.16);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.06);
+}
+
+.btn-complete {
+  background-color: rgba(139,92,246,0.12);
+  color: #c4b5fd;
+  border: 1px solid rgba(139,92,246,0.18);
+}
+
+.btn-complete:hover {
+  background-color: rgba(139,92,246,0.16);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.06);
 }
 
 .status-btn {
   padding: 2px 6px;
   font-size: 10px;
-  background: var(--secondary-color);
-  color: white;
-  border: none;
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.92);
+  border: 1px solid rgba(255,255,255,0.04);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .status-btn:hover {
-  background: var(--primary-color);
-  transform: scale(1.05);
+  background: rgba(255,255,255,0.05);
+  transform: scale(1.02);
 }
 
 .status-processing {
@@ -117,9 +197,10 @@
 .no-data-container {
   text-align: center;
   padding: 60px 20px;
-  background: white;
+  background: rgba(255,255,255,0.03);
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
 .no-data-icon {

@@ -1,13 +1,70 @@
+.recent-activity {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  padding: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.recent-activity:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.recent-activity h2 {
+  color: #ffffff;
+  font-weight: 300;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.8);
+  font-size: 1.5rem;
+  text-transform: uppercase;
+}
+
 .activity-list {
-  max-height: 400px;
+  flex: 1;
   overflow-y: auto;
+  padding-right: 5px;
+  min-height: 0;
+}
+
+/* Custom Scrollbar */
+.activity-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.activity-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.activity-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.activity-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .activity-item {
   display: flex;
   gap: 16px;
   padding: 16px 0;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.activity-item:hover {
+  padding-left: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid rgba(255, 255, 255, 0.5);
 }
 
 .activity-item:last-child {
@@ -21,9 +78,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 50%;
   flex-shrink: 0;
+  backdrop-filter: blur(10px);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+  transition: all 0.3s ease;
 }
 
 .activity-content {
@@ -33,16 +93,18 @@
 
 .activity-title {
   font-size: 14px;
-  font-weight: 600;
-  color: var(--dark-color);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.95);
   margin-bottom: 4px;
+  letter-spacing: 0.5px;
 }
 
 .activity-description {
   font-size: 13px;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.7);
   margin-bottom: 8px;
-  line-height: 1.4;
+  line-height: 1.9;
+  letter-spacing: 0.5px;
 }
 
 .activity-meta {
@@ -53,30 +115,34 @@
 
 .activity-time {
   font-size: 12px;
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.5px;
 }
 
 .activity-status {
   font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 0;
+  font-weight: 400;
   text-transform: uppercase;
+  letter-spacing: 1px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .status-pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
 }
 
 .status-completed {
-  background: #d1fae5;
-  color: #065f46;
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
 }
 
 .status-approved {
-  background: #dbeafe;
-  color: #1e40af;
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
 }
 
 .status-info {
@@ -98,4 +164,9 @@
 .btn-sm {
   padding: 8px 16px;
   font-size: 14px;
+}
+/* Activity icon SVG styles */
+.activity-icon-svg {
+  color: rgba(255, 255, 255, 0.9);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }

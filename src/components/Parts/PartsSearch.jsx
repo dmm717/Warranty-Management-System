@@ -1,13 +1,12 @@
 import React, { useState } from "react";
-import { PARTS_CATEGORIES, PARTS_STATUS } from "../../constants";
+import { PARTS_STATUS } from "../../constants";
 import "../../styles/PartsSearch.css";
 
-function PartsSearch({ onSearch }) {
+function PartsSearch({ onSearch, availableCategories = [] }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const categories = PARTS_CATEGORIES;
   const statusOptions = PARTS_STATUS;
 
   const handleSearchChange = (e) => {
@@ -60,9 +59,9 @@ function PartsSearch({ onSearch }) {
             onChange={handleCategoryChange}
           >
             <option value="all">Tất cả</option>
-            {categories.map((category) => (
-              <option key={category.value} value={category.value}>
-                {category.label}
+            {availableCategories.map((category, index) => (
+              <option key={index} value={category}>
+                {category}
               </option>
             ))}
           </select>

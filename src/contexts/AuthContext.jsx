@@ -23,13 +23,20 @@ export function AuthProvider({ children }) {
     // Check if user is logged in from localStorage or sessionStorage
     const storedUser =
       localStorage.getItem("user") || sessionStorage.getItem("user");
-    if (storedUser && authService.isAuthenticated()) {
+    const token =
+      localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+    if (storedUser && token) {
+      // Chỉ cần có user và token là đủ, không kiểm tra expiry ở đây
+      // Sẽ kiểm tra khi API trả về 401
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
         console.error("Error parsing stored user:", error);
         localStorage.removeItem("user");
         sessionStorage.removeItem("user");
+        localStorage.removeItem("authToken");
+        sessionStorage.removeItem("authToken");
       }
     }
     setLoading(false);
