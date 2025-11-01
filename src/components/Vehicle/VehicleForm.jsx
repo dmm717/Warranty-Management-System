@@ -1,38 +1,65 @@
 import React, { useState, useEffect } from "react";
 import { transformVehicleToBackend } from "../../services/api";
 import { VEHICLE_TYPES, VEHICLE_STATUS_OPTIONS } from "../../constants";
+import { toast } from "react-toastify";
 import "../../styles/VehicleForm.css";
 
 function VehicleForm({ vehicle, onSave, onCancel }) {
   const [formData, setFormData] = useState({
-    Vehicle_Name: "",
     VIN: "",
     Owner: "",
     Phone_Number: "",
     Email: "",
     Status: "ACTIVE",
     Total_KM: 0,
-    Production_Date: "",
+    Purchase_Date: "",
     ID_Electric_Vehicle_Type: "",
     Picture: "",
   });
 
   const [errors, setErrors] = useState({});
 
+  // Reverse mapping: Vietnamese label -> enum key
+  const getStatusKey = (statusValue) => {
+    if (!statusValue) return "ACTIVE";
+
+    // If already enum key, return as is
+    const validKeys = [
+      "ACTIVE",
+      "IN_WARRANTY",
+      "INACTIVE",
+      "RECALLED",
+      "RETIRED",
+    ];
+    if (validKeys.includes(statusValue)) return statusValue;
+
+    // Map Vietnamese to enum key
+    const statusMap = {
+      "Đang sử dụng": "ACTIVE",
+      "Trong bảo hành": "IN_WARRANTY",
+      "Ngừng hoạt động": "INACTIVE",
+      "Đã triệu hồi": "RECALLED",
+      "Đã thanh lý": "RETIRED",
+    };
+
+    return statusMap[statusValue] || "ACTIVE";
+  };
+
   useEffect(() => {
     if (vehicle) {
-      setFormData({
-        Vehicle_Name: vehicle.Vehicle_Name || "",
+      const vehicleTypeId =
+        vehicle.Vehicle_Type_ID || vehicle.ID_Electric_Vehicle_Type || "";
+      const newFormData = {
         VIN: vehicle.VIN || "",
         Owner: vehicle.Owner || "",
         Phone_Number: vehicle.Phone_Number || "",
         Email: vehicle.Email || "",
-        Status: vehicle.Status || "ACTIVE",
+        Status: getStatusKey(vehicle.Status),
         Total_KM: vehicle.Total_KM || 0,
-        Production_Date: vehicle.Production_Date || "",
-        ID_Electric_Vehicle_Type: vehicle.ID_Electric_Vehicle_Type || "",
+        Purchase_Date: vehicle.Purchase_Date || "",
+        ID_Electric_Vehicle_Type: vehicleTypeId,
         Picture: vehicle.Picture || "",
-      });
+      };      setFormData(newFormData);
     }
   }, [vehicle]);
 
@@ -58,45 +85,75 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.Vehicle_Name.trim()) {
-      newErrors.Vehicle_Name = "Tên xe là bắt buộc";
-    }
-
+    // VIN validation
     if (!formData.VIN.trim()) {
       newErrors.VIN = "VIN là bắt buộc";
-    } else if (formData.VIN.length !== 17) {
-      newErrors.VIN = "VIN phải có đúng 17 ký tự";
+    } else if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(formData.VIN)) {
+      newErrors.VIN = "VIN phải có đúng 17 ký tự (không chứa I, O, Q)";
     }
 
+    // Owner validation
     if (!formData.Owner.trim()) {
       newErrors.Owner = "Tên chủ xe là bắt buộc";
+    } else if (formData.Owner.trim().length < 2) {
+      newErrors.Owner = "Tên chủ xe phải có ít nhất 2 ký tự";
     }
 
+    // Phone validation - Vietnam phone numbers
     if (!formData.Phone_Number.trim()) {
       newErrors.Phone_Number = "Số điện thoại là bắt buộc";
-    } else if (!/^[0-9]{10,11}$/.test(formData.Phone_Number)) {
-      newErrors.Phone_Number = "Số điện thoại không hợp lệ";
+    } else if (!/^(03|05|07|08|09)[0-9]{8}$/.test(formData.Phone_Number)) {
+      newErrors.Phone_Number =
+        "Số điện thoại phải có 10 số và đúng mã vùng VN (03, 05, 07, 08, 09)";
     }
 
+    // Email validation
     if (!formData.Email.trim()) {
       newErrors.Email = "Email là bắt buộc";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.Email)) {
-      newErrors.Email = "Email không hợp lệ";
+    } else if (
+      !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.Email)
+    ) {
+      newErrors.Email = "Email không đúng định dạng";
     }
 
-    if (!formData.Production_Date) {
-      newErrors.Production_Date = "Ngày sản xuất là bắt buộc";
+    // Purchase Date validation - from 2021 onwards
+    if (!formData.Purchase_Date) {
+      newErrors.Purchase_Date = "Ngày mua là bắt buộc";
+    } else {
+      const purchaseYear = new Date(formData.Purchase_Date).getFullYear();
+      const currentYear = new Date().getFullYear();
+      if (purchaseYear < 2021) {
+        newErrors.Purchase_Date = "Ngày mua phải từ năm 2021 trở đi";
+      } else if (purchaseYear > currentYear) {
+        newErrors.Purchase_Date = "Ngày mua không được lớn hơn năm hiện tại";
+      }
     }
 
+    // Vehicle Type validation
     if (!formData.ID_Electric_Vehicle_Type) {
       newErrors.ID_Electric_Vehicle_Type = "Loại xe là bắt buộc";
     }
 
+    // Total KM validation
     if (formData.Total_KM < 0) {
       newErrors.Total_KM = "Số km không được âm";
+    } else if (formData.Total_KM > 1000000) {
+      newErrors.Total_KM = "Số km không hợp lệ (quá lớn)";
+    }
+
+    // Status validation
+    if (!formData.Status) {
+      newErrors.Status = "Trạng thái là bắt buộc";
     }
 
     setErrors(newErrors);
+
+    // Show toast for first error
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.values(newErrors)[0];
+      toast.error(firstError);
+    }
+
     return Object.keys(newErrors).length === 0;
   };
 
@@ -110,7 +167,8 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
       };
 
       // Transform data sang format backend
-      const backendData = transformVehicleToBackend(dataToSave);
+      const isUpdate = !!vehicle; // true if editing existing vehicle
+      const backendData = transformVehicleToBackend(dataToSave, isUpdate);
       onSave(backendData);
     }
   };
@@ -148,21 +206,6 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
               </div>
             )}
           </div>
-
-          <div className="form-group">
-            <label className="form-label">Tên xe *</label>
-            <input
-              type="text"
-              name="Vehicle_Name"
-              value={formData.Vehicle_Name}
-              onChange={handleChange}
-              className={`form-control ${errors.Vehicle_Name ? "error" : ""}`}
-              placeholder="VinFast VF8"
-            />
-            {errors.Vehicle_Name && (
-              <div className="error-message">{errors.Vehicle_Name}</div>
-            )}
-          </div>
         </div>
 
         <div className="form-row">
@@ -182,18 +225,16 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Ngày sản xuất *</label>
+            <label className="form-label">Ngày mua *</label>
             <input
               type="date"
-              name="Production_Date"
-              value={formData.Production_Date}
+              name="Purchase_Date"
+              value={formData.Purchase_Date}
               onChange={handleChange}
-              className={`form-control ${
-                errors.Production_Date ? "error" : ""
-              }`}
+              className={`form-control ${errors.Purchase_Date ? "error" : ""}`}
             />
-            {errors.Production_Date && (
-              <div className="error-message">{errors.Production_Date}</div>
+            {errors.Purchase_Date && (
+              <div className="error-message">{errors.Purchase_Date}</div>
             )}
           </div>
         </div>

@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { vehicleAPI } from "../../services/api";
-import { transformClaimToBackend } from "../../services/api";
 import "../../styles/WarrantyClaimForm.css";
 
 function WarrantyClaimForm({ claim, onSave, onCancel }) {
   const [formData, setFormData] = useState({
-    CustomerName: "",
-    CustomerPhone: "",
-    Email: "",
-    Vehicle_ID: "",
-    VIN: "",
-    VehicleName: "",
-    IssueDescription: "",
-    RequiredPart: "",
+    customerName: "",
+    customerPhone: "",
+    email: "",
+    vehicleId: "",
+    issueDescription: "",
+    requiredPart: "",
+    claimDate: new Date().toISOString().split("T")[0], // Add claimDate with today's date
   });
 
   const [errors, setErrors] = useState({});
@@ -24,14 +22,13 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
 
     if (claim) {
       setFormData({
-        CustomerName: claim.CustomerName || "",
-        CustomerPhone: claim.CustomerPhone || "",
-        Email: claim.Email || "",
-        Vehicle_ID: claim.Vehicle_ID || "",
-        VIN: claim.VIN || "",
-        VehicleName: claim.VehicleName || "",
-        IssueDescription: claim.IssueDescription || "",
-        RequiredPart: claim.RequiredPart || "",
+        customerName: claim.customerName || "",
+        customerPhone: claim.customerPhone || "",
+        email: claim.email || "",
+        vehicleId: claim.vehicleId || "",
+        issueDescription: claim.issueDescription || "",
+        requiredPart: claim.requiredPart || "",
+        claimDate: claim.claimDate || new Date().toISOString().split("T")[0],
       });
     }
   }, [claim]);
@@ -46,15 +43,14 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
         sortDir: "asc",
       });
 
-      if (response.success && response.data) {
+      if (response.success && response.data?.content) {
         // Transform data từ BE sang format FE
         const transformedVehicles = response.data.content.map((vehicle) => ({
-          Vehicle_ID: vehicle.vehicleId,
-          VIN: vehicle.vehicleId,
-          Vehicle_Name: vehicle.vehicleName,
-          Owner: vehicle.owner,
-          Phone_Number: vehicle.phoneNumber,
-          Email: vehicle.email,
+          id: vehicle.id,
+          name: vehicle.name,
+          owner: vehicle.owner,
+          phoneNumber: vehicle.phoneNumber,
+          email: vehicle.email,
         }));
 
         setVehicles(transformedVehicles);
@@ -84,27 +80,23 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
 
   const handleVehicleSelect = (e) => {
     const vehicleId = e.target.value;
-    const selectedVehicle = vehicles.find((v) => v.Vehicle_ID === vehicleId);
+    const selectedVehicle = vehicles.find((v) => v.id === vehicleId);
 
     if (selectedVehicle) {
       setFormData((prev) => ({
         ...prev,
-        Vehicle_ID: vehicleId,
-        VIN: selectedVehicle.VIN,
-        VehicleName: selectedVehicle.Vehicle_Name,
-        CustomerName: selectedVehicle.Owner,
-        CustomerPhone: selectedVehicle.Phone_Number,
-        Email: selectedVehicle.Email,
+        vehicleId: vehicleId,
+        customerName: selectedVehicle.owner,
+        customerPhone: selectedVehicle.phoneNumber,
+        email: selectedVehicle.email,
       }));
     } else {
       setFormData((prev) => ({
         ...prev,
-        Vehicle_ID: "",
-        VIN: "",
-        VehicleName: "",
-        CustomerName: "",
-        CustomerPhone: "",
-        Email: "",
+        vehicleId: "",
+        customerName: "",
+        customerPhone: "",
+        email: "",
       }));
     }
   };
@@ -112,34 +104,30 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.Vehicle_ID) {
-      newErrors.Vehicle_ID = "Vui lòng chọn xe";
+    if (!formData.vehicleId) {
+      newErrors.vehicleId = "Vui lòng chọn xe";
     }
 
-    if (!formData.CustomerName.trim()) {
-      newErrors.CustomerName = "Tên khách hàng là bắt buộc";
+    if (!formData.customerName.trim()) {
+      newErrors.customerName = "Tên khách hàng là bắt buộc";
     }
 
-    if (!formData.CustomerPhone.trim()) {
-      newErrors.CustomerPhone = "Số điện thoại là bắt buộc";
-    } else if (!/^[0-9]{10,11}$/.test(formData.CustomerPhone)) {
-      newErrors.CustomerPhone = "Số điện thoại không hợp lệ";
+    if (!formData.customerPhone.trim()) {
+      newErrors.customerPhone = "Số điện thoại là bắt buộc";
+    } else if (!/^[0-9]{10}$/.test(formData.customerPhone)) {
+      newErrors.customerPhone = "Số điện thoại phải đúng 10 chữ số";
     }
 
-    if (!formData.Email.trim()) {
-      newErrors.Email = "Email là bắt buộc";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.Email)) {
-      newErrors.Email = "Email không hợp lệ";
+    if (!formData.email.trim()) {
+      newErrors.email = "Email là bắt buộc";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Email không hợp lệ";
     }
 
-    if (!formData.IssueDescription.trim()) {
-      newErrors.IssueDescription = "Mô tả vấn đề là bắt buộc";
-    } else if (formData.IssueDescription.length < 10) {
-      newErrors.IssueDescription = "Mô tả vấn đề phải có ít nhất 10 ký tự";
-    }
-
-    if (formData.EstimatedCost < 0) {
-      newErrors.EstimatedCost = "Chi phí ước tính không được âm";
+    if (!formData.issueDescription.trim()) {
+      newErrors.issueDescription = "Mô tả vấn đề là bắt buộc";
+    } else if (formData.issueDescription.length < 10) {
+      newErrors.issueDescription = "Mô tả vấn đề phải có ít nhất 10 ký tự";
     }
 
     setErrors(newErrors);
@@ -149,9 +137,25 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // Transform data sang format backend
-      const backendData = transformClaimToBackend(formData);
-      onSave(backendData);
+      // Transform data to match Backend DTO
+      // Backend expects date format: dd-MM-yyyy
+      const formatDateForBackend = (dateString) => {
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+      };
+
+      const requestData = {
+        customerName: formData.customerName,
+        phoneNumber: formData.customerPhone, // Backend expects phoneNumber not customerPhone
+        email: formData.email,
+        vehicleId: formData.vehicleId,
+        issueDescription: formData.issueDescription,
+        requiredPart: formData.requiredPart || null,
+        claimDate: formatDateForBackend(formData.claimDate), // Convert yyyy-MM-dd to dd-MM-yyyy
+      };      onSave(requestData);
     }
   };
 
@@ -170,46 +174,23 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
             <div className="form-group">
               <label className="form-label">Chọn xe *</label>
               <select
-                name="Vehicle_ID"
-                value={formData.Vehicle_ID}
+                name="vehicleId"
+                value={formData.vehicleId}
                 onChange={handleVehicleSelect}
-                className={`form-control ${errors.Vehicle_ID ? "error" : ""}`}
+                className={`form-control ${errors.vehicleId ? "error" : ""}`}
               >
                 <option value="">-- Chọn xe --</option>
                 {vehicles.map((vehicle) => (
-                  <option key={vehicle.Vehicle_ID} value={vehicle.Vehicle_ID}>
-                    {vehicle.VIN} - {vehicle.Vehicle_Name} ({vehicle.Owner})
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.id} - {vehicle.name} ({vehicle.owner})
                   </option>
                 ))}
               </select>
-              {errors.Vehicle_ID && (
-                <div className="error-message">{errors.Vehicle_ID}</div>
+              {errors.vehicleId && (
+                <div className="error-message">{errors.vehicleId}</div>
               )}
             </div>
           </div>
-
-          {formData.Vehicle_ID && (
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">VIN</label>
-                <input
-                  type="text"
-                  value={formData.VIN}
-                  className="form-control"
-                  readOnly
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Tên xe</label>
-                <input
-                  type="text"
-                  value={formData.VehicleName}
-                  className="form-control"
-                  readOnly
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="form-section">
@@ -219,30 +200,30 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
               <label className="form-label">Tên khách hàng *</label>
               <input
                 type="text"
-                name="CustomerName"
-                value={formData.CustomerName}
+                name="customerName"
+                value={formData.customerName}
                 onChange={handleChange}
-                className={`form-control ${errors.CustomerName ? "error" : ""}`}
+                className={`form-control ${errors.customerName ? "error" : ""}`}
                 placeholder="Nguyễn Văn An"
               />
-              {errors.CustomerName && (
-                <div className="error-message">{errors.CustomerName}</div>
+              {errors.customerName && (
+                <div className="error-message">{errors.customerName}</div>
               )}
             </div>
             <div className="form-group">
               <label className="form-label">Số điện thoại *</label>
               <input
                 type="tel"
-                name="CustomerPhone"
-                value={formData.CustomerPhone}
+                name="customerPhone"
+                value={formData.customerPhone}
                 onChange={handleChange}
                 className={`form-control ${
-                  errors.CustomerPhone ? "error" : ""
+                  errors.customerPhone ? "error" : ""
                 }`}
                 placeholder="0912345678"
               />
-              {errors.CustomerPhone && (
-                <div className="error-message">{errors.CustomerPhone}</div>
+              {errors.customerPhone && (
+                <div className="error-message">{errors.customerPhone}</div>
               )}
             </div>
           </div>
@@ -252,14 +233,14 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
               <label className="form-label">Email *</label>
               <input
                 type="email"
-                name="Email"
-                value={formData.Email}
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
-                className={`form-control ${errors.Email ? "error" : ""}`}
+                className={`form-control ${errors.email ? "error" : ""}`}
                 placeholder="example@email.com"
               />
-              {errors.Email && (
-                <div className="error-message">{errors.Email}</div>
+              {errors.email && (
+                <div className="error-message">{errors.email}</div>
               )}
             </div>
           </div>
@@ -271,17 +252,17 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
             <div className="form-group">
               <label className="form-label">Mô tả vấn đề *</label>
               <textarea
-                name="IssueDescription"
-                value={formData.IssueDescription}
+                name="issueDescription"
+                value={formData.issueDescription}
                 onChange={handleChange}
                 className={`form-control ${
-                  errors.IssueDescription ? "error" : ""
+                  errors.issueDescription ? "error" : ""
                 }`}
                 placeholder="Mô tả chi tiết vấn đề gặp phải..."
                 rows="4"
               />
-              {errors.IssueDescription && (
-                <div className="error-message">{errors.IssueDescription}</div>
+              {errors.issueDescription && (
+                <div className="error-message">{errors.issueDescription}</div>
               )}
               <small className="form-help">Ít nhất 10 ký tự</small>
             </div>
@@ -289,48 +270,16 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Độ ưu tiên</label>
-              <select
-                name="Priority"
-                value={formData.Priority}
-                onChange={handleChange}
-                className="form-control"
-              >
-                <option value="Thấp">Thấp</option>
-                <option value="Trung bình">Trung bình</option>
-                <option value="Cao">Cao</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Chi phí ước tính (VNĐ)</label>
+              <label className="form-label">Phụ tùng cần thiết</label>
               <input
-                type="number"
-                name="EstimatedCost"
-                value={formData.EstimatedCost}
-                onChange={handleChange}
-                className={`form-control ${
-                  errors.EstimatedCost ? "error" : ""
-                }`}
-                placeholder="0"
-                min="0"
-              />
-              {errors.EstimatedCost && (
-                <div className="error-message">{errors.EstimatedCost}</div>
-              )}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Kết quả chẩn đoán</label>
-              <textarea
-                name="DiagnosisResult"
-                value={formData.DiagnosisResult}
+                type="text"
+                name="requiredPart"
+                value={formData.requiredPart}
                 onChange={handleChange}
                 className="form-control"
-                placeholder="Nhập kết quả chẩn đoán (nếu có)..."
-                rows="3"
+                placeholder="Ví dụ: Lốp xe, pin, động cơ..."
               />
+              <small className="form-help">Để trống nếu chưa xác định</small>
             </div>
           </div>
         </div>

@@ -8,27 +8,26 @@ function CampaignList({
   onUpdateStatus,
   userRole,
   onAssign,
+  onStartCampaign, // Callback để bắt đầu chiến dịch (SC_ADMIN)
+  onDelete, // Callback để xóa chiến dịch
 }) {
   const getStatusBadge = (status) => {
     const statusClasses = {
+      PLANNED: "status-preparing",
       ACTIVE: "status-active",
-      INACTIVE: "status-inactive",
+      IN_PROGRESS: "status-active",
+      PAUSED: "status-paused",
       COMPLETED: "status-completed",
       CANCELLED: "status-cancelled",
-      PENDING: "status-preparing",
-      "Chuẩn bị": "status-preparing",
-      "Đang triển khai": "status-active",
-      "Tạm dừng": "status-paused",
-      "Hoàn thành": "status-completed",
-      "Hủy bỏ": "status-cancelled",
     };
 
     const statusLabels = {
+      PLANNED: "Chuẩn bị",
       ACTIVE: "Đang triển khai",
-      INACTIVE: "Tạm dừng",
+      IN_PROGRESS: "Đang triển khai",
+      PAUSED: "Dừng",
       COMPLETED: "Hoàn thành",
       CANCELLED: "Hủy bỏ",
-      PENDING: "Chuẩn bị",
     };
 
     const displayStatus = statusLabels[status] || status;
@@ -36,9 +35,7 @@ function CampaignList({
     return (
       <span
         className={`status-badge ${
-          statusClasses[status] ||
-          statusClasses[displayStatus] ||
-          "status-preparing"
+          statusClasses[status] || "status-preparing"
         }`}
       >
         {displayStatus}
@@ -47,35 +44,64 @@ function CampaignList({
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("vi-VN");
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
   };
 
   const canUpdateStatus = () => {
-    return userRole === "EVM_Staff" || userRole === "Admin";
+    // EVM_ADMIN và SC_ADMIN đều có quyền update status (nhưng flow khác nhau)
+    return userRole === "SC_ADMIN" || userRole === "EVM_ADMIN";
   };
 
-  const getAvailableStatuses = (currentStatus) => {
-    const statusFlow = {
-      ACTIVE: ["INACTIVE", "COMPLETED"],
-      INACTIVE: ["ACTIVE", "CANCELLED"],
-      PENDING: ["ACTIVE", "CANCELLED"],
-      COMPLETED: [],
-      CANCELLED: [],
-      "Chuẩn bị": ["Đang triển khai", "Hủy bỏ"],
-      "Đang triển khai": ["Tạm dừng", "Hoàn thành"],
-      "Tạm dừng": ["Đang triển khai", "Hủy bỏ"],
-      "Hoàn thành": [],
-      "Hủy bỏ": [],
-    };
-    return statusFlow[currentStatus] || [];
+  const canEditCampaign = () => {
+    // Chỉ EVM_ADMIN và SC_ADMIN có quyền edit
+    // EVM_STAFF không có quyền edit
+    return userRole === "EVM_ADMIN" || userRole === "SC_ADMIN";
+  };
+
+  const canDeleteCampaign = () => {
+    // EVM_STAFF và EVM_ADMIN có quyền xóa
+    return userRole === "EVM_STAFF" || userRole === "EVM_ADMIN";
+  };
+
+  const canAssignTechnician = () => {
+    // Chỉ SC_ADMIN mới có quyền phân công kỹ thuật viên
+    return userRole === "SC_ADMIN";
+  };
+
+  const getAvailableStatuses = (currentStatus, role) => {
+    // EVM_ADMIN: Không có quyền thay đổi status
+    if (role === "EVM_ADMIN") {
+      return [];
+    }
+
+    // SC_ADMIN: Chỉ có thể chuyển PLANNED → ACTIVE và các status khác
+    if (role === "SC_ADMIN") {
+      const scStatusFlow = {
+        PLANNED: ["ACTIVE", "CANCELLED"], // Bắt đầu hoặc Hủy
+        ACTIVE: ["COMPLETED", "CANCELLED"], // Hoàn thành hoặc Hủy
+        PAUSED: [], // Không thể chuyển (chỉ EVM_ADMIN mới dừng)
+        COMPLETED: [], // Không thể chuyển nữa
+        CANCELLED: [], // Không thể chuyển nữa
+      };
+      return scStatusFlow[currentStatus] || [];
+    }
+
+    // Các role khác không có quyền thay đổi status
+    return [];
   };
 
   if (campaigns.length === 0) {
     return (
       <div className="no-data-container">
         <div className="no-data-icon">📢</div>
-        <h3>Chưa có chiến dịch nào</h3>
-        <p>Tạo chiến dịch dịch vụ đầu tiên</p>
+        <h3>Chưa có Service Campaign nào</h3>
+        <p>Tạo Service Campaign đầu tiên</p>
       </div>
     );
   }
@@ -97,76 +123,115 @@ function CampaignList({
           </thead>
           <tbody>
             {campaigns.map((campaign) => (
-              <tr key={campaign.campaignId || campaign.CampaignsID}>
+              <tr key={campaign.campaignsId || campaign.CampaignsID}>
                 <td>
                   <div className="campaign-id">
                     <strong>
-                      {campaign.campaignId || campaign.CampaignsID}
+                      {campaign.campaignsId || campaign.CampaignsID}
                     </strong>
                   </div>
                 </td>
                 <td>
                   <div className="campaign-info">
-                    <strong>
-                      {campaign.campaignName || campaign.CampaignsTypeName}
+                    <strong className="campaign-name">
+                      {campaign.campaignsTypeName ||
+                        campaign.CampaignsTypeName ||
+                        "N/A"}
                     </strong>
-                    <small>
-                      {campaign.description || campaign.Description}
-                    </small>
+                    {(campaign.description || campaign.Description) && (
+                      <small className="campaign-desc">
+                        {campaign.description || campaign.Description}
+                      </small>
+                    )}
                   </div>
                 </td>
                 <td>
                   <div className="date-range">
-                    <div>
+                    <div className="date-start">
+                      <strong>Bắt đầu:</strong>{" "}
                       {formatDate(campaign.startDate || campaign.StartDate)}
                     </div>
-                    <small>
-                      đến {formatDate(campaign.endDate || campaign.EndDate)}
-                    </small>
+                    <div className="date-end">
+                      <strong>Kết thúc:</strong>{" "}
+                      {formatDate(campaign.endDate || campaign.EndDate)}
+                    </div>
                   </div>
                 </td>
                 <td>
-                  <span className="required-parts">
-                    {campaign.requiredParts || campaign.RequiredParts || "N/A"}
-                  </span>
+                  <div className="required-parts-cell">
+                    {(() => {
+                      const parts =
+                        campaign.requiredParts || campaign.RequiredParts;
+
+                      return parts ? (
+                        <span className="required-parts">{parts}</span>
+                      ) : (
+                        <span className="required-parts parts-none">
+                          Chưa xác định
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </td>
                 <td>
                   <div className="progress-info">
-                    {/* tiến độ sẽ được cập nhật dựa vào số xe được hoàn thành */}
                     <div className="progress-text">
-                      {campaign.completedVehicles ||
-                        campaign.CompletedVehicles ||
-                        0}{" "}
-                      xe
+                      <div className="progress-number">
+                        <strong>{campaign.completedVehicles || 0}</strong>
+                      </div>
+                      <div className="progress-label">xe đã sửa chữa</div>
                     </div>
+                    {campaign.vehicleTypeCount > 0 && (
+                      <small className="text-muted">
+                        Áp dụng cho {campaign.vehicleTypeCount} dòng xe
+                      </small>
+                    )}
                   </div>
                 </td>
                 <td>
                   <div className="status-container">
                     {getStatusBadge(campaign.status || campaign.Status)}
-                    {canUpdateStatus() &&
-                      getAvailableStatuses(campaign.status || campaign.Status)
-                        .length > 0 && (
+                    {(() => {
+                      const canUpdate = canUpdateStatus();
+                      const currentStatus = campaign.status || campaign.Status;
+                      const availableStatuses = getAvailableStatuses(
+                        currentStatus,
+                        userRole
+                      );
+
+                      return canUpdate && availableStatuses.length > 0 ? (
                         <div className="status-actions">
-                          {getAvailableStatuses(
-                            campaign.status || campaign.Status
-                          ).map((nextStatus) => (
-                            <button
-                              key={nextStatus}
-                              onClick={() =>
-                                onUpdateStatus(
-                                  campaign.campaignId || campaign.CampaignsID,
-                                  nextStatus
-                                )
-                              }
-                              className="btn btn-sm status-btn"
-                              title={`Chuyển sang ${nextStatus}`}
-                            >
-                              →{nextStatus}
-                            </button>
-                          ))}
+                          {availableStatuses.map((nextStatus) => {
+                            // Map status to Vietnamese labels
+                            const statusLabels = {
+                              ACTIVE: "Bắt đầu",
+                              PAUSED: "Dừng",
+                              COMPLETED: "Hoàn thành",
+                              CANCELLED: "Hủy bỏ",
+                            };
+
+                            return (
+                              <button
+                                key={nextStatus}
+                                onClick={() => {
+                                  onUpdateStatus(
+                                    campaign.campaignsId ||
+                                      campaign.CampaignsID,
+                                    nextStatus
+                                  );
+                                }}
+                                className="btn btn-sm status-btn"
+                                title={`Chuyển sang ${
+                                  statusLabels[nextStatus] || nextStatus
+                                }`}
+                              >
+                                → {statusLabels[nextStatus] || nextStatus}
+                              </button>
+                            );
+                          })}
                         </div>
-                      )}
+                      ) : null;
+                    })()}
                   </div>
                 </td>
 
@@ -179,7 +244,22 @@ function CampaignList({
                     >
                       👁️
                     </button>
-                    {canUpdateStatus() && (
+
+                    {/* SC_ADMIN: Button bắt đầu chiến dịch (PLANNED → ACTIVE) */}
+                    {userRole === "SC_ADMIN" &&
+                      campaign.status === "PLANNED" &&
+                      onStartCampaign && (
+                        <button
+                          onClick={() => onStartCampaign(campaign)}
+                          className="btn btn-sm btn-success"
+                          title="Bắt đầu chiến dịch và gửi thông báo"
+                        >
+                          🚀 Bắt đầu
+                        </button>
+                      )}
+
+                    {/* EVM_ADMIN và SC_ADMIN có quyền edit */}
+                    {canEditCampaign() && (
                       <button
                         onClick={() => onEdit(campaign)}
                         className="btn btn-sm btn-outline"
@@ -188,13 +268,39 @@ function CampaignList({
                         ✏️
                       </button>
                     )}
-                    {canUpdateStatus() && (
+
+                    {/* Chỉ SC_ADMIN mới có quyền phân công kỹ thuật viên */}
+                    {canAssignTechnician() && (
                       <button
                         onClick={() => onAssign(campaign)}
                         className="btn btn-sm btn-warning"
                         title="Phân công kỹ thuật viên"
                       >
                         👷
+                      </button>
+                    )}
+
+                    {/* EVM_STAFF và EVM_ADMIN có quyền xóa */}
+                    {canDeleteCampaign() && onDelete && (
+                      <button
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Bạn có chắc chắn muốn xóa chiến dịch "${
+                                campaign.campaignsTypeName ||
+                                campaign.CampaignsTypeName
+                              }"?`
+                            )
+                          ) {
+                            onDelete(
+                              campaign.campaignsId || campaign.CampaignsID
+                            );
+                          }
+                        }}
+                        className="btn btn-sm btn-danger"
+                        title="Xóa"
+                      >
+                        🗑️
                       </button>
                     )}
                   </div>

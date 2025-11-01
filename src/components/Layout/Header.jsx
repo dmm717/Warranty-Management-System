@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import vinLogo from "../../assets/Vin.jfif";
+import NotificationBell from "../Notification/NotificationBell";
 import "../../styles/Header.css";
 
 function Header() {
@@ -26,6 +27,9 @@ function Header() {
       </div>
 
       <div className="header-right">
+        {/* Notification Bell - Hiển thị cho tất cả roles trừ SC_TECHNICIAN */}
+        <NotificationBell />
+
         <div
           className="user-info"
           onClick={() => setShowDropdown(!showDropdown)}

@@ -5,20 +5,23 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
   const getStatusBadge = (status) => {
     const statusClasses = {
       ACTIVE: "status-active",
+      IN_WARRANTY: "status-warranty",
       INACTIVE: "status-inactive",
-      MAINTENANCE: "status-maintenance",
-      WARRANTY: "status-warranty",
+      RECALLED: "status-recalled",
+      RETIRED: "status-retired",
       "Đang sử dụng": "status-active",
-      "Bảo hành": "status-warranty",
-      "Bảo dưỡng": "status-maintenance",
+      "Trong bảo hành": "status-warranty",
       "Ngừng hoạt động": "status-inactive",
+      "Đã triệu hồi": "status-recalled",
+      "Đã thanh lý": "status-retired",
     };
 
     const statusLabels = {
       ACTIVE: "Đang sử dụng",
+      IN_WARRANTY: "Trong bảo hành",
       INACTIVE: "Ngừng hoạt động",
-      MAINTENANCE: "Bảo dưỡng",
-      WARRANTY: "Bảo hành",
+      RECALLED: "Đã triệu hồi",
+      RETIRED: "Đã thanh lý",
     };
 
     const displayStatus = statusLabels[status] || status;
@@ -65,43 +68,47 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
               <th>Chủ xe</th>
               <th>Liên hệ</th>
               <th>Số KM</th>
-              <th>Ngày sản xuất</th>
+              <th>Ngày mua</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {vehicles.map((vehicle) => (
-              <tr key={vehicle.vehicleId || vehicle.Vehicle_ID}>
+              <tr key={vehicle.vehicleId}>
                 <td>
                   <div className="vin-cell">
-                    <strong>{vehicle.vehicleId || vehicle.VIN}</strong>
-                    <small>ID: {vehicle.vehicleId || vehicle.Vehicle_ID}</small>
+                    <strong>{vehicle.VIN}</strong>
                   </div>
                 </td>
                 <td>
                   <div className="vehicle-name">
-                    {vehicle.vehicleName || vehicle.Vehicle_Name}
+                    {vehicle.Vehicle_Name}
+                    {vehicle.Vehicle_Type && (
+                      <small className="vehicle-type">
+                        ({vehicle.Vehicle_Type})
+                      </small>
+                    )}
                   </div>
                 </td>
                 <td>
                   <div className="owner-cell">
-                    <strong>{vehicle.owner || vehicle.Owner}</strong>
+                    <strong>{vehicle.Owner}</strong>
                   </div>
                 </td>
                 <td>
                   <div className="contact-cell">
-                    <div>{vehicle.phoneNumber || vehicle.Phone_Number}</div>
-                    <small>{vehicle.email || vehicle.Email}</small>
+                    <div>📞 {vehicle.Phone_Number}</div>
+                    <small>✉️ {vehicle.Email}</small>
                   </div>
                 </td>
-                <td>{formatKM(vehicle.totalKm || vehicle.Total_KM || 0)}</td>
+                <td>{formatKM(vehicle.Total_KM || 0)}</td>
                 <td>
-                  {formatDate(
-                    vehicle.productionDate || vehicle.Production_Date
-                  )}
+                  {vehicle.Purchase_Date
+                    ? formatDate(vehicle.Purchase_Date)
+                    : "N/A"}
                 </td>
-                <td>{getStatusBadge(vehicle.status || vehicle.Status)}</td>
+                <td>{getStatusBadge(vehicle.Status)}</td>
                 <td>
                   <div className="action-buttons">
                     <button
@@ -112,9 +119,7 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
                       ✏️
                     </button>
                     <button
-                      onClick={() =>
-                        onDelete(vehicle.vehicleId || vehicle.Vehicle_ID)
-                      }
+                      onClick={() => onDelete(vehicle.vehicleId)}
                       className="btn btn-sm btn-danger"
                       title="Xóa"
                     >

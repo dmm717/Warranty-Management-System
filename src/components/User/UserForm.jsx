@@ -3,16 +3,19 @@ import {
   USER_ROLES,
   ROLE_DESCRIPTIONS,
   PASSWORD_REQUIREMENTS,
+  REGIONS,
 } from "../../constants";
 import "../../styles/UserForm.css";
 
-function UserForm({ user, onSave, onCancel }) {
+function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     role: "",
     department: "",
     phone: "",
+    dateOfBirth: "",
+    specialty: "", // Thêm field specialty cho SC_TECHNICAL
     password: "",
     confirmPassword: "",
   });
@@ -20,16 +23,49 @@ function UserForm({ user, onSave, onCancel }) {
   const [errors, setErrors] = useState({});
   const [passwordStrength, setPasswordStrength] = useState("");
 
-  const roles = USER_ROLES;
+  // Lọc roles theo currentUser
+  const getAvailableRoles = () => {
+    if (currentUser?.role === "SC_ADMIN") {
+      // SC_ADMIN chỉ thấy SC_STAFF và SC_TECHNICAL
+      return USER_ROLES.filter(
+        (r) => r.value === "SC_STAFF" || r.value === "SC_TECHNICAL"
+      );
+    }
+    // EVM_ADMIN thấy tất cả roles
+    return USER_ROLES;
+  };
+
+  const roles = getAvailableRoles();
 
   useEffect(() => {
     if (user) {
+      // Backend trả về: username, email, roles (Set), branchOffice, phoneNumber, dateOfBirth
+      const userRole = user.roles && user.roles.length > 0 ? user.roles[0] : "";
+
+      // Convert dateOfBirth from dd-MM-yyyy to yyyy-MM-dd for HTML date input
+      let formattedDate = "";
+      if (user.dateOfBirth) {
+        // Backend format: "27-10-2025" hoặc "2025-10-27"
+        if (user.dateOfBirth.includes("-")) {
+          const parts = user.dateOfBirth.split("-");
+          if (parts[0].length === 4) {
+            // Already yyyy-MM-dd
+            formattedDate = user.dateOfBirth;
+          } else {
+            // dd-MM-yyyy → yyyy-MM-dd
+            formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          }
+        }
+      }
+
       setFormData({
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        department: user.department,
-        phone: user.phone,
+        name: user.username || "",
+        email: user.email || "",
+        role: userRole,
+        department: user.branchOffice || "",
+        phone: user.phoneNumber || "",
+        dateOfBirth: formattedDate,
+        specialty: user.specialty || "", // Load specialty khi edit
         password: "",
         confirmPassword: "",
       });
@@ -48,10 +84,21 @@ function UserForm({ user, onSave, onCancel }) {
 
     if (name === "role") {
       const selectedRole = roles.find((r) => r.value === value);
+      let departmentValue = selectedRole
+        ? selectedRole.department
+        : formData.department;
+
+      // Nếu SC_ADMIN tạo SC_STAFF/SC_TECHNICAL, tự động set chi nhánh của SC_ADMIN
+      if (currentUser?.role === "SC_ADMIN" && !user && currentUserBranch) {
+        if (value === "SC_STAFF" || value === "SC_TECHNICAL") {
+          departmentValue = currentUserBranch;
+        }
+      }
+
       setFormData((prev) => ({
         ...prev,
         [name]: value,
-        department: selectedRole ? selectedRole.department : prev.department,
+        department: departmentValue,
       }));
     } else {
       setFormData((prev) => ({
@@ -91,16 +138,51 @@ function UserForm({ user, onSave, onCancel }) {
 
     if (!formData.phone.trim()) {
       newErrors.phone = "Số điện thoại là bắt buộc";
-    } else if (!/^[0-9]{10,11}$/.test(formData.phone)) {
-      newErrors.phone = "Số điện thoại không hợp lệ";
+    } else if (!/^[0-9]{10}$/.test(formData.phone)) {
+      newErrors.phone = "Số điện thoại phải có đúng 10 chữ số";
+    }
+
+    // Chỉ SC roles mới bắt buộc branchOffice
+    if (
+      formData.role === "SC_ADMIN" ||
+      formData.role === "SC_STAFF" ||
+      formData.role === "SC_TECHNICAL"
+    ) {
+      if (!formData.department.trim()) {
+        newErrors.department = "Khu vực là bắt buộc cho vai trò SC";
+      }
+
+      // VALIDATION: SC_ADMIN chỉ được tạo user trong cùng chi nhánh
+      if (currentUser?.role === "SC_ADMIN" && !user && currentUserBranch) {
+        if (formData.department !== currentUserBranch) {
+          newErrors.department = `Bạn chỉ có thể tạo tài khoản trong chi nhánh "${currentUserBranch}"`;
+        }
+      }
+    }
+
+    // Specialty validation for SC_TECHNICAL
+    if (formData.role === "SC_TECHNICAL") {
+      if (!formData.specialty || !formData.specialty.trim()) {
+        newErrors.specialty = "Chuyên môn là bắt buộc cho Kỹ thuật viên SC";
+      }
+    }
+
+    if (!formData.dateOfBirth) {
+      newErrors.dateOfBirth = "Ngày sinh là bắt buộc";
+    } else {
+      const birthDate = new Date(formData.dateOfBirth);
+      const today = new Date();
+      if (birthDate >= today) {
+        newErrors.dateOfBirth = "Ngày sinh phải là ngày trong quá khứ";
+      }
     }
 
     if (!user) {
       // Chỉ validate password khi tạo mới
       if (!formData.password) {
         newErrors.password = "Mật khẩu là bắt buộc";
-      } else if (formData.password.length < 6) {
-        newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+      } else if (formData.password.length < 8) {
+        newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
       }
 
       if (formData.password !== formData.confirmPassword) {
@@ -191,6 +273,22 @@ function UserForm({ user, onSave, onCancel }) {
               {errors.phone && (
                 <div className="error-message">{errors.phone}</div>
               )}
+              <small className="form-help">Phải có đúng 10 chữ số</small>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Ngày sinh *</label>
+              <input
+                type="date"
+                name="dateOfBirth"
+                value={formData.dateOfBirth}
+                onChange={handleChange}
+                className={`form-control ${errors.dateOfBirth ? "error" : ""}`}
+                max={new Date().toISOString().split("T")[0]}
+              />
+              {errors.dateOfBirth && (
+                <div className="error-message">{errors.dateOfBirth}</div>
+              )}
             </div>
           </div>
         </div>
@@ -225,19 +323,58 @@ function UserForm({ user, onSave, onCancel }) {
                 </div>
               )}
             </div>
-            <div className="form-group">
-              <label className="form-label">Phòng ban</label>
-              <input
-                type="text"
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="Phòng ban"
-                readOnly
-              />
-              <small className="form-help">Tự động cập nhật theo vai trò</small>
-            </div>
+
+            {/* Chỉ SC roles mới có field Khu vực - KHÔNG hiển thị cho SC_ADMIN khi tạo mới */}
+            {(formData.role === "SC_ADMIN" ||
+              formData.role === "SC_STAFF" ||
+              formData.role === "SC_TECHNICAL") &&
+              !(currentUser?.role === "SC_ADMIN" && !user) && ( // Ẩn hoàn toàn khi SC_ADMIN tạo mới
+                <div className="form-group">
+                  <label className="form-label">Khu vực *</label>
+                  <select
+                    name="department"
+                    value={formData.department}
+                    onChange={handleChange}
+                    className={`form-control ${
+                      errors.department ? "error" : ""
+                    }`}
+                  >
+                    <option value="">Chọn khu vực</option>
+                    {REGIONS.filter((r) => r.value !== "ALL").map((region) => (
+                      <option key={region.value} value={region.label}>
+                        {region.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.department && (
+                    <div className="error-message">{errors.department}</div>
+                  )}
+                  <small className="form-help">
+                    Chọn quận/huyện khu vực hoạt động
+                  </small>
+                </div>
+              )}
+
+            {/* Specialty field - Chỉ cho SC_TECHNICAL */}
+            {formData.role === "SC_TECHNICAL" && (
+              <div className="form-group">
+                <label className="form-label">Chuyên môn *</label>
+                <input
+                  type="text"
+                  name="specialty"
+                  value={formData.specialty}
+                  onChange={handleChange}
+                  className={`form-control ${errors.specialty ? "error" : ""}`}
+                  placeholder="Ví dụ: Sửa chữa động cơ điện, Bảo dưỡng pin"
+                />
+                {errors.specialty && (
+                  <div className="error-message">{errors.specialty}</div>
+                )}
+                <small className="form-help">
+                  Nhập chuyên môn của kỹ thuật viên
+                </small>
+              </div>
+            )}
           </div>
         </div>
 
@@ -319,7 +456,7 @@ function UserForm({ user, onSave, onCancel }) {
           <div className="preview-content">
             <div className="preview-header">
               <div className="preview-avatar">
-                {formData.name.charAt(0).toUpperCase() || "U"}
+                {(formData.name || "U").charAt(0).toUpperCase()}
               </div>
               <div className="preview-info">
                 <h5>{formData.name || "Tên người dùng"}</h5>

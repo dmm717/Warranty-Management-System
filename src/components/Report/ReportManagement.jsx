@@ -4,6 +4,8 @@ import ReportList from "./ReportList";
 import ReportForm from "./ReportForm";
 import ReportDetail from "./ReportDetail";
 import ReportChart from "./ReportChart";
+import { warrantyClaimAPI, serviceCampaignAPI } from "../../services/api";
+import { toast } from "react-toastify";
 import "../../styles/ReportManagement.css";
 
 function ReportManagement() {
@@ -17,89 +19,168 @@ function ReportManagement() {
   const [reportData, setReportData] = useState({});
 
   useEffect(() => {
-    const mockReports = [
-      {
-        ID_Report: "RPT001",
-        ReportName: "Báo cáo lỗi pin tháng 9/2024",
-        Description: "Thống kê và phân tích các lỗi liên quan đến pin xe điện",
-        Image: "/api/placeholder/400/200",
-        Error: "Pin quá nhiệt",
-        Status: "Hoàn thành",
-        CampaignsID: "SC001",
-        Recall_ID: null,
-        SC_StaffID: "SC001",
-        EVM_Staff_ID: "EVM001",
-        CreatedDate: "2024-10-01",
-        ReportType: "Warranty Analysis",
-        Priority: "Cao",
-      },
-      {
-        ID_Report: "RPT002",
-        ReportName: "Hiệu suất chiến dịch cập nhật BMS",
-        Description:
-          "Đánh giá tiến độ và hiệu quả chiến dịch cập nhật phần mềm BMS",
-        Image: "/api/placeholder/400/200",
-        Error: "Không có",
-        Status: "Đang xử lý",
-        CampaignsID: "SC001",
-        Recall_ID: null,
-        SC_StaffID: "SC002",
-        EVM_Staff_ID: "EVM001",
-        CreatedDate: "2024-09-28",
-        ReportType: "Campaign Performance",
-        Priority: "Trung bình",
-      },
-      {
-        ID_Report: "RPT003",
-        ReportName: "Báo cáo recall pin VF8",
-        Description: "Tình hình thực hiện recall pin VF8 2023",
-        Image: "/api/placeholder/400/200",
-        Error: "Cell pin lỗi",
-        Status: "Hoàn thành",
-        CampaignsID: null,
-        Recall_ID: "RC001",
-        SC_StaffID: "SC001",
-        EVM_Staff_ID: "EVM001",
-        CreatedDate: "2024-09-15",
-        ReportType: "Recall Progress",
-        Priority: "Cao",
-      },
-    ];
-
-    const mockReportData = {
-      warrantyStats: {
-        totalClaims: 234,
-        approvedClaims: 189,
-        rejectedClaims: 23,
-        pendingClaims: 22,
-        avgProcessingTime: 5.2,
-      },
-      partFailureStats: [
-        { part: "Pin", failures: 45, percentage: 35 },
-        { part: "Motor", failures: 28, percentage: 22 },
-        { part: "BMS", failures: 18, percentage: 14 },
-        { part: "Inverter", failures: 15, percentage: 12 },
-        { part: "Khác", failures: 22, percentage: 17 },
-      ],
-      monthlyTrends: [
-        { month: "T1", claims: 18, resolved: 15, pending: 3 },
-        { month: "T2", claims: 22, resolved: 20, pending: 2 },
-        { month: "T3", claims: 28, resolved: 25, pending: 3 },
-        { month: "T4", claims: 25, resolved: 23, pending: 2 },
-        { month: "T5", claims: 30, resolved: 27, pending: 3 },
-        { month: "T6", claims: 26, resolved: 24, pending: 2 },
-        { month: "T7", claims: 32, resolved: 29, pending: 3 },
-        { month: "T8", claims: 28, resolved: 26, pending: 2 },
-        { month: "T9", claims: 25, resolved: 20, pending: 5 },
-      ],
-    };
-
-    setTimeout(() => {
-      setReports(mockReports);
-      setReportData(mockReportData);
-      setLoading(false);
-    }, 1000);
+    fetchReportsAndStats();
   }, []);
+
+  const fetchReportsAndStats = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch campaign reports và warranty claims từ backend
+      const [campaignsRes, claimsRes] = await Promise.all([
+        serviceCampaignAPI.getAllCampaigns({ page: 0, size: 100 }),
+        warrantyClaimAPI.getAllClaims({ page: 0, size: 1000 }),
+      ]);
+
+      // Transform campaigns thành reports
+      const campaignReports = [];
+      if (campaignsRes.success && campaignsRes.data?.content) {
+        for (const campaign of campaignsRes.data.content) {
+          // Fetch report cho từng campaign
+          try {
+            const reportRes = await serviceCampaignAPI.getCampaignReport(
+              campaign.id
+            );
+            if (reportRes.success && reportRes.data) {
+              campaignReports.push({
+                ID_Report: `RPT-${campaign.id}`,
+                ReportName: `Báo cáo chiến dịch: ${campaign.campaignName}`,
+                Description:
+                  campaign.description ||
+                  `Báo cáo cho chiến dịch ${campaign.campaignName}`,
+                Image: "/api/placeholder/400/200",
+                Error: "Không có",
+                Status:
+                  campaign.status === "COMPLETED"
+                    ? "Hoàn thành"
+                    : campaign.status === "ACTIVE"
+                    ? "Đang xử lý"
+                    : "Chờ duyệt",
+                CampaignsID: campaign.id,
+                Recall_ID: null,
+                SC_StaffID: "SC001",
+                EVM_Staff_ID: "EVM001",
+                CreatedDate: campaign.startDate,
+                ReportType: "Campaign Performance",
+                Priority: "Trung bình",
+              });
+            }
+          } catch (err) {          }
+        }
+      }
+
+      setReports(campaignReports);
+
+      // Calculate statistics từ warranty claims
+      if (claimsRes.success && claimsRes.data?.content) {
+        const claims = claimsRes.data.content;
+
+        // Thống kê tổng quan
+        const totalClaims = claims.length;
+        const approvedClaims = claims.filter(
+          (c) => c.status === "APPROVED"
+        ).length;
+        const rejectedClaims = claims.filter(
+          (c) => c.status === "REJECTED"
+        ).length;
+        const pendingClaims = claims.filter(
+          (c) => c.status === "PENDING"
+        ).length;
+
+        // Phân tích lỗi theo phụ tùng (từ requiredPart)
+        const partFailureMap = {};
+        claims.forEach((claim) => {
+          if (claim.requiredPart) {
+            const part = claim.requiredPart;
+            partFailureMap[part] = (partFailureMap[part] || 0) + 1;
+          }
+        });
+
+        const partFailureStats = Object.entries(partFailureMap)
+          .map(([part, failures]) => ({
+            part,
+            failures,
+            percentage: Math.round((failures / totalClaims) * 100),
+          }))
+          .sort((a, b) => b.failures - a.failures)
+          .slice(0, 5); // Top 5
+
+        // Xu hướng theo tháng (lấy 9 tháng gần nhất)
+        const monthlyMap = {};
+        claims.forEach((claim) => {
+          if (claim.claimDate) {
+            const date = new Date(claim.claimDate);
+            const monthKey = `${date.getFullYear()}-${String(
+              date.getMonth() + 1
+            ).padStart(2, "0")}`;
+            if (!monthlyMap[monthKey]) {
+              monthlyMap[monthKey] = { claims: 0, resolved: 0, pending: 0 };
+            }
+            monthlyMap[monthKey].claims++;
+            if (claim.status === "APPROVED" || claim.status === "COMPLETED") {
+              monthlyMap[monthKey].resolved++;
+            } else if (claim.status === "PENDING") {
+              monthlyMap[monthKey].pending++;
+            }
+          }
+        });
+
+        const monthlyTrends = Object.entries(monthlyMap)
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .slice(-9) // Lấy 9 tháng gần nhất
+          .map(([key, data]) => {
+            const parts = key.split("-");
+            const month = parts[1];
+            return {
+              month: `T${parseInt(month)}`,
+              ...data,
+            };
+          });
+
+        setReportData({
+          warrantyStats: {
+            totalClaims,
+            approvedClaims,
+            rejectedClaims,
+            pendingClaims,
+            avgProcessingTime: 5.2, // TODO: Calculate từ backend nếu có
+          },
+          partFailureStats,
+          monthlyTrends,
+        });
+      } else {
+        // Default empty data
+        setReportData({
+          warrantyStats: {
+            totalClaims: 0,
+            approvedClaims: 0,
+            rejectedClaims: 0,
+            pendingClaims: 0,
+            avgProcessingTime: 0,
+          },
+          partFailureStats: [],
+          monthlyTrends: [],
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching reports and stats:", error);
+      toast.error("Không thể tải dữ liệu báo cáo");
+      setReports([]);
+      setReportData({
+        warrantyStats: {
+          totalClaims: 0,
+          approvedClaims: 0,
+          rejectedClaims: 0,
+          pendingClaims: 0,
+          avgProcessingTime: 0,
+        },
+        partFailureStats: [],
+        monthlyTrends: [],
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreateReport = () => {
     setSelectedReport(null);

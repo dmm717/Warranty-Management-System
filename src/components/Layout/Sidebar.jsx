@@ -7,10 +7,18 @@ function Sidebar() {
   const location = useLocation();
   const { user } = useAuth();
 
+  // Xác định tên Dashboard dựa trên role và branchOffice
+  const getDashboardName = () => {
+    if (user?.role === "SC_ADMIN" && user?.branchOffice) {
+      return `Trung tâm ${user.branchOffice}`;
+    }
+    return "Dashboard";
+  };
+
   const menuItems = [
     {
       path: "/",
-      name: "Dashboard",
+      name: getDashboardName(),
       icon: "📊",
       roles: ["SC_STAFF", "SC_TECHNICAL", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
@@ -18,7 +26,7 @@ function Sidebar() {
       path: "/vehicles",
       name: "Quản lý xe",
       icon: "🚗",
-      roles: ["SC_STAFF", "SC_TECHNICAL", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
+      roles: ["SC_STAFF", "SC_TECHNICAL", "SC_ADMIN", "EVM_ADMIN"],
     },
     {
       path: "/warranty-claims",

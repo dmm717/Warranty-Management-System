@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { dashboardAPI, warrantyClaimAPI } from "../../services/api";
+import { warrantyClaimAPI } from "../../services/api";
 import "../../styles/RecentActivity.css";
 
 function RecentActivity({ userRole }) {
@@ -10,18 +10,10 @@ function RecentActivity({ userRole }) {
     const loadActivities = async () => {
       setLoading(true);
       try {
-        // Thử gọi API recent activities nếu BE có implement
-        const response = await dashboardAPI.getRecentActivities(10);
-
-        if (response.success && response.data) {
-          setActivities(response.data);
-        } else {
-          // Fallback: Lấy recent claims
-          await fetchRecentClaims();
-        }
-      } catch {
-        // Fallback: Lấy recent claims
+        // Lấy recent claims
         await fetchRecentClaims();
+      } catch (err) {
+        console.error("Error loading activities:", err);
       } finally {
         setLoading(false);
       }
@@ -40,7 +32,7 @@ function RecentActivity({ userRole }) {
         sortDir: "desc",
       });
 
-      if (response.success && response.data.content) {
+      if (response.success && response.data?.content) {
         const claims = response.data.content;
 
         // Transform claims to activities

@@ -394,3 +394,16 @@
     font-size: var(--vf-text-sm);
   }
 }
+
+/* ==================== STATUS BADGE TOOLTIP ==================== */
+.status-badge-wrapper {
+  display: inline-block;
+  cursor: help;
+  position: relative;
+}
+
+.status-badge-wrapper:hover {
+  opacity: 0.9;
+}
+
+/* Native browser tooltip will be used via title attribute */

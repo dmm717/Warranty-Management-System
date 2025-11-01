@@ -54,9 +54,201 @@
   font-style: italic;
 }
 
+/* Checkbox Grid Layout */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.regions-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.checkbox-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.checkbox-item span {
+  font-size: 14px;
+  color: var(--dark-color);
+}
+
+.card-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 4px;
+  font-weight: normal;
+}
+
+/* Info Section for EVM_STAFF */
+.info-section {
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-item span {
+  font-size: 14px;
+  color: var(--dark-color);
+  font-weight: 500;
+}
+
 textarea.form-control {
   resize: vertical;
   min-height: 100px;
+}
+
+/* Vehicle Type Selection Section */
+.vehicle-select-section {
+  margin: 24px 0;
+  padding: 20px;
+  background: #f9fafb;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.vehicle-select-section .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.vehicle-select-section .header-row label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--dark-color);
+}
+
+.vehicle-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.vehicle-item {
+  background: white;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vehicle-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.vehicle-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--dark-color);
+  margin: 0;
+  font-weight: 500;
+}
+
+.vehicle-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.vehicle-checkbox span {
+  flex: 1;
+}
+
+/* Quantity Input Section */
+.quantity-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  margin-left: 26px;
+}
+
+.quantity-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.quantity-input {
+  width: 80px;
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.quantity-unit {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
 }
 
 .recall-warning {
@@ -124,6 +316,20 @@ textarea.form-control {
   
   .form-row .form-group {
     margin-bottom: 20px;
+  }
+
+  .vehicle-types-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicle-select-section .header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .vehicle-select-section .header-row .btn {
+    width: 100%;
   }
   
   .recall-warning {

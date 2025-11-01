@@ -4,6 +4,7 @@ import UserList from "./UserList";
 import UserForm from "./UserForm";
 import { authAPI, userAPI } from "../../services/api";
 import { toast } from "react-toastify";
+import { confirmStatusChange } from "./ConfirmStatusToast";
 import "../../styles/UserManagement.css";
 
 function UserManagement() {
@@ -16,26 +17,50 @@ function UserManagement() {
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
     try {
-      // TODO: Backend team cần implement endpoint này
-      // GET /api/users - Lấy danh sách tất cả users
-      const response = await userAPI.getAllUsers();
+      // Check token trước khi gọi API
+      const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+
+      if (!token) {
+        setError("Bạn chưa đăng nhập. Vui lòng đăng nhập lại.");
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+
+      // Gọi API khác nhau theo role
+      let response;
+      if (user?.role === "EVM_ADMIN") {
+        // EVM_ADMIN: Lấy tất cả users
+        response = await userAPI.getAllUsers();
+      } else if (user?.role === "SC_ADMIN") {
+        // SC_ADMIN: Chỉ lấy users trong chi nhánh của mình
+        response = await userAPI.getSCUsers();
+      } else {
+        setError("Bạn không có quyền truy cập trang này");
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
 
       if (response.success && response.data) {
         setUsers(response.data);
       } else {
-        console.warn("Failed to fetch users:", response.message);
+        setError(response.message || "Không thể tải danh sách người dùng");
         setUsers([]);
       }
-    } catch (error) {
-      console.error("Fetch users error:", error);
+    } catch {
       setError(
-        "Backend chưa có API GET /api/users. Vui lòng yêu cầu Backend team implement endpoint này."
+        "Lỗi khi tải danh sách người dùng: " +
+          (error.message || "Unknown error")
       );
       setUsers([]);
     } finally {
@@ -65,8 +90,7 @@ function UserManagement() {
         } else {
           toast.error(response.message || "Không thể xóa người dùng");
         }
-      } catch (error) {
-        console.error("Delete user error:", error);
+      } catch {
         toast.error("Đã xảy ra lỗi khi xóa người dùng");
       } finally {
         setLoading(false);
@@ -78,9 +102,45 @@ function UserManagement() {
     try {
       setLoading(true);
 
+      // Tự động set department cho SC_ADMIN khi tạo SC_STAFF/SC_TECHNICAL
+      if (!editingUser && user?.role === "SC_ADMIN") {
+        // Lấy branchOffice từ danh sách users
+        const currentUserBranch = users.find(
+          (u) => u.email === user.email
+        )?.branchOffice;
+
+        if (userData.role === "SC_STAFF" || userData.role === "SC_TECHNICAL") {
+          // Tự động gán chi nhánh của SC_ADMIN
+          userData.department = currentUserBranch;
+        }
+      }
+
       if (editingUser) {
-        // Update existing user
-        const response = await userAPI.updateUser(userData);
+        // Update existing user - EVM_ADMIN update user khác
+        // Backend UserResponse: id, username, email, phoneNumber, branchOffice, dateOfBirth, roles
+        // Convert date from yyyy-MM-dd to dd-MM-yyyy format
+        let formattedDate = editingUser.dateOfBirth;
+        if (userData.dateOfBirth) {
+          const [year, month, day] = userData.dateOfBirth.split("-");
+          formattedDate = `${day}-${month}-${year}`;
+        }
+
+        const updateData = {
+          username: userData.name || editingUser.username,
+          email: userData.email || editingUser.email,
+          phoneNumber: userData.phone || editingUser.phoneNumber,
+          branchOffice:
+            userData.department && userData.department.trim()
+              ? userData.department
+              : null, // Gửi null nếu rỗng, backend sẽ validate cho SC roles
+          dateOfBirth: formattedDate,
+          specialty: null,
+        };
+
+        const response = await userAPI.adminUpdateUser(
+          editingUser.id,
+          updateData
+        );
 
         if (response.success) {
           await fetchUsers();
@@ -91,21 +151,30 @@ function UserManagement() {
           toast.error(response.message || "Không thể cập nhật người dùng");
         }
       } else {
-        // Create new user - sử dụng register API
+        // Create new user - Convert date from yyyy-MM-dd to dd-MM-yyyy
+        const [year, month, day] = userData.dateOfBirth.split("-");
+        const formattedDate = `${day}-${month}-${year}`;
+
         const registerData = {
           username: userData.name,
           email: userData.email,
           password: userData.password,
-          roles: [userData.role], // Backend expects array of roles
-          createdByEmail: user.email, // Email của user đang đăng nhập (EVM_ADMIN)
+          roles: [userData.role],
+          createdByEmail: user.email,
+          phoneNumber: userData.phone,
+          branchOffice: userData.department,
+          dateOfBirth: formattedDate,
+          specialty:
+            userData.role === "SC_TECHNICAL"
+              ? userData.specialty || null
+              : null,
         };
 
-        console.log("Creating user with data:", registerData);
-        console.log("Current user email:", user.email);
+        console.log("📤 Sending register data:", registerData);
 
         const response = await authAPI.register(registerData);
 
-        console.log("Register response:", response);
+        console.log("📥 Register response:", response);
 
         if (response.success) {
           await fetchUsers();
@@ -113,32 +182,82 @@ function UserManagement() {
           setEditingUser(null);
           toast.success("Tạo người dùng thành công!");
         } else {
-          const errorMsg = response.message || "Không thể tạo người dùng mới";
-          toast.error(errorMsg);
-          if (response.errors) {
-            console.error("Validation errors:", response.errors);
+          // Xử lý error message cụ thể
+          let errorMsg = response.message || "Không thể tạo người dùng mới";
+
+          // Kiểm tra lỗi email đã tồn tại
+          if (
+            errorMsg.includes("Email is already registered") ||
+            errorMsg.includes("Email đã được đăng ký")
+          ) {
+            errorMsg = `Email "${userData.email}" đã tồn tại trong hệ thống. Vui lòng sử dụng email khác.`;
           }
+
+          toast.error(errorMsg, { autoClose: 5000 });
         }
       }
     } catch (error) {
-      console.error("Save user error:", error);
-      toast.error("Đã xảy ra lỗi khi lưu người dùng");
+      // Xử lý error message chi tiết hơn
+      let errorMsg = "Đã xảy ra lỗi khi lưu người dùng";
+      if (
+        error.message &&
+        error.message.includes("Email is already registered")
+      ) {
+        errorMsg =
+          "Email đã tồn tại trong hệ thống. Vui lòng sử dụng email khác.";
+      }
+
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
   const handleUpdateStatus = async (userId, newStatus) => {
+    // Chỉ EVM_ADMIN mới được phép
+    if (user?.role !== "EVM_ADMIN") {
+      toast.error("Chỉ EVM_ADMIN mới có quyền thay đổi trạng thái người dùng");
+      return;
+    }
+
+    // Map từ Vietnamese sang backend enum
+    const statusMap = {
+      "Tạm khóa": "LOCKED",
+      "Ngừng hoạt động": "INACTIVE",
+      "Hoạt động": "ACTIVE",
+    };
+
+    const backendStatus = statusMap[newStatus];
+    if (!backendStatus) {
+      toast.error("Trạng thái không hợp lệ");
+      return;
+    }
+
+    // Show custom confirm toast and wait for user response
+    const result = await confirmStatusChange(userId, newStatus);
+
+    // If user cancelled, stop here
+    if (!result.confirmed) {
+      return;
+    }
+
+    // User confirmed, proceed with API call
     try {
       setLoading(true);
-      // Note: Backend chưa có endpoint update status
-      // Tạm thời update local state
-      setUsers(
-        users.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
+      const response = await userAPI.updateUserStatus(
+        userId,
+        backendStatus,
+        result.reason
       );
-    } catch (error) {
-      console.error("Update status error:", error);
-      alert("Đã xảy ra lỗi khi cập nhật trạng thái");
+
+      if (response.success) {
+        await fetchUsers();
+        toast.success(`Đã chuyển trạng thái sang "${newStatus}"`);
+      } else {
+        toast.error(response.message || "Không thể cập nhật trạng thái");
+      }
+    } catch {
+      toast.error("Đã xảy ra lỗi khi cập nhật trạng thái");
     } finally {
       setLoading(false);
     }
@@ -168,12 +287,6 @@ function UserManagement() {
     );
   }
 
-  // Lọc danh sách user theo role nếu là SC_Admin
-  const filteredUsers =
-    user?.role === "SC_ADMIN"
-      ? users.filter((u) => u.role === "SC_STAFF" || u.role === "SC_TECHNICAL")
-      : users;
-
   return (
     <div className="user-management">
       <div className="page-header">
@@ -186,7 +299,7 @@ function UserManagement() {
         )}
       </div>
 
-      {/* Hiển thị error nếu Backend chưa có API */}
+      {/* Hiển thị error nếu có lỗi */}
       {error && (
         <div
           className="error-message"
@@ -200,16 +313,13 @@ function UserManagement() {
           }}
         >
           <strong>⚠️ Lỗi:</strong> {error}
-          <br />
-          <small>
-            Backend team cần thêm endpoint: <code>GET /api/users</code>
-          </small>
         </div>
       )}
 
       {!showForm ? (
         <UserList
-          users={filteredUsers}
+          users={users}
+          currentUser={user}
           onEdit={handleEditUser}
           onDelete={handleDeleteUser}
           onUpdateStatus={handleUpdateStatus}
@@ -217,6 +327,10 @@ function UserManagement() {
       ) : (
         <UserForm
           user={editingUser}
+          currentUser={user}
+          currentUserBranch={
+            users.find((u) => u.email === user.email)?.branchOffice
+          }
           onSave={handleSaveUser}
           onCancel={handleCancelForm}
         />

@@ -281,6 +281,36 @@ body {
   border: 1px solid var(--vf-primary-200);
 }
 
+.status-processing {
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+}
+
+.status-cancelled {
+  background: #f3e5f5;
+  color: #6a1b9a;
+  border: 1px solid #ce93d8;
+}
+
+.status-assigned {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffb74d;
+}
+
+.status-inspected {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #81c784;
+}
+
+.status-pending-parts {
+  background: #fff8e1;
+  color: #f57f17;
+  border: 1px solid #ffd54f;
+}
+
 /* ==================== LAYOUT STABILITY FIXES ==================== */
 /* Prevent layout shifts during navigation */
 * {

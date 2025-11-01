@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
 import WarrantyClaimList from "./WarrantyClaimList";
 import WarrantyClaimForm from "./WarrantyClaimForm";
 import WarrantyClaimDetail from "./WarrantyClaimDetail";
 import ClaimSearch from "./ClaimSearch";
 import { warrantyClaimAPI } from "../../services/api";
 import { WARRANTY_CLAIM_STATUS } from "../../constants";
+import notificationService from "../../services/NotificationService";
 import "../../styles/WarrantyClaimManagement.css";
 
 function WarrantyClaimManagement() {
   const { user } = useAuth();
+  const location = useLocation();
   const [claims, setClaims] = useState([]);
   const [filteredClaims, setFilteredClaims] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -23,6 +27,24 @@ function WarrantyClaimManagement() {
     fetchClaims();
   }, []);
 
+  // Handle navigation từ notification
+  useEffect(() => {
+    if (
+      location.state?.highlightClaimId &&
+      location.state?.fromNotification &&
+      claims.length > 0
+    ) {
+      const claimId = location.state.highlightClaimId;
+      const claim = claims.find((c) => c.claimId === claimId);
+
+      if (claim) {
+        setSelectedClaim(claim);
+        setShowDetail(true);
+        setShowForm(false);
+      }
+    }
+  }, [location.state, claims]);
+
   const fetchClaims = async () => {
     try {
       setLoading(true);
@@ -35,21 +57,18 @@ function WarrantyClaimManagement() {
         sortDir: "desc",
       });
 
-      if (response.success && response.data) {
-        // Transform data từ BE sang format FE
+      if (response.success && response.data?.content) {
+        // Debug: Xem data thực tế từ Backend
+        // Transform data từ BE sang format FE - match với Backend DTOs
         const transformedClaims = response.data.content.map((claim) => ({
-          ClaimID: claim.claimId,
-          CustomerName: claim.customerName,
-          CustomerPhone: claim.phoneNumber,
-          ClaimDate: claim.claimDate,
-          IssueDescription: claim.issueDescription,
-          Status: WARRANTY_CLAIM_STATUS[claim.status] || claim.status,
-          Email: claim.email,
-          Vehicle_ID: claim.vehicleId,
-          VIN: claim.vin || claim.vehicleId,
-          VehicleName: claim.vehicleName || "N/A",
-          RequiredPart: claim.requiredPart,
-          SC_TechID: claim.scTechId,
+          claimId: claim.claimId,
+          customerName: claim.customerName,
+          customerPhone: claim.customerPhone,
+          // claimDate: Backend trả LocalDate "yyyy-MM-dd", có thể null
+          claimDate: claim.claimDate || new Date().toISOString().split("T")[0],
+          // status: Backend có thể trả enum string hoặc null
+          status: claim.status || "PENDING",
+          vehicleName: claim.vehicleName || "N/A",
         }));
 
         setClaims(transformedClaims);
@@ -59,33 +78,28 @@ function WarrantyClaimManagement() {
           response.message || "Không thể tải danh sách yêu cầu bảo hành"
         );
       }
-    } catch (error) {
-      console.error("Error fetching claims:", error);
+    } catch {
       setError("Đã xảy ra lỗi khi tải dữ liệu");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = (searchTerm, statusFilter, priorityFilter) => {
+  const handleSearch = (searchTerm, statusFilter) => {
     let filtered = claims;
 
     if (searchTerm) {
       filtered = filtered.filter(
         (claim) =>
-          claim.ClaimID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          claim.CustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          claim.VIN.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          claim.CustomerPhone.includes(searchTerm)
+          claim.claimId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          claim.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          claim.customerPhone.includes(searchTerm) ||
+          claim.vehicleName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (statusFilter && statusFilter !== "all") {
-      filtered = filtered.filter((claim) => claim.Status === statusFilter);
-    }
-
-    if (priorityFilter && priorityFilter !== "all") {
-      filtered = filtered.filter((claim) => claim.Priority === priorityFilter);
+      filtered = filtered.filter((claim) => claim.status === statusFilter);
     }
 
     setFilteredClaims(filtered);
@@ -116,67 +130,149 @@ function WarrantyClaimManagement() {
       if (selectedClaim) {
         // Update existing claim
         const response = await warrantyClaimAPI.updateClaim(
-          selectedClaim.ClaimID,
+          selectedClaim.claimId,
           claimData
         );
 
         if (response.success) {
-          // Reload claims để có data mới nhất
           await fetchClaims();
           setShowForm(false);
           setSelectedClaim(null);
+          toast.success("Cập nhật yêu cầu bảo hành thành công!", {
+            position: "top-right",
+            autoClose: 3000,
+          });
         } else {
-          alert(response.message || "Không thể cập nhật yêu cầu bảo hành");
+          toast.error(
+            response.message || "Không thể cập nhật yêu cầu bảo hành",
+            {
+              position: "top-right",
+              autoClose: 5000,
+            }
+          );
         }
       } else {
-        // Create new claim
-        const response = await warrantyClaimAPI.createClaim(claimData);
+        // Create new claim - Thêm createdByUserId
+        const claimDataWithUserId = {
+          ...claimData,
+          createdByUserId: user?.id, // Thêm userId để backend lưu
+        };
+
+        const response = await warrantyClaimAPI.createClaim(
+          claimDataWithUserId
+        );
 
         if (response.success) {
-          // Reload claims để có data mới nhất
           await fetchClaims();
+
+          // Gửi notification cho SC_ADMIN nếu user là SC_STAFF
+          if (user?.role === "SC_STAFF" && response.data) {
+            try {
+              await notificationService.sendWarrantyClaimNotification({
+                claimId: response.data.claimId,
+                customerName: claimData.customerName,
+                branchOffice: user.branchOffice,
+                createdBy: user.username || user.email,
+              });
+            } catch {
+              // Không throw error để không ảnh hưởng đến flow tạo claim
+            }
+          }
+
           setShowForm(false);
           setSelectedClaim(null);
+          toast.success(
+            "Tạo yêu cầu bảo hành thành công! Thông báo đã được gửi đến SC_ADMIN.",
+            {
+              position: "top-right",
+              autoClose: 5000,
+            }
+          );
         } else {
-          alert(response.message || "Không thể tạo yêu cầu bảo hành");
+          toast.error(response.message || "Không thể tạo yêu cầu bảo hành", {
+            position: "top-right",
+            autoClose: 5000,
+          });
         }
       }
-    } catch (error) {
-      console.error("Error saving claim:", error);
-      alert("Đã xảy ra lỗi khi lưu yêu cầu bảo hành");
+    } catch {
+      toast.error("Đã xảy ra lỗi khi lưu yêu cầu bảo hành", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateStatus = async (claimId, newStatus) => {
+  const handleUpdateStatus = async (
+    claimId,
+    newStatus,
+    rejectionReason = null
+  ) => {
     try {
       setLoading(true);
 
-      // Convert Vietnamese status to backend enum
-      const statusMap = {
-        "Chờ duyệt": "PENDING",
-        "Đã duyệt": "APPROVED",
-        "Đang xử lý": "IN_PROGRESS",
-        "Hoàn thành": "COMPLETED",
-        "Từ chối": "REJECTED",
-      };
+      // SC_ADMIN duyệt/từ chối → Gọi approve-reject endpoint
+      if (
+        user?.role === "SC_ADMIN" &&
+        (newStatus === "APPROVED" || newStatus === "REJECTED")
+      ) {
+        const approveRejectData = {
+          claimId: claimId,
+          action: newStatus === "APPROVED" ? "APPROVE" : "REJECT",
+          rejectionReason: rejectionReason || "",
+          approvedByUserId: user?.id,
+        };
 
-      const backendStatus = statusMap[newStatus] || newStatus;
-      const response = await warrantyClaimAPI.updateClaimStatus(
-        claimId,
-        backendStatus
-      );
+        const response = await warrantyClaimAPI.approveOrRejectClaim(
+          approveRejectData
+        );
 
-      if (response.success) {
-        // Reload claims để có data mới nhất
-        await fetchClaims();
+        if (response.success) {
+          await fetchClaims();
+
+          // Hiển thị toast notification
+          toast.success(
+            newStatus === "APPROVED"
+              ? "✅ Đã duyệt yêu cầu bảo hành thành công! Thông báo đã được gửi đến SC_STAFF."
+              : "❌ Đã từ chối yêu cầu bảo hành. Thông báo đã được gửi đến SC_STAFF.",
+            {
+              position: "top-right",
+              autoClose: 5000,
+            }
+          );
+        } else {
+          toast.error(response.message || "Không thể cập nhật trạng thái", {
+            position: "top-right",
+            autoClose: 5000,
+          });
+        }
       } else {
-        alert(response.message || "Không thể cập nhật trạng thái");
+        // Các trường hợp khác: dùng endpoint updateClaimStatus thông thường
+        const response = await warrantyClaimAPI.updateClaimStatus(
+          claimId,
+          newStatus
+        );
+
+        if (response.success) {
+          await fetchClaims();
+          toast.success("Cập nhật trạng thái thành công!", {
+            position: "top-right",
+            autoClose: 3000,
+          });
+        } else {
+          toast.error(response.message || "Không thể cập nhật trạng thái", {
+            position: "top-right",
+            autoClose: 5000,
+          });
+        }
       }
-    } catch (error) {
-      console.error("Error updating status:", error);
-      alert("Đã xảy ra lỗi khi cập nhật trạng thái");
+    } catch {
+      toast.error("Đã xảy ra lỗi khi cập nhật trạng thái", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     } finally {
       setLoading(false);
     }
@@ -201,12 +297,15 @@ function WarrantyClaimManagement() {
     <div className="warranty-claim-management">
       <div className="page-header">
         <h1>Quản lý yêu cầu bảo hành</h1>
-        {!showForm && !showDetail && (
-          <button onClick={handleCreateClaim} className="btn btn-primary">
-            <span>➕</span>
-            Tạo yêu cầu mới
-          </button>
-        )}
+        {!showForm &&
+          !showDetail &&
+          user?.role !== "SC_ADMIN" &&
+          user?.role !== "EVM_ADMIN" && (
+            <button onClick={handleCreateClaim} className="btn btn-primary">
+              <span>➕</span>
+              Tạo yêu cầu mới
+            </button>
+          )}
         {(showForm || showDetail) && (
           <button onClick={handleBack} className="btn btn-outline">
             <span>⬅️</span>

@@ -89,8 +89,9 @@
 }
 
 .user-email {
-  color: #6b7280;
+  color: #374151;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .role-badge {
@@ -121,14 +122,11 @@
   color: #92400e;
 }
 
-.department {
-  font-size: 13px;
-  color: #374151;
-}
-
-.phone {
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
+.branch-office,
+.phone,
+.date-of-birth {
+  font-size: 14px;
+  font-weight: 500;
   color: #374151;
 }
 

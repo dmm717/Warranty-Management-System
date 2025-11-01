@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { dashboardAPI, warrantyClaimAPI, vehicleAPI } from "../../services/api";
+import { warrantyClaimAPI, vehicleAPI } from "../../services/api";
 import StatsCard from "./StatsCard";
 import ChartComponent from "./ChartComponent";
 import RecentActivity from "./RecentActivity";
@@ -18,22 +18,11 @@ function Dashboard() {
       setError(null);
 
       try {
-        // Thử gọi API dashboard nếu BE có implement
-        // Nếu chưa có API, sẽ fallback sang tính toán từ các API khác
-        const statsResponse = await dashboardAPI.getStats();
-
-        if (statsResponse.success && statsResponse.data) {
-          setStatsData(statsResponse.data.stats || []);
-        } else {
-          // Fallback: Tính toán stats từ các API khác
-          await fetchStatsFromOtherAPIs();
-        }
-      } catch {
-        console.log(
-          "Dashboard API not available, using fallback stats calculation"
-        );
-        // Fallback: Tính toán stats từ các API khác
-        await fetchStatsFromOtherAPIs();
+        // Tính toán stats trực tiếp từ ElectricVehicle và WarrantyClaim APIs
+        await fetchStatsFromAPIs();
+      } catch (err) {
+        console.error("Error loading dashboard:", err);
+        setError("Không thể tải dữ liệu dashboard");
       } finally {
         setLoading(false);
       }
@@ -43,7 +32,7 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role]);
 
-  const fetchStatsFromOtherAPIs = async () => {
+  const fetchStatsFromAPIs = async () => {
     try {
       const role = user?.role;
       let stats = [];
@@ -54,10 +43,17 @@ function Dashboard() {
         warrantyClaimAPI.getAllClaims({ page: 0, size: 1000 }),
       ]);
 
-      const vehicles = vehiclesResponse.success
-        ? vehiclesResponse.data.content
-        : [];
-      const claims = claimsResponse.success ? claimsResponse.data.content : [];
+      // ApiService trả về response.data = backend's data.data
+      // Backend trả: { success: true, data: { content: [...], totalElements: 100 }, message: "..." }
+      // ApiService xử lý: { success: true, data: { content: [...], totalElements: 100 }, message: "..." }
+      const vehicles =
+        vehiclesResponse.success && vehiclesResponse.data?.content
+          ? vehiclesResponse.data.content
+          : [];
+      const claims =
+        claimsResponse.success && claimsResponse.data?.content
+          ? claimsResponse.data.content
+          : [];
 
       // Tính toán stats dựa trên role
       if (
@@ -136,8 +132,7 @@ function Dashboard() {
 
       setStatsData(stats);
     } catch (err) {
-      console.error("Error fetching stats from other APIs:", err);
-      setError("Không thể tải dữ liệu thống kê");
+      console.error("Error fetching stats:", err);
       // Set default empty stats để tránh crash
       setStatsData([]);
     }
@@ -154,10 +149,18 @@ function Dashboard() {
     );
   }
 
+  // Xác định tiêu đề dashboard theo role
+  const getDashboardTitle = () => {
+    if (user?.role === "SC_ADMIN" && user?.branchOffice) {
+      return `Trung tâm ${user.branchOffice}`;
+    }
+    return "Dashboard";
+  };
+
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>Dashboard</h1>
+        <h1>{getDashboardTitle()}</h1>
         <p>Chào mừng trở lại, {user?.name || user?.username}!</p>
       </div>
 

@@ -9,6 +9,7 @@ import { serviceCampaignAPI, vehicleAPI } from "../../services/api";
 import "./CampaignManagement.css";
 import AssignTechnicianModal from "../AssignTechnicianModal/AssignTechnicianModal";
 import { mockTechnicians } from "../Technician/TechnicianManagement";
+import { toast } from "react-toastify";
 
 function CampaignManagement() {
   const { user } = useAuth();
@@ -30,6 +31,48 @@ function CampaignManagement() {
   const [vehicles, setVehicles] = useState([]);
   const [recallVehicleMap, setRecallVehicleMap] = useState([]);
 
+  // ✅ Load recalls từ localStorage khi component mount
+  useEffect(() => {
+    const savedRecalls = localStorage.getItem("recalls");
+    const savedRecallVehicleMap = localStorage.getItem("recallVehicleMap");
+
+    if (savedRecalls) {
+      try {
+        setRecalls(JSON.parse(savedRecalls));
+      } catch (error) {
+        console.error("Error loading recalls from localStorage:", error);
+      }
+    }
+
+    if (savedRecallVehicleMap) {
+      try {
+        setRecallVehicleMap(JSON.parse(savedRecallVehicleMap));
+      } catch (error) {
+        console.error(
+          "Error loading recallVehicleMap from localStorage:",
+          error
+        );
+      }
+    }
+  }, []);
+
+  // ✅ Lưu recalls vào localStorage mỗi khi thay đổi
+  useEffect(() => {
+    if (recalls.length > 0) {
+      localStorage.setItem("recalls", JSON.stringify(recalls));
+    }
+  }, [recalls]);
+
+  // ✅ Lưu recallVehicleMap vào localStorage mỗi khi thay đổi
+  useEffect(() => {
+    if (recallVehicleMap.length > 0) {
+      localStorage.setItem(
+        "recallVehicleMap",
+        JSON.stringify(recallVehicleMap)
+      );
+    }
+  }, [recallVehicleMap]);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -49,12 +92,13 @@ function CampaignManagement() {
       if (campaignsRes.success && campaignsRes.data) {
         const transformedCampaigns = campaignsRes.data.content.map(
           (campaign) => ({
-            campaignId: campaign.campaignId,
-            CampaignsID: campaign.campaignId,
-            campaignName: campaign.campaignName,
-            CampaignsTypeName: campaign.campaignName,
-            description: campaign.description,
-            Description: campaign.description,
+            // Backend trả về: campaignsId, campaignsTypeName (from ServiceCampaignsListDTO)
+            campaignId: campaign.campaignsId,
+            CampaignsID: campaign.campaignsId,
+            campaignName: campaign.campaignsTypeName,
+            CampaignsTypeName: campaign.campaignsTypeName,
+            description: campaign.description || "N/A",
+            Description: campaign.description || "N/A",
             startDate: campaign.startDate,
             StartDate: campaign.startDate,
             endDate: campaign.endDate,
@@ -63,10 +107,12 @@ function CampaignManagement() {
             Status: campaign.status,
             requiredParts: campaign.requiredParts || "N/A",
             RequiredParts: campaign.requiredParts || "N/A",
-            completedVehicles: 0, // Will be updated from reports
-            CompletedVehicles: 0,
+            completedVehicles: campaign.completedVehicles || 0,
+            CompletedVehicles: campaign.completedVehicles || 0,
             vehicleTypes: campaign.vehicleTypes || [],
             technicians: campaign.technicians || [],
+            vehicleTypeCount: campaign.vehicleTypeCount || 0,
+            technicianCount: campaign.technicianCount || 0,
           })
         );
         setCampaigns(transformedCampaigns);
@@ -93,13 +139,13 @@ function CampaignManagement() {
         setVehicles(transformedVehicles);
       }
 
-      // Note: Recalls chưa có API, giữ nguyên empty array
-      setRecalls([]);
+      // Note: Recalls được quản lý bởi localStorage, không cần fetch từ API
+      // Không set empty array để tránh ghi đè dữ liệu từ localStorage
     } catch (error) {
       console.error("Fetch data error:", error);
       setError("Không thể tải dữ liệu");
       setCampaigns([]);
-      setRecalls([]);
+      // Không reset recalls ở đây
       setVehicles([]);
     } finally {
       setLoading(false);
@@ -123,7 +169,6 @@ function CampaignManagement() {
       ...prev,
       { CampaignsID: campaignId, SC_TechnicianID: techId },
     ]);
-    console.log("Assigned:", campaignId, techId);
   };
 
   // ✅ Remove technician - logic mới
@@ -133,7 +178,6 @@ function CampaignManagement() {
         (a) => !(a.CampaignsID === campaignId && a.SC_TechnicianID === techId)
       )
     );
-    console.log("Removed:", campaignId, techId);
   };
 
   const handleCreateCampaign = () => {
@@ -168,56 +212,105 @@ function CampaignManagement() {
     try {
       setLoading(true);
       if (formType === "campaign") {
+        // Transform frontend field names to backend format
+        const backendData = {
+          typeName: itemData.CampaignsTypeName || itemData.typeName,
+          startDate: itemData.StartDate || itemData.startDate,
+          endDate: itemData.EndDate || itemData.endDate,
+          requiredParts: itemData.RequiredParts || itemData.requiredParts,
+          description: itemData.Description || itemData.description,
+          status: itemData.Status || itemData.status || "PLANNED",
+          notificationSent: itemData.NotificationSent || false,
+          vehicleTypeIds: itemData.vehicleTypeIds || [],
+          technicianIds: itemData.technicianIds || [],
+        };
+
         if (selectedItem) {
           // Update campaign
+          const campaignId =
+            selectedItem.campaignId || selectedItem.CampaignsID;
+
           const response = await serviceCampaignAPI.updateCampaign(
-            selectedItem.campaignId || selectedItem.CampaignsID,
-            itemData
+            campaignId,
+            backendData
           );
+
           if (response.success) {
             await fetchData(); // Reload data
+            toast.success("Cập nhật Service Campaign thành công!");
           } else {
-            alert(response.message || "Không thể cập nhật chiến dịch");
+            console.error("Update failed:", response);
+            toast.error(
+              response.message || "Không thể cập nhật Service Campaign"
+            );
           }
         } else {
           // Create campaign
-          const response = await serviceCampaignAPI.createCampaign(itemData);
+          const response = await serviceCampaignAPI.createCampaign(backendData);
+
           if (response.success) {
             await fetchData(); // Reload data
+            toast.success("Tạo Service Campaign thành công!");
           } else {
-            alert(response.message || "Không thể tạo chiến dịch");
+            console.error("Create failed:", response);
+            toast.error(response.message || "Không thể tạo Service Campaign");
           }
         }
       } else {
-        // Recall logic - giữ nguyên vì chưa có API
+        // Recall logic - chỉ update local state vì chưa có API
         if (selectedItem) {
+          // Edit existing recall
+          const updatedRecall = { ...selectedItem, ...itemData };
+
+          // If EVM_STAFF is completing the recall details, change status
+          if (
+            user?.role === "EVM_STAFF" &&
+            itemData.IssueDescription &&
+            itemData.RequiredAction
+          ) {
+            updatedRecall.Status = "In Progress";
+          }
+
           setRecalls(
             recalls.map((r) =>
-              r.Recall_ID === selectedItem.Recall_ID ? { ...r, ...itemData } : r
+              r.Recall_ID === selectedItem.Recall_ID ? updatedRecall : r
             )
           );
+          toast.success("Cập nhật Recall thành công!");
         } else {
+          // Create new recall
           const newRecall = {
             ...itemData,
             Recall_ID: `RC${String(recalls.length + 1).padStart(3, "0")}`,
+            Status: "Pending", // EVM_ADMIN creates with Pending status
             NotificationSent: 0,
-            EVMApprovalStatus: "Chờ phê duyệt",
-            AffectedVehicles: itemData.selectedVehicles?.length || 0,
             CompletedVehicles: 0,
+            AffectedVehicles: 0,
+            CreatedDate: new Date().toISOString(),
+            CreatedBy: user?.role || "EVM_ADMIN",
           };
-          const newMappings = (itemData.selectedVehicles || []).map((vId) => ({
-            Recall_ID: newRecall.Recall_ID,
-            Vehicle_ID: vId,
-          }));
-          setRecallVehicleMap((prev) => [...prev, ...newMappings]);
+
           setRecalls([...recalls, newRecall]);
+          toast.success(
+            "Tạo Recall thành công! EVM_STAFF sẽ nhận được thông báo."
+          );
+
+          // TODO: When backend is ready, send notification to EVM_STAFF users
+          // await NotificationService.sendNotification({
+          //   RecipientRole: "EVM_STAFF",
+          //   Title: "Recall mới cần xử lý",
+          //   Message: `Recall ${newRecall.RecallName} (${newRecall.Recall_ID}) đã được tạo`,
+          //   RelatedID: newRecall.Recall_ID,
+          //   Type: "Recall"
+          // });
         }
       }
     } catch (error) {
       console.error("Save campaign/recall error:", error);
-      alert("Đã xảy ra lỗi khi lưu");
+      toast.error("Đã xảy ra lỗi khi lưu");
     } finally {
       setLoading(false);
+      // Không gọi fetchData() cho recall vì chưa có API backend
     }
     setShowForm(false);
     setSelectedItem(null);
@@ -225,15 +318,40 @@ function CampaignManagement() {
 
   const handleUpdateStatus = async (itemId, newStatus, type) => {
     try {
+      setLoading(true);
       if (type === "campaign") {
-        // await fetch(`/api/campaigns/${itemId}/status`, { method: 'PATCH', body: JSON.stringify({ Status: newStatus }) });
-        setCampaigns(
-          campaigns.map((c) =>
-            c.CampaignsID === itemId ? { ...c, Status: newStatus } : c
-          )
+        // Call backend API to update campaign status
+        const response = await serviceCampaignAPI.updateCampaignStatus(
+          itemId,
+          newStatus
         );
+
+        if (response.success) {
+          // Xử lý notification khi cần
+          if (newStatus === "PAUSED") {
+            await serviceCampaignAPI.updateNotificationSent(itemId, true);
+            toast.success("Chiến dịch đã dừng! Thông báo đã được gửi.");
+          } else {
+            const statusLabels = {
+              ACTIVE: "Đang triển khai",
+              COMPLETED: "Hoàn thành",
+              CANCELLED: "Hủy bỏ",
+            };
+            toast.success(
+              `Đã cập nhật trạng thái thành "${
+                statusLabels[newStatus] || newStatus
+              }"`
+            );
+          }
+
+          // Reload data to get updated campaigns
+          await fetchData();
+        } else {
+          // ApiService đã xử lý 401, chỉ cần hiển thị lỗi khác
+          toast.error(response.message || "Không thể cập nhật trạng thái");
+        }
       } else {
-        // await fetch(`/api/recalls/${itemId}/status`, { method: 'PATCH', body: JSON.stringify({ Status: newStatus }) });
+        // Recall status update
         setRecalls(
           recalls.map((r) =>
             r.Recall_ID === itemId ? { ...r, Status: newStatus } : r
@@ -242,6 +360,42 @@ function CampaignManagement() {
       }
     } catch (error) {
       console.error("Update status error:", error);
+      toast.error("Đã xảy ra lỗi khi cập nhật trạng thái");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCampaign = async (campaignId) => {
+    try {
+      setLoading(true);
+      const response = await serviceCampaignAPI.deleteCampaign(campaignId);
+
+      if (response.success) {
+        toast.success("Đã xóa Service Campaign thành công!");
+        await fetchData(); // Reload data
+      } else {
+        toast.error(response.message || "Không thể xóa Service Campaign");
+      }
+    } catch (error) {
+      console.error("Delete campaign error:", error);
+      toast.error("Đã xảy ra lỗi khi xóa chiến dịch");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteRecall = (recallId) => {
+    try {
+      setRecalls(recalls.filter((r) => r.Recall_ID !== recallId));
+      // Cập nhật recallVehicleMap
+      setRecallVehicleMap(
+        recallVehicleMap.filter((m) => m.Recall_ID !== recallId)
+      );
+      toast.success("Đã xóa Recall thành công!");
+    } catch (error) {
+      console.error("Delete recall error:", error);
+      toast.error("Đã xảy ra lỗi khi xóa recall");
     }
   };
 
@@ -252,7 +406,57 @@ function CampaignManagement() {
   };
 
   const canCreateEdit = () => {
-    return user?.role === "EVM_STAFF" || user?.role === "EVM_ADMIN";
+    // Chỉ EVM_ADMIN mới có quyền tạo mới và chỉnh sửa
+    // EVM_STAFF chỉ có thể xem và xóa
+    return user?.role === "EVM_ADMIN";
+  };
+
+  const handleStartCampaign = async (campaign) => {
+    if (
+      !window.confirm(
+        `Bắt đầu chiến dịch "${campaign.campaignsTypeName}"?\n\nThao tác này sẽ:\n- Chuyển trạng thái sang "Đang triển khai"\n- Gửi thông báo đến tất cả SC_STAFF`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // 1. Update status to ACTIVE
+      const statusResponse = await serviceCampaignAPI.updateCampaignStatus(
+        campaign.campaignsId || campaign.CampaignsID,
+        "ACTIVE"
+      );
+
+      if (!statusResponse.success) {
+        toast.error(statusResponse.message || "Không thể bắt đầu chiến dịch");
+        return;
+      }
+
+      // 2. Mark notification as sent
+      await serviceCampaignAPI.updateNotificationSent(
+        campaign.campaignsId || campaign.CampaignsID,
+        true
+      );
+
+      // 3. Create notifications for SC_STAFF users
+      // Note: Backend should handle this automatically when status changes to ACTIVE
+      // or when notificationSent is set to true
+      // For now, we just rely on backend to create notifications
+
+      // 4. Reload data
+      await fetchData();
+
+      toast.success(
+        `Đã bắt đầu chiến dịch "${campaign.campaignsTypeName}"! Thông báo đã được gửi đến SC_STAFF.`
+      );
+    } catch (error) {
+      console.error("Start campaign error:", error);
+      toast.error("Đã xảy ra lỗi khi bắt đầu chiến dịch");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -275,7 +479,7 @@ function CampaignManagement() {
               className="btn btn-secondary"
             >
               <span>📢</span>
-              Tạo chiến dịch
+              Tạo Service Campaign
             </button>
             <button onClick={handleCreateRecall} className="btn btn-primary">
               <span>🚨</span>
@@ -299,7 +503,7 @@ function CampaignManagement() {
               onClick={() => setActiveTab("campaigns")}
             >
               <span>📢</span>
-              Chiến dịch dịch vụ
+              Service Campaign
             </button>
             <button
               className={`tab-btn ${activeTab === "recalls" ? "active" : ""}`}
@@ -318,8 +522,10 @@ function CampaignManagement() {
               onUpdateStatus={(id, status) =>
                 handleUpdateStatus(id, status, "campaign")
               }
+              onStartCampaign={handleStartCampaign}
               userRole={user?.role}
               onAssign={openAssignModal}
+              onDelete={handleDeleteCampaign}
               assignments={assignments} // ✅ Pass assignments để hiển thị số lượng
             />
           ) : (
@@ -331,6 +537,7 @@ function CampaignManagement() {
                 handleUpdateStatus(id, status, "recall")
               }
               userRole={user?.role}
+              onDelete={handleDeleteRecall}
             />
           )}
         </>

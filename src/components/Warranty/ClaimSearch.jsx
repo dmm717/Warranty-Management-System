@@ -1,34 +1,27 @@
 import React, { useState } from "react";
+import { WARRANTY_CLAIM_STATUS_OPTIONS } from "../../constants";
 import "../../styles/ClaimSearch.css";
 
 function ClaimSearch({ onSearch }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
-    onSearch(value, statusFilter, priorityFilter);
+    onSearch(value, statusFilter);
   };
 
   const handleStatusChange = (e) => {
     const value = e.target.value;
     setStatusFilter(value);
-    onSearch(searchTerm, value, priorityFilter);
-  };
-
-  const handlePriorityChange = (e) => {
-    const value = e.target.value;
-    setPriorityFilter(value);
-    onSearch(searchTerm, statusFilter, value);
+    onSearch(searchTerm, value);
   };
 
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
-    setPriorityFilter("all");
-    onSearch("", "all", "all");
+    onSearch("", "all");
   };
 
   return (
@@ -40,7 +33,7 @@ function ClaimSearch({ onSearch }) {
             <input
               type="text"
               className="form-control search-input"
-              placeholder="Nhập mã claim, VIN, tên khách hàng..."
+              placeholder="Nhập mã claim, tên xe, tên khách hàng, số điện thoại..."
               value={searchTerm}
               onChange={handleSearchChange}
             />
@@ -56,25 +49,11 @@ function ClaimSearch({ onSearch }) {
             onChange={handleStatusChange}
           >
             <option value="all">Tất cả</option>
-            <option value="Chờ duyệt">Chờ duyệt</option>
-            <option value="Đã duyệt">Đã duyệt</option>
-            <option value="Từ chối">Từ chối</option>
-            <option value="Đang xử lý">Đang xử lý</option>
-            <option value="Hoàn thành">Hoàn thành</option>
-          </select>
-        </div>
-
-        <div className="filter-group">
-          <label className="search-label">Độ ưu tiên</label>
-          <select
-            className="form-control"
-            value={priorityFilter}
-            onChange={handlePriorityChange}
-          >
-            <option value="all">Tất cả</option>
-            <option value="Cao">Cao</option>
-            <option value="Trung bình">Trung bình</option>
-            <option value="Thấp">Thấp</option>
+            {WARRANTY_CLAIM_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
 
