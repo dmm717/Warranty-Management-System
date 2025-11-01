@@ -49,7 +49,8 @@ function PartsInventoryList({ inventory, onUpdateStock, onRequestCreated }) {
   };
 
   // Check if user can request parts (SC_ADMIN or SC_STAFF)
-  const canRequestParts = user && (user.role === 'SC_ADMIN' || user.role === 'SC_STAFF');
+  const canRequestParts =
+    user && (user.role === "SC_ADMIN" || user.role === "SC_STAFF");
 
   const generateSerialDisplay = (itemId, stock) => {
     // Generate a simplified serial preview (in real implementation, fetch from backend)
@@ -157,15 +158,17 @@ function PartsInventoryList({ inventory, onUpdateStock, onRequestCreated }) {
                       >
                         {getStockLabel(currentStatus)}
                       </span>
-                      {canRequestParts && (currentStatus === 'LOW_STOCK' || currentStatus === 'OUT_OF_STOCK') && (
-                        <button
-                          className="btn-request-parts"
-                          onClick={() => openRequestForm(item)}
-                          title="Tạo yêu cầu nhập hàng"
-                        >
-                          Nhập hàng
-                        </button>
-                      )}
+                      {canRequestParts &&
+                        (currentStatus === "LOW_STOCK" ||
+                          currentStatus === "OUT_OF_STOCK") && (
+                          <button
+                            className="btn-request-parts"
+                            onClick={() => openRequestForm(item)}
+                            title="Tạo yêu cầu nhập hàng"
+                          >
+                            Nhập hàng
+                          </button>
+                        )}
                     </div>
                   )}
                 </td>

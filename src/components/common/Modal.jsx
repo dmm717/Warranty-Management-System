@@ -1,5 +1,5 @@
-import React from 'react';
-import '../../styles/Modal.css';
+import React from "react";
+import "../../styles/Modal.css";
 
 /**
  * Reusable Modal Component
@@ -9,11 +9,11 @@ import '../../styles/Modal.css';
  * @param {ReactNode} children - Modal content
  * @param {string} size - Modal size: 'small', 'medium', 'large'
  */
-const Modal = ({ isOpen, onClose, title, children, size = 'medium' }) => {
+const Modal = ({ isOpen, onClose, title, children, size = "medium" }) => {
   if (!isOpen) return null;
 
   const handleBackdropClick = (e) => {
-    if (e.target.classList.contains('modal-backdrop')) {
+    if (e.target.classList.contains("modal-backdrop")) {
       onClose();
     }
   };
@@ -27,9 +27,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'medium' }) => {
             &times;
           </button>
         </div>
-        <div className="modal-body">
-          {children}
-        </div>
+        <div className="modal-body">{children}</div>
       </div>
     </div>
   );
