@@ -35,7 +35,7 @@ function PartsRequest({ userRole, onCancel, isModal = false }) {
         sortDir: "desc",
       });
 
-      if (response.success && response.data) {
+      if (response.success && response.data?.content) {
         // Transform data từ BE sang format FE
         const transformedRequests = response.data.content.map((request) => ({
           RequestID: request.id,

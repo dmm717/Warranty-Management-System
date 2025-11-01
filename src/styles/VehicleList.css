@@ -28,6 +28,15 @@
 .vehicle-name {
   font-weight: 600;
   color: var(--dark-color);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vehicle-name .vehicle-type {
+  font-weight: 400;
+  font-size: 11px;
+  color: #6b7280;
 }
 
 .owner-cell strong {

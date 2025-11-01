@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import Swal from "sweetalert2";
 import "../../styles/WarrantyClaimList.css";
 
 function WarrantyClaimList({
@@ -11,54 +12,35 @@ function WarrantyClaimList({
   const getStatusBadge = (status) => {
     const statusClasses = {
       PENDING: "status-pending",
+      IN_PROGRESS: "status-processing",
       APPROVED: "status-approved",
       REJECTED: "status-rejected",
-      IN_PROGRESS: "status-processing",
       COMPLETED: "status-completed",
-      "Chờ duyệt": "status-pending",
-      "Đã duyệt": "status-approved",
-      "Từ chối": "status-rejected",
-      "Đang xử lý": "status-processing",
-      "Hoàn thành": "status-completed",
+      CANCELLED: "status-cancelled",
+      ASSIGNED_TO_TECHNICIAN: "status-assigned",
+      INSPECTION_COMPLETED: "status-inspected",
+      PENDING_PARTS: "status-pending-parts",
     };
 
     const statusLabels = {
       PENDING: "Chờ duyệt",
+      IN_PROGRESS: "Đang xử lý",
       APPROVED: "Đã duyệt",
       REJECTED: "Từ chối",
-      IN_PROGRESS: "Đang xử lý",
       COMPLETED: "Hoàn thành",
+      CANCELLED: "Đã hủy",
+      ASSIGNED_TO_TECHNICIAN: "👨‍🔧 Đã phân công",
+      INSPECTION_COMPLETED: "✅ Kiểm tra xong",
+      PENDING_PARTS: "⏳ Chờ phụ tùng",
     };
 
     const displayStatus = statusLabels[status] || status;
 
     return (
       <span
-        className={`status-badge ${
-          statusClasses[status] ||
-          statusClasses[displayStatus] ||
-          "status-pending"
-        }`}
+        className={`status-badge ${statusClasses[status] || "status-pending"}`}
       >
         {displayStatus}
-      </span>
-    );
-  };
-
-  const getPriorityBadge = (priority) => {
-    const priorityClasses = {
-      Cao: "priority-high",
-      "Trung bình": "priority-medium",
-      Thấp: "priority-low",
-    };
-
-    return (
-      <span
-        className={`priority-badge ${
-          priorityClasses[priority] || "priority-medium"
-        }`}
-      >
-        {priority}
       </span>
     );
   };
@@ -67,30 +49,52 @@ function WarrantyClaimList({
     return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
-
   const canUpdateStatus = (status) => {
-    if (userRole === "EVM_STAFF" || userRole === "EVM_ADMIN") {
-      return ["Chờ duyệt", "Đã duyệt"].includes(status);
+    // SC_ADMIN: Có quyền duyệt/từ chối yêu cầu PENDING
+    if (userRole === "SC_ADMIN") {
+      return ["PENDING"].includes(status);
     }
+    // SC_STAFF và SC_TECHNICAL: Xử lý yêu cầu đã duyệt
     if (userRole === "SC_STAFF" || userRole === "SC_TECHNICAL") {
-      return ["Đã duyệt", "Đang xử lý"].includes(status);
+      return ["APPROVED", "IN_PROGRESS"].includes(status);
     }
+    // EVM_ADMIN và EVM_STAFF: Không có quyền duyệt, chỉ xem
     return false;
   };
 
   const getNextStatus = (currentStatus) => {
     const statusFlow = {
-      "Chờ duyệt": ["Đã duyệt", "Từ chối"],
-      "Đã duyệt": ["Đang xử lý"],
-      "Đang xử lý": ["Hoàn thành"],
+      PENDING: ["APPROVED", "REJECTED"],
+      APPROVED: ["IN_PROGRESS"],
+      IN_PROGRESS: ["COMPLETED"],
     };
     return statusFlow[currentStatus] || [];
+  };
+
+  const getStatusButtonConfig = (status) => {
+    const configs = {
+      APPROVED: {
+        label: "Duyệt",
+        className: "btn-approve",
+        icon: "✓",
+      },
+      REJECTED: {
+        label: "Từ chối",
+        className: "btn-reject",
+        icon: "✕",
+      },
+      IN_PROGRESS: {
+        label: "Bắt đầu xử lý",
+        className: "btn-process",
+        icon: "▶",
+      },
+      COMPLETED: {
+        label: "Hoàn thành",
+        className: "btn-complete",
+        icon: "✓",
+      },
+    };
+    return configs[status] || { label: status, className: "", icon: "" };
   };
 
   if (claims.length === 0) {
@@ -112,85 +116,96 @@ function WarrantyClaimList({
               <th>Mã claim</th>
               <th>Khách hàng</th>
               <th>Xe</th>
-              <th>Vấn đề</th>
               <th>Ngày tạo</th>
-              <th>Độ ưu tiên</th>
-              <th>Chi phí ước tính</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {claims.map((claim) => (
-              <tr key={claim.claimId || claim.ClaimID}>
+              <tr key={claim.claimId}>
                 <td>
                   <div className="claim-id">
-                    <strong>{claim.claimId || claim.ClaimID}</strong>
+                    <strong>{claim.claimId}</strong>
                   </div>
                 </td>
                 <td>
                   <div className="customer-info">
-                    <strong>{claim.customerName || claim.CustomerName}</strong>
-                    <small>{claim.phoneNumber || claim.CustomerPhone}</small>
+                    <strong>{claim.customerName}</strong>
+                    <small>{claim.customerPhone}</small>
                   </div>
                 </td>
                 <td>
                   <div className="vehicle-info">
-                    <strong>
-                      {claim.vehicleName || claim.VehicleName || "N/A"}
-                    </strong>
-                    <small>{claim.vehicleId || claim.VIN || "N/A"}</small>
+                    <strong>{claim.vehicleName || "N/A"}</strong>
                   </div>
                 </td>
-                <td>
-                  <div className="issue-description">
-                    {(claim.issueDescription || claim.IssueDescription || "")
-                      .length > 50
-                      ? `${(
-                          claim.issueDescription || claim.IssueDescription
-                        ).substring(0, 50)}...`
-                      : claim.issueDescription || claim.IssueDescription}
-                  </div>
-                </td>
-                <td>{formatDate(claim.claimDate || claim.ClaimDate)}</td>
-                <td>
-                  {claim.Priority ? (
-                    getPriorityBadge(claim.Priority)
-                  ) : (
-                    <span className="priority-badge priority-medium">
-                      Trung bình
-                    </span>
-                  )}
-                </td>
-                <td>
-                  <div className="cost-info">
-                    {claim.EstimatedCost
-                      ? formatCurrency(claim.EstimatedCost)
-                      : "Chưa ước tính"}
-                  </div>
-                </td>
+                <td>{formatDate(claim.claimDate)}</td>
                 <td>
                   <div className="status-container">
-                    {getStatusBadge(claim.status || claim.Status)}
-                    {canUpdateStatus(claim.status || claim.Status) && (
+                    {getStatusBadge(claim.status)}
+                    {canUpdateStatus(claim.status) && (
                       <div className="status-actions">
-                        {getNextStatus(claim.status || claim.Status).map(
-                          (nextStatus) => (
+                        {getNextStatus(claim.status).map((nextStatus) => {
+                          const config = getStatusButtonConfig(nextStatus);
+                          return (
                             <button
                               key={nextStatus}
-                              onClick={() =>
-                                onUpdateStatus(
-                                  claim.claimId || claim.ClaimID,
-                                  nextStatus
-                                )
-                              }
-                              className="btn btn-sm status-btn"
-                              title={`Chuyển sang ${nextStatus}`}
+                              onClick={async () => {
+                                // Nếu là REJECT, yêu cầu nhập lý do
+                                if (nextStatus === "REJECTED") {
+                                  const result = await Swal.fire({
+                                    title: "Từ chối yêu cầu bảo hành",
+                                    input: "textarea",
+                                    inputLabel: "Lý do từ chối",
+                                    inputPlaceholder:
+                                      "Nhập lý do từ chối yêu cầu bảo hành...",
+                                    inputValidator: (value) => {
+                                      if (!value || value.trim() === "") {
+                                        return "Bạn cần nhập lý do từ chối!";
+                                      }
+                                    },
+                                    showCancelButton: true,
+                                    confirmButtonText: "Từ chối",
+                                    cancelButtonText: "Hủy",
+                                    confirmButtonColor: "#d33",
+                                  });
+
+                                  if (result.isConfirmed) {
+                                    onUpdateStatus(
+                                      claim.claimId,
+                                      nextStatus,
+                                      result.value
+                                    );
+                                  }
+                                } else if (nextStatus === "APPROVED") {
+                                  // Confirm approve
+                                  const result = await Swal.fire({
+                                    title: "Duyệt yêu cầu bảo hành",
+                                    text: `Bạn có chắc muốn duyệt yêu cầu ${claim.claimId}?`,
+                                    icon: "question",
+                                    showCancelButton: true,
+                                    confirmButtonText: "Duyệt",
+                                    cancelButtonText: "Hủy",
+                                    confirmButtonColor: "#28a745",
+                                  });
+
+                                  if (result.isConfirmed) {
+                                    onUpdateStatus(claim.claimId, nextStatus);
+                                  }
+                                } else {
+                                  // Các status khác
+                                  onUpdateStatus(claim.claimId, nextStatus);
+                                }
+                              }}
+                              className={`btn btn-sm status-action-btn ${config.className}`}
+                              title={config.label}
                             >
-                              →{nextStatus}
+                              <span className="btn-icon">{config.icon}</span>
+                              <span className="btn-text">{config.label}</span>
                             </button>
-                          )
-                        )}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -204,13 +219,17 @@ function WarrantyClaimList({
                     >
                       👁️
                     </button>
-                    <button
-                      onClick={() => onEdit(claim)}
-                      className="btn btn-sm btn-outline"
-                      title="Chỉnh sửa"
-                    >
-                      ✏️
-                    </button>
+                    {/* Chỉ SC_STAFF và SC_TECHNICAL có quyền chỉnh sửa */}
+                    {(userRole === "SC_STAFF" ||
+                      userRole === "SC_TECHNICAL") && (
+                      <button
+                        onClick={() => onEdit(claim)}
+                        className="btn btn-sm btn-outline"
+                        title="Chỉnh sửa"
+                      >
+                        ✏️
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

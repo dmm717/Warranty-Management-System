@@ -74,13 +74,85 @@
   flex-direction: column;
   gap: 8px;
   align-items: center;
-  min-width: 120px;
+  min-width: 150px;
 }
 
 .status-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  gap: 6px;
+  width: 100%;
+  justify-content: center;
+}
+
+.status-action-btn {
+  display: flex;
+  align-items: center;
   gap: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.status-action-btn .btn-icon {
+  font-size: 14px;
+}
+
+.status-action-btn .btn-text {
+  font-size: 12px;
+}
+
+/* Button for Approve */
+.btn-approve {
+  background-color: #10b981;
+  color: white;
+}
+
+.btn-approve:hover {
+  background-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+}
+
+/* Button for Reject */
+.btn-reject {
+  background-color: #ef4444;
+  color: white;
+}
+
+.btn-reject:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+}
+
+/* Button for In Progress */
+.btn-process {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-process:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+
+/* Button for Complete */
+.btn-complete {
+  background-color: #8b5cf6;
+  color: white;
+}
+
+.btn-complete:hover {
+  background-color: #7c3aed;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(139, 92, 246, 0.3);
 }
 
 .status-btn {

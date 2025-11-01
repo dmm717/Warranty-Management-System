@@ -30,27 +30,34 @@ function VehicleManagement() {
         sortDir: "asc",
       });
 
-      if (response.success && response.data) {
+      if (
+        response.success &&
+        response.data?.content &&
+        Array.isArray(response.data.content)
+      ) {
         // Transform data từ BE sang format FE
-        const transformedVehicles = response.data.content.map((vehicle) => ({
-          Vehicle_ID: vehicle.vehicleId,
-          Vehicle_Name: vehicle.vehicleName,
-          VIN: vehicle.vehicleId,
-          Owner: vehicle.owner,
-          Phone_Number: vehicle.phoneNumber,
-          Email: vehicle.email,
-          Status: VEHICLE_STATUS[vehicle.status] || vehicle.status,
-          Total_KM: vehicle.totalKm,
-          Production_Date: vehicle.productionDate,
-          ID_Electric_Vehicle_Type: vehicle.electricVehicleTypeId,
-          Picture: vehicle.picture,
-        }));
+        const transformedVehicles = response.data.content.map((vehicle) => {          const transformed = {
+            vehicleId: vehicle.id, // VIN
+            VIN: vehicle.id,
+            Vehicle_Name: vehicle.name,
+            Owner: vehicle.owner,
+            Phone_Number: vehicle.phoneNumber,
+            Email: vehicle.email,
+            Status: VEHICLE_STATUS[vehicle.status] || vehicle.status,
+            Total_KM: vehicle.totalKm,
+            Purchase_Date: vehicle.purchaseDate,
+            Picture: vehicle.picture,
+            // Vehicle Type info - using flat fields from ListResponseDTO
+            Vehicle_Type: vehicle.modelName || "N/A",
+            Vehicle_Type_ID: vehicle.vehicleTypeId || null,
+          };          return transformed;
+        });
 
         setVehicles(transformedVehicles);
         setFilteredVehicles(transformedVehicles);
       } else {
-        console.error("Failed to fetch vehicles:", response.message);
-        toast.error(response.message || "Không thể tải danh sách xe");
+        const errorMsg = response.message || "Không thể tải danh sách xe";
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error("Error fetching vehicles:", error);
@@ -117,12 +124,21 @@ function VehicleManagement() {
       setLoading(true);
 
       if (editingVehicle) {
-        // Update existing vehicle
-        const response = await vehicleAPI.updateVehicle(
-          editingVehicle.Vehicle_ID,
+        // Update existing vehicle - use VIN as ID
+        // Check duplicate phone (excluding current vehicle)
+        const duplicatePhone = vehicles.find(
+          (v) =>
+            v.Phone_Number === vehicleData.phoneNumber &&
+            v.VIN !== editingVehicle.VIN
+        );
+        if (duplicatePhone) {
+          toast.error("Số điện thoại đã được sử dụng bởi xe khác!");
+          setLoading(false);
+          return;
+        }        const response = await vehicleAPI.updateVehicle(
+          editingVehicle.VIN,
           vehicleData
         );
-
         if (response.success) {
           await fetchVehicles();
           setShowForm(false);
@@ -132,9 +148,24 @@ function VehicleManagement() {
           toast.error(response.message || "Không thể cập nhật thông tin xe");
         }
       } else {
-        // Thêm xe mới
-        const response = await vehicleAPI.createVehicle(vehicleData);
+        // Thêm xe mới - Check duplicates
+        const duplicateVIN = vehicles.find(
+          (v) => v.VIN === vehicleData.vehicleId
+        );
+        if (duplicateVIN) {
+          toast.error("VIN đã tồn tại trong hệ thống!");
+          setLoading(false);
+          return;
+        }
 
+        const duplicatePhone = vehicles.find(
+          (v) => v.Phone_Number === vehicleData.phoneNumber
+        );
+        if (duplicatePhone) {
+          toast.error("Số điện thoại đã được sử dụng bởi xe khác!");
+          setLoading(false);
+          return;
+        }        const response = await vehicleAPI.createVehicle(vehicleData);
         if (response.success) {
           await fetchVehicles();
           setShowForm(false);

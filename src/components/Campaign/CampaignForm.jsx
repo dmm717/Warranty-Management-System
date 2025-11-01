@@ -8,15 +8,31 @@ function CampaignForm({ campaign, onSave, onCancel }) {
     EndDate: "",
     RequiredParts: "",
     Description: "",
-    Status: "Chuẩn bị",
+    Status: "PLANNED", // Luôn là PLANNED khi EVM_ADMIN tạo mới
     CompletedVehicles: 0,
+    YearScope: "", // Phạm vi năm sản xuất (VD: 2020-2023)
   });
 
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (campaign) {
-      setFormData(campaign);
+      // Map campaign data to form fields (handle both camelCase and PascalCase)
+      setFormData({
+        CampaignsTypeName:
+          campaign.CampaignsTypeName ||
+          campaign.campaignsTypeName ||
+          campaign.campaignName ||
+          "",
+        StartDate: campaign.StartDate || campaign.startDate || "",
+        EndDate: campaign.EndDate || campaign.endDate || "",
+        RequiredParts: campaign.RequiredParts || campaign.requiredParts || "",
+        Description: campaign.Description || campaign.description || "",
+        Status: campaign.Status || campaign.status || "PLANNED",
+        CompletedVehicles:
+          campaign.CompletedVehicles || campaign.completedVehicles || 0,
+        YearScope: campaign.YearScope || campaign.yearScope || "",
+      });
     }
   }, [campaign]);
 
@@ -38,7 +54,7 @@ function CampaignForm({ campaign, onSave, onCancel }) {
   const validateForm = () => {
     const newErrors = {};
     if (formData.CompletedVehicles < 0) {
-      newErrors.CompletedVehicles = "Số xe hoàn thành không được âm";//PQD_fix_v1
+      newErrors.CompletedVehicles = "Số xe hoàn thành không được âm"; //PQD_fix_v1
     }
     if (!formData.CampaignsTypeName.trim()) {
       newErrors.CampaignsTypeName = "Tên chiến dịch là bắt buộc";
@@ -60,12 +76,16 @@ function CampaignForm({ campaign, onSave, onCancel }) {
       newErrors.EndDate = "Ngày kết thúc phải sau ngày bắt đầu";
     }
 
-    if (!formData.Description.trim()) {
+    if (!formData.Description || !formData.Description.trim()) {
       newErrors.Description = "Mô tả là bắt buộc";
     }
 
-    if (!formData.RequiredParts.trim()) {
+    if (!formData.RequiredParts || !formData.RequiredParts.trim()) {
       newErrors.RequiredParts = "Phụ tùng yêu cầu là bắt buộc";
+    }
+
+    if (!formData.YearScope || !formData.YearScope.trim()) {
+      newErrors.YearScope = "Phạm vi năm sản xuất là bắt buộc";
     }
 
     setErrors(newErrors);
@@ -83,7 +103,7 @@ function CampaignForm({ campaign, onSave, onCancel }) {
     <div className="campaign-form card">
       <div className="card-header">
         <h3 className="card-title">
-          {campaign ? "Chỉnh sửa chiến dịch" : "Tạo chiến dịch mới"}
+          {campaign ? "Chỉnh sửa Service Campaign" : "Tạo Service Campaign mới"}
         </h3>
       </div>
 
@@ -107,21 +127,34 @@ function CampaignForm({ campaign, onSave, onCancel }) {
                 <div className="error-message">{errors.CampaignsTypeName}</div>
               )}
             </div>
-            <div className="form-group">
-              <label className="form-label">Trạng thái</label>
-              <select
-                name="Status"
-                value={formData.Status}
-                onChange={handleChange}
-                className="form-control"
-              >
-                <option value="Chuẩn bị">Chuẩn bị</option>
-                <option value="Đang triển khai">Đang triển khai</option>
-                <option value="Tạm dừng">Tạm dừng</option>
-                <option value="Hoàn thành">Hoàn thành</option>
-                <option value="Hủy bỏ">Hủy bỏ</option>
-              </select>
-            </div>
+            {/* Status field - hidden, luôn là PLANNED khi tạo mới */}
+            {campaign && (
+              <div className="form-group">
+                <label className="form-label">Trạng thái</label>
+                <input
+                  type="text"
+                  value={
+                    campaign.status === "PLANNED"
+                      ? "Chuẩn bị"
+                      : campaign.status === "ACTIVE"
+                      ? "Đang triển khai"
+                      : campaign.status === "PAUSED"
+                      ? "Dừng"
+                      : campaign.status === "COMPLETED"
+                      ? "Hoàn thành"
+                      : campaign.status === "CANCELLED"
+                      ? "Hủy bỏ"
+                      : campaign.status
+                  }
+                  className="form-control"
+                  disabled
+                  readOnly
+                />
+                <small className="form-help">
+                  Trạng thái được thay đổi thông qua danh sách chiến dịch
+                </small>
+              </div>
+            )}
           </div>
 
           <div className="form-row">
@@ -173,6 +206,28 @@ function CampaignForm({ campaign, onSave, onCancel }) {
                 Nhập "Không" nếu không cần phụ tùng
               </small>
             </div>
+
+            {/* ✅ Thêm phạm vi năm sản xuất */}
+            <div className="form-group">
+              <label className="form-label">Phạm vi năm sản xuất *</label>
+              <input
+                type="text"
+                name="YearScope"
+                value={formData.YearScope}
+                onChange={handleChange}
+                className={`form-control ${errors.YearScope ? "error" : ""}`}
+                placeholder="VD: 2020-2023 hoặc 2022"
+              />
+              {errors.YearScope && (
+                <div className="error-message">{errors.YearScope}</div>
+              )}
+              <small className="form-help">
+                Năm sản xuất của các dòng xe áp dụng chiến dịch
+              </small>
+            </div>
+          </div>
+
+          <div className="form-row">
             {/* ✅ Thêm ô nhập số xe hoàn thành */}
             <div className="form-group">
               <label className="form-label">Số xe hoàn thành</label>
@@ -186,13 +241,14 @@ function CampaignForm({ campaign, onSave, onCancel }) {
                   errors.CompletedVehicles ? "error" : ""
                 }`}
                 placeholder="Nhập số xe đã hoàn thành"
+                disabled
+                readOnly
               />
-              {errors.CompletedVehicles && (
-                <div className="error-message">{errors.CompletedVehicles}</div>
-              )}
+              <small className="form-help">
+                Tự động cập nhật từ báo cáo của kỹ thuật viên
+              </small>
             </div>
           </div>
-          
 
           <div className="form-row">
             <div className="form-group">
@@ -217,7 +273,7 @@ function CampaignForm({ campaign, onSave, onCancel }) {
             Hủy
           </button>
           <button type="submit" className="btn btn-primary">
-            {campaign ? "Cập nhật" : "Tạo chiến dịch"}
+            {campaign ? "Cập nhật" : "Tạo Service Campaign"}
           </button>
         </div>
       </form>

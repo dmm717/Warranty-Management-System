@@ -6,14 +6,7 @@ const AssignTechnicianManagement = ({ campaigns = [], technicians = [] }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [assignments, setAssignments] = useState([]);
   const [notification, setNotification] = useState(null);
-
-  console.log("✅ Component rendered");
-  console.log("📊 Campaigns:", campaigns);
-  console.log("👨‍💼 Technicians:", technicians);
-
-  const openModal = (campaign) => {
-    console.log("🔓 Opening modal for:", campaign.CampaignsTypeName);
-    setSelectedCampaign(campaign);
+  const openModal = (campaign) => {    setSelectedCampaign(campaign);
     setIsModalOpen(true);
   };
 
@@ -43,10 +36,7 @@ const AssignTechnicianManagement = ({ campaigns = [], technicians = [] }) => {
             SC_TechnicianID: technicianId,
             CampaignsID: campaignId
           }
-        ]);
-        console.log("✅ Assigned:", { SC_TechnicianID: technicianId, CampaignsID: campaignId });
-        console.log("📊 All assignments:", assignments);
-        showNotification(
+        ]);        showNotification(
           `✅ Assigned ${technician.SC_TechnicianName} to ${campaign.CampaignsTypeName}`,
           "success"
         );
@@ -62,9 +52,7 @@ const AssignTechnicianManagement = ({ campaigns = [], technicians = [] }) => {
       assignments.filter(
         a => !(a.CampaignsID === campaignId && a.SC_TechnicianID === technicianId)
       )
-    );
-    console.log("❌ Removed:", { SC_TechnicianID: technicianId, CampaignsID: campaignId });
-    showNotification(
+    );    showNotification(
       `❌ Removed ${technician.SC_TechnicianName}`,
       "success"
     );

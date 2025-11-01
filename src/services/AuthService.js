@@ -2,8 +2,8 @@
    AUTHENTICATION SERVICE - Xử lý các API liên quan đến xác thực
    ========================================================================== */
 
-import { authAPI } from './api';
-import apiService from './ApiService';
+import { authAPI } from "./api";
+import apiService from "./ApiService";
 
 class AuthService {
   /**
@@ -19,20 +19,19 @@ class AuthService {
         return {
           success: true,
           data: response.data,
-          message: response.message || 'Đăng ký thành công',
+          message: response.message || "Đăng ký thành công",
         };
       } else {
         return {
           success: false,
-          message: response.message || 'Đăng ký thất bại',
+          message: response.message || "Đăng ký thất bại",
           errors: response.errors,
         };
       }
-    } catch (error) {
-      console.error('Register error:', error);
+    } catch {
       return {
         success: false,
-        message: 'Không thể kết nối đến server. Vui lòng thử lại sau.',
+        message: "Không thể kết nối đến server. Vui lòng thử lại sau.",
         errors: null,
       };
     }
@@ -44,49 +43,54 @@ class AuthService {
    * @returns {Promise<object>} Response với token và thông tin user
    */
   async login(credentials) {
-    try {
-      const response = await authAPI.login(credentials);
+    // Gọi API login - ApiService đã xử lý network errors
+    const response = await authAPI.login(credentials);
 
-      if (response.success && response.data) {
-        // Lưu token vào localStorage hoặc sessionStorage
-        if (response.data.token) {
-          apiService.setToken(response.data.token, credentials.rememberMe);
-        }
-
-        // Lưu thông tin user
-        const userInfo = {
-          id: response.data.id,
-          username: response.data.username,
-          email: response.data.email,
-          role: response.data.role,
-          roles: response.data.roles || [response.data.role],
-          phoneNumber: response.data.phoneNumber,
-        };
-        
-        // Lưu vào localStorage hoặc sessionStorage dựa vào rememberMe
-        const storage = credentials.rememberMe ? localStorage : sessionStorage;
-        storage.setItem('user', JSON.stringify(userInfo));
-
-        return {
-          success: true,
-          data: userInfo,
-          message: response.message || 'Đăng nhập thành công',
-        };
-      } else {
-        return {
-          success: false,
-          message: response.message || 'Đăng nhập thất bại',
-          errors: response.errors,
-        };
+    // Nếu đăng nhập thành công
+    if (response.success && response.data) {
+      // Tìm token trong response với nhiều tên khác nhau
+      let token = null;
+      if (response.data.token) {
+        token = response.data.token;
+      } else if (response.data.accessToken) {
+        token = response.data.accessToken;
+      } else if (response.data.jwt) {
+        token = response.data.jwt;
       }
-    } catch (error) {
-      console.error('Login error:', error);
+
+      // Lưu token nếu tìm thấy
+      if (token) {
+        apiService.setToken(token, credentials.rememberMe);
+      }
+
+      // Lưu thông tin user
+      const userInfo = {
+        id: response.data.userId || response.data.id,
+        username: response.data.username,
+        email: response.data.email,
+        role: response.data.role,
+        roles: response.data.roles || [response.data.role],
+        phoneNumber: response.data.phoneNumber,
+        branchOffice: response.data.branchOffice,
+      };
+
+      // Lưu vào localStorage hoặc sessionStorage dựa vào rememberMe
+      const storage = credentials.rememberMe ? localStorage : sessionStorage;
+      storage.setItem("user", JSON.stringify(userInfo));
+
       return {
-        success: false,
-        message: 'Không thể kết nối đến server. Vui lòng thử lại sau.',
-        errors: null,
+        success: true,
+        data: userInfo,
+        message: response.message || "Đăng nhập thành công",
       };
     }
+
+    // Nếu đăng nhập thất bại - trả về message từ backend
+    return {
+      success: false,
+      message: response.message || "Đăng nhập thất bại. Vui lòng thử lại.",
+      errors: response.errors,
+    };
   }
 
   /**
@@ -99,16 +103,15 @@ class AuthService {
 
       // Xóa token và thông tin user từ cả localStorage và sessionStorage
       apiService.removeToken();
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('user');
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
 
       return { success: true };
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch {
       // Vẫn xóa token local dù API call fail
       apiService.removeToken();
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('user');
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
       return { success: true };
     }
   }
@@ -124,7 +127,8 @@ class AuthService {
    * Lấy thông tin user từ localStorage hoặc sessionStorage
    */
   getCurrentUser() {
-    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const userStr =
+      localStorage.getItem("user") || sessionStorage.getItem("user");
     if (userStr) {
       try {
         return JSON.parse(userStr);
@@ -140,7 +144,7 @@ class AuthService {
    */
   async refreshToken() {
     try {
-      const response = await apiService.post('/auth/refresh');
+      const response = await apiService.post("/auth/refresh");
 
       if (response.success && response.data) {
         apiService.setToken(response.data.token);
@@ -148,8 +152,7 @@ class AuthService {
       }
 
       return { success: false };
-    } catch (error) {
-      console.error('Refresh token error:', error);
+    } catch {
       return { success: false };
     }
   }
@@ -162,7 +165,7 @@ class AuthService {
       return null;
     }
 
-    return errors.map(error => ({
+    return errors.map((error) => ({
       field: error.field,
       message: error.message,
     }));
@@ -182,22 +185,22 @@ class AuthService {
   validateCredentials(credentials) {
     const errors = [];
 
-    if (!credentials.email || credentials.email.trim() === '') {
+    if (!credentials.email || credentials.email.trim() === "") {
       errors.push({
-        field: 'email',
-        message: 'Email không được để trống',
+        field: "email",
+        message: "Email không được để trống",
       });
     } else if (!this.validateEmail(credentials.email)) {
       errors.push({
-        field: 'email',
-        message: 'Email không đúng định dạng',
+        field: "email",
+        message: "Email không đúng định dạng",
       });
     }
 
-    if (!credentials.password || credentials.password.trim() === '') {
+    if (!credentials.password || credentials.password.trim() === "") {
       errors.push({
-        field: 'password',
-        message: 'Mật khẩu không được để trống',
+        field: "password",
+        message: "Mật khẩu không được để trống",
       });
     }
 
