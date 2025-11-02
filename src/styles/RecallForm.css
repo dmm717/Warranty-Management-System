@@ -5,12 +5,16 @@
 
 .form-section {
   margin-bottom: 32px;
+  padding: 24px;
   padding-bottom: 24px;
-  border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .form-section:last-of-type {
-  border-bottom: none;
   margin-bottom: 0;
 }
 

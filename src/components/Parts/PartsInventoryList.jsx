@@ -69,8 +69,8 @@ function PartsInventoryList({ inventory, onUpdateStock }) {
         <tbody>
           {inventory.map((item) => {
             const stock = item.totalAmountOfProduct || 0;
-            // Use stockStatus from backend if available, otherwise calculate from stock
-            const currentStatus = item.stockStatus || getStockStatus(stock);
+            // Always calculate status from stock amount
+            const currentStatus = getStockStatus(stock);
 
             return (
               <tr key={item.id}>

@@ -102,7 +102,7 @@ function PartsList({ parts, onEdit, onDelete, userRole}) {
                 </td>
                 <td>{formatDate(request.requestDate)}</td>
                 <td>
-                  {getStatusBadge(request.status)}
+                  {getStatusBadge(reqtuest.staus)}
                 </td>
                 {canEditDelete() && (
                   <td>
