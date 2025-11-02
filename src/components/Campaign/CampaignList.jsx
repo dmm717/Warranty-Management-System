@@ -10,6 +10,7 @@ function CampaignList({
   userRole,
   onAssign,
   onStartCampaign, // Callback để bắt đầu chiến dịch (SC_ADMIN)
+  onDelete, // Callback để xóa chiến dịch
 }) {
   const getStatusBadge = (status) => {
     const statusClasses = {
@@ -59,12 +60,14 @@ function CampaignList({
   };
 
   const canEditCampaign = () => {
-    // EVM_ADMIN và SC_ADMIN đều có quyền edit thông tin campaign
-    return (
-      userRole === "EVM_ADMIN" ||
-      userRole === "SC_ADMIN" ||
-      userRole === "Admin"
-    );
+    // Chỉ EVM_ADMIN và SC_ADMIN có quyền edit
+    // EVM_STAFF không có quyền edit
+    return userRole === "EVM_ADMIN" || userRole === "SC_ADMIN";
+  };
+
+  const canDeleteCampaign = () => {
+    // EVM_STAFF và EVM_ADMIN có quyền xóa
+    return userRole === "EVM_STAFF" || userRole === "EVM_ADMIN";
   };
 
   const canAssignTechnician = () => {
@@ -97,9 +100,7 @@ function CampaignList({
   if (campaigns.length === 0) {
     return (
       <div className="no-data-container">
-        <div className="no-data-icon">
-          <Megaphone size={48} />
-        </div>
+        <div className="no-data-icon">📢</div>
         <h3>Chưa có Service Campaign nào</h3>
         <p>Tạo Service Campaign đầu tiên</p>
       </div>
@@ -277,6 +278,30 @@ function CampaignList({
                         title="Phân công kỹ thuật viên"
                       >
                         👷
+                      </button>
+                    )}
+
+                    {/* EVM_STAFF và EVM_ADMIN có quyền xóa */}
+                    {canDeleteCampaign() && onDelete && (
+                      <button
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Bạn có chắc chắn muốn xóa chiến dịch "${
+                                campaign.campaignsTypeName ||
+                                campaign.CampaignsTypeName
+                              }"?`
+                            )
+                          ) {
+                            onDelete(
+                              campaign.campaignsId || campaign.CampaignsID
+                            );
+                          }
+                        }}
+                        className="btn btn-sm btn-danger"
+                        title="Xóa"
+                      >
+                        🗑️
                       </button>
                     )}
                   </div>

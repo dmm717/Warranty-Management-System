@@ -17,6 +17,7 @@ function UserManagement() {
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUsers = async () => {
@@ -29,15 +30,26 @@ function UserManagement() {
         sessionStorage.getItem("authToken");
 
       if (!token) {
-        console.error("❌ NO TOKEN FOUND! User needs to login.");
         setError("Bạn chưa đăng nhập. Vui lòng đăng nhập lại.");
         setUsers([]);
         setLoading(false);
         return;
       }
 
-      // GET /api/users - Lấy danh sách tất cả users
-      const response = await userAPI.getAllUsers();
+      // Gọi API khác nhau theo role
+      let response;
+      if (user?.role === "EVM_ADMIN") {
+        // EVM_ADMIN: Lấy tất cả users
+        response = await userAPI.getAllUsers();
+      } else if (user?.role === "SC_ADMIN") {
+        // SC_ADMIN: Chỉ lấy users trong chi nhánh của mình
+        response = await userAPI.getSCUsers();
+      } else {
+        setError("Bạn không có quyền truy cập trang này");
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
 
       if (response.success && response.data) {
         setUsers(response.data);
@@ -45,8 +57,7 @@ function UserManagement() {
         setError(response.message || "Không thể tải danh sách người dùng");
         setUsers([]);
       }
-    } catch (error) {
-      console.error("❌ Fetch users error:", error);
+    } catch {
       setError(
         "Lỗi khi tải danh sách người dùng: " +
           (error.message || "Unknown error")
@@ -79,8 +90,7 @@ function UserManagement() {
         } else {
           toast.error(response.message || "Không thể xóa người dùng");
         }
-      } catch (error) {
-        console.error("Delete user error:", error);
+      } catch {
         toast.error("Đã xảy ra lỗi khi xóa người dùng");
       } finally {
         setLoading(false);
@@ -91,6 +101,19 @@ function UserManagement() {
   const handleSaveUser = async (userData) => {
     try {
       setLoading(true);
+
+      // Tự động set department cho SC_ADMIN khi tạo SC_STAFF/SC_TECHNICAL
+      if (!editingUser && user?.role === "SC_ADMIN") {
+        // Lấy branchOffice từ danh sách users
+        const currentUserBranch = users.find(
+          (u) => u.email === user.email
+        )?.branchOffice;
+
+        if (userData.role === "SC_STAFF" || userData.role === "SC_TECHNICAL") {
+          // Tự động gán chi nhánh của SC_ADMIN
+          userData.department = currentUserBranch;
+        }
+      }
 
       if (editingUser) {
         // Update existing user - EVM_ADMIN update user khác
@@ -106,9 +129,10 @@ function UserManagement() {
           username: userData.name || editingUser.username,
           email: userData.email || editingUser.email,
           phoneNumber: userData.phone || editingUser.phoneNumber,
-          branchOffice: userData.department && userData.department.trim() 
-            ? userData.department 
-            : null, // Gửi null nếu rỗng, backend sẽ validate cho SC roles
+          branchOffice:
+            userData.department && userData.department.trim()
+              ? userData.department
+              : null, // Gửi null nếu rỗng, backend sẽ validate cho SC roles
           dateOfBirth: formattedDate,
           specialty: null,
         };
@@ -140,10 +164,17 @@ function UserManagement() {
           phoneNumber: userData.phone,
           branchOffice: userData.department,
           dateOfBirth: formattedDate,
-          specialty: null,
+          specialty:
+            userData.role === "SC_TECHNICAL"
+              ? userData.specialty || null
+              : null,
         };
 
+        console.log("📤 Sending register data:", registerData);
+
         const response = await authAPI.register(registerData);
+
+        console.log("📥 Register response:", response);
 
         if (response.success) {
           await fetchUsers();
@@ -151,16 +182,32 @@ function UserManagement() {
           setEditingUser(null);
           toast.success("Tạo người dùng thành công!");
         } else {
-          const errorMsg = response.message || "Không thể tạo người dùng mới";
-          toast.error(errorMsg);
-          if (response.errors) {
-            console.error("Validation errors:", response.errors);
+          // Xử lý error message cụ thể
+          let errorMsg = response.message || "Không thể tạo người dùng mới";
+
+          // Kiểm tra lỗi email đã tồn tại
+          if (
+            errorMsg.includes("Email is already registered") ||
+            errorMsg.includes("Email đã được đăng ký")
+          ) {
+            errorMsg = `Email "${userData.email}" đã tồn tại trong hệ thống. Vui lòng sử dụng email khác.`;
           }
+
+          toast.error(errorMsg, { autoClose: 5000 });
         }
       }
     } catch (error) {
-      console.error("Save user error:", error);
-      toast.error("Đã xảy ra lỗi khi lưu người dùng");
+      // Xử lý error message chi tiết hơn
+      let errorMsg = "Đã xảy ra lỗi khi lưu người dùng";
+      if (
+        error.message &&
+        error.message.includes("Email is already registered")
+      ) {
+        errorMsg =
+          "Email đã tồn tại trong hệ thống. Vui lòng sử dụng email khác.";
+      }
+
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -209,8 +256,7 @@ function UserManagement() {
       } else {
         toast.error(response.message || "Không thể cập nhật trạng thái");
       }
-    } catch (error) {
-      console.error("Update status error:", error);
+    } catch {
       toast.error("Đã xảy ra lỗi khi cập nhật trạng thái");
     } finally {
       setLoading(false);
@@ -241,12 +287,6 @@ function UserManagement() {
     );
   }
 
-  // Lọc danh sách user theo role nếu là SC_Admin
-  const filteredUsers =
-    user?.role === "SC_ADMIN"
-      ? users.filter((u) => u.role === "SC_STAFF" || u.role === "SC_TECHNICAL")
-      : users;
-
   return (
     <div className="user-management">
       <div className="page-header">
@@ -259,7 +299,7 @@ function UserManagement() {
         )}
       </div>
 
-      {/* Hiển thị error nếu Backend chưa có API */}
+      {/* Hiển thị error nếu có lỗi */}
       {error && (
         <div
           className="error-message"
@@ -273,16 +313,13 @@ function UserManagement() {
           }}
         >
           <strong>⚠️ Lỗi:</strong> {error}
-          <br />
-          <small>
-            Backend team cần thêm endpoint: <code>GET /api/users</code>
-          </small>
         </div>
       )}
 
       {!showForm ? (
         <UserList
-          users={filteredUsers}
+          users={users}
+          currentUser={user}
           onEdit={handleEditUser}
           onDelete={handleDeleteUser}
           onUpdateStatus={handleUpdateStatus}
@@ -290,6 +327,10 @@ function UserManagement() {
       ) : (
         <UserForm
           user={editingUser}
+          currentUser={user}
+          currentUserBranch={
+            users.find((u) => u.email === user.email)?.branchOffice
+          }
           onSave={handleSaveUser}
           onCancel={handleCancelForm}
         />

@@ -37,11 +37,6 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role]);
 
-  // If user is EVM_STAFF, show specialized dashboard
-  if (user?.role === "EVM_STAFF") {
-    return <EVMStaffDashboard />;
-  }
-
   const fetchStatsFromAPIs = async () => {
     try {
       const role = user?.role;
@@ -159,10 +154,18 @@ function Dashboard() {
     );
   }
 
+  // Xác định tiêu đề dashboard theo role
+  const getDashboardTitle = () => {
+    if (user?.role === "SC_ADMIN" && user?.branchOffice) {
+      return `Trung tâm ${user.branchOffice}`;
+    }
+    return "Dashboard";
+  };
+
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>Dashboard</h1>
+        <h1>{getDashboardTitle()}</h1>
         <p>Chào mừng trở lại, {user?.name || user?.username}!</p>
       </div>
 

@@ -28,8 +28,7 @@ class AuthService {
           errors: response.errors,
         };
       }
-    } catch (error) {
-      console.error("Register error:", error);
+    } catch {
       return {
         success: false,
         message: "Không thể kết nối đến server. Vui lòng thử lại sau.",
@@ -44,59 +43,54 @@ class AuthService {
    * @returns {Promise<object>} Response với token và thông tin user
    */
   async login(credentials) {
-    try {
-      const response = await authAPI.login(credentials);
+    // Gọi API login - ApiService đã xử lý network errors
+    const response = await authAPI.login(credentials);
 
-      if (response.success && response.data) {
-        // Tìm token trong response với nhiều tên khác nhau
-        let token = null;
-        if (response.data.token) {
-          token = response.data.token;
-        } else if (response.data.accessToken) {
-          token = response.data.accessToken;
-        } else if (response.data.jwt) {
-          token = response.data.jwt;
-        }
-
-        // Lưu token nếu tìm thấy
-        if (token) {
-          apiService.setToken(token, credentials.rememberMe);
-        }
-
-        // Lưu thông tin user
-        const userInfo = {
-          id: response.data.id,
-          username: response.data.username,
-          email: response.data.email,
-          role: response.data.role,
-          roles: response.data.roles || [response.data.role],
-          phoneNumber: response.data.phoneNumber,
-        };
-
-        // Lưu vào localStorage hoặc sessionStorage dựa vào rememberMe
-        const storage = credentials.rememberMe ? localStorage : sessionStorage;
-        storage.setItem("user", JSON.stringify(userInfo));
-
-        return {
-          success: true,
-          data: userInfo,
-          message: response.message || "Đăng nhập thành công",
-        };
-      } else {
-        return {
-          success: false,
-          message: response.message || "Đăng nhập thất bại",
-          errors: response.errors,
-        };
+    // Nếu đăng nhập thành công
+    if (response.success && response.data) {
+      // Tìm token trong response với nhiều tên khác nhau
+      let token = null;
+      if (response.data.token) {
+        token = response.data.token;
+      } else if (response.data.accessToken) {
+        token = response.data.accessToken;
+      } else if (response.data.jwt) {
+        token = response.data.jwt;
       }
-    } catch (error) {
-      console.error("Login error:", error);
+
+      // Lưu token nếu tìm thấy
+      if (token) {
+        apiService.setToken(token, credentials.rememberMe);
+      }
+
+      // Lưu thông tin user
+      const userInfo = {
+        id: response.data.userId || response.data.id,
+        username: response.data.username,
+        email: response.data.email,
+        role: response.data.role,
+        roles: response.data.roles || [response.data.role],
+        phoneNumber: response.data.phoneNumber,
+        branchOffice: response.data.branchOffice,
+      };
+
+      // Lưu vào localStorage hoặc sessionStorage dựa vào rememberMe
+      const storage = credentials.rememberMe ? localStorage : sessionStorage;
+      storage.setItem("user", JSON.stringify(userInfo));
+
       return {
-        success: false,
-        message: "Không thể kết nối đến server. Vui lòng thử lại sau.",
-        errors: null,
+        success: true,
+        data: userInfo,
+        message: response.message || "Đăng nhập thành công",
       };
     }
+
+    // Nếu đăng nhập thất bại - trả về message từ backend
+    return {
+      success: false,
+      message: response.message || "Đăng nhập thất bại. Vui lòng thử lại.",
+      errors: response.errors,
+    };
   }
 
   /**
@@ -113,8 +107,7 @@ class AuthService {
       sessionStorage.removeItem("user");
 
       return { success: true };
-    } catch (error) {
-      console.error("Logout error:", error);
+    } catch {
       // Vẫn xóa token local dù API call fail
       apiService.removeToken();
       localStorage.removeItem("user");
@@ -159,8 +152,7 @@ class AuthService {
       }
 
       return { success: false };
-    } catch (error) {
-      console.error("Refresh token error:", error);
+    } catch {
       return { success: false };
     }
   }

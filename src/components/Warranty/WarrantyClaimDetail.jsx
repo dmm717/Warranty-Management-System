@@ -13,6 +13,7 @@ function WarrantyClaimDetail({ claim, onEdit, onUpdateStatus, userRole }) {
     if (claim?.claimId) {
       fetchClaimDetail();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claim]);
 
   const fetchClaimDetail = async () => {
@@ -111,6 +112,14 @@ function WarrantyClaimDetail({ claim, onEdit, onUpdateStatus, userRole }) {
           </div>
         </div>
         <div className="detail-actions">
+          {displayClaim.status === "REJECTED" && userRole === "SC_STAFF" && (
+            <button
+              onClick={() => onEdit(displayClaim)}
+              className="btn btn-warning"
+            >
+              📝 Bổ sung và gửi lại
+            </button>
+          )}
           <button
             onClick={() => onEdit(displayClaim)}
             className="btn btn-outline"
@@ -127,6 +136,38 @@ function WarrantyClaimDetail({ claim, onEdit, onUpdateStatus, userRole }) {
           )}
         </div>
       </div>
+
+      {/* Rejection Alert */}
+      {displayClaim.status === "REJECTED" && displayClaim.rejectionReason && (
+        <div
+          className="rejection-alert"
+          style={{
+            background: "#fff3cd",
+            border: "1px solid #ffc107",
+            borderRadius: "8px",
+            padding: "16px",
+            margin: "16px 0",
+            display: "flex",
+            gap: "12px",
+          }}
+        >
+          <div style={{ fontSize: "24px" }}>❌</div>
+          <div style={{ flex: 1 }}>
+            <h4 style={{ margin: "0 0 8px 0", color: "#856404" }}>
+              Yêu cầu bảo hành bị từ chối
+            </h4>
+            <p style={{ margin: "0 0 8px 0" }}>
+              <strong>Lý do:</strong> {displayClaim.rejectionReason}
+            </p>
+            {userRole === "SC_STAFF" && (
+              <p style={{ margin: 0, fontSize: "14px", fontStyle: "italic" }}>
+                💡 Vui lòng bổ sung thông tin và gửi lại yêu cầu để được xem
+                xét.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="detail-content">
         {displayClaim.vehicle && (

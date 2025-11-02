@@ -1,9 +1,14 @@
 import React, { useState } from "react";
 import { PARTS_INVENTORY_STATUS } from "../../constants";
+import { useAuth } from "../../contexts/AuthContext";
+import PartsRequestForm from "./PartsRequestForm";
 import "../../styles/PartsManagement.css";
 
-function PartsInventoryList({ inventory, onUpdateStock }) {
+function PartsInventoryList({ inventory, onUpdateStock, onRequestCreated }) {
+  const { user } = useAuth();
   const [editingStatus, setEditingStatus] = useState(null);
+  const [requestFormOpen, setRequestFormOpen] = useState(false);
+  const [selectedPart, setSelectedPart] = useState(null);
 
   if (!inventory || inventory.length === 0) {
     return (
@@ -30,6 +35,22 @@ function PartsInventoryList({ inventory, onUpdateStock }) {
     }
     setEditingStatus(null);
   };
+
+  const openRequestForm = (part) => {
+    setSelectedPart(part);
+    setRequestFormOpen(true);
+  };
+
+  const handleRequestSuccess = () => {
+    setRequestFormOpen(false);
+    if (onRequestCreated) {
+      onRequestCreated();
+    }
+  };
+
+  // Check if user can request parts (SC_ADMIN or SC_STAFF)
+  const canRequestParts =
+    user && (user.role === "SC_ADMIN" || user.role === "SC_STAFF");
 
   const generateSerialDisplay = (itemId, stock) => {
     // Generate a simplified serial preview (in real implementation, fetch from backend)
@@ -69,8 +90,8 @@ function PartsInventoryList({ inventory, onUpdateStock }) {
         <tbody>
           {inventory.map((item) => {
             const stock = item.totalAmountOfProduct || 0;
-            // Always calculate status from stock amount
-            const currentStatus = getStockStatus(stock);
+            // Use stockStatus from backend if available, otherwise calculate from stock
+            const currentStatus = item.stockStatus || getStockStatus(stock);
 
             return (
               <tr key={item.id}>
@@ -128,14 +149,27 @@ function PartsInventoryList({ inventory, onUpdateStock }) {
                       ))}
                     </select>
                   ) : (
-                    <span
-                      className={`status-badge status-${currentStatus.toLowerCase()}`}
-                      onClick={() => setEditingStatus(item.id)}
-                      style={{ cursor: "pointer" }}
-                      title="Click để thay đổi"
-                    >
-                      {getStockLabel(currentStatus)}
-                    </span>
+                    <div className="status-cell">
+                      <span
+                        className={`status-badge status-${currentStatus.toLowerCase()}`}
+                        onClick={() => setEditingStatus(item.id)}
+                        style={{ cursor: "pointer" }}
+                        title="Click để thay đổi"
+                      >
+                        {getStockLabel(currentStatus)}
+                      </span>
+                      {canRequestParts &&
+                        (currentStatus === "LOW_STOCK" ||
+                          currentStatus === "OUT_OF_STOCK") && (
+                          <button
+                            className="btn-request-parts"
+                            onClick={() => openRequestForm(item)}
+                            title="Tạo yêu cầu nhập hàng"
+                          >
+                            Nhập hàng
+                          </button>
+                        )}
+                    </div>
                   )}
                 </td>
               </tr>
@@ -143,6 +177,15 @@ function PartsInventoryList({ inventory, onUpdateStock }) {
           })}
         </tbody>
       </table>
+
+      {/* Parts Request Form Modal */}
+      <PartsRequestForm
+        isOpen={requestFormOpen}
+        onClose={() => setRequestFormOpen(false)}
+        onSuccess={handleRequestSuccess}
+        prefilledPart={selectedPart}
+        userInfo={user}
+      />
     </div>
   );
 }

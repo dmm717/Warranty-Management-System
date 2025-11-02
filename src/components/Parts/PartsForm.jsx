@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { vehicleAPI } from "../../services/api";
+import { vehicleAPI, evmInventoryAPI } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 import "../../styles/PartsForm.css";
 
 // Temporary EVM Part Types - TODO: Get from Backend API /api/evm/part-types
@@ -15,39 +16,36 @@ const PART_TYPES = [
 ];
 
 function PartsForm({ part, onSave, onCancel }) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
-    partNumber: "",
-    partName: "",
-    quantity: 1,
-    requestDate: new Date().toISOString().split("T")[0],
-    deliveryDate: "",
-    partTypeId: "",
     vehicleId: "",
+    partTypeId: "",
+    quantity: 1,
   });
 
   const [errors, setErrors] = useState({});
   const [vehicles, setVehicles] = useState([]);
+  const [partTypes, setPartTypes] = useState([]);
+  const [filteredPartTypes, setFilteredPartTypes] = useState([]);
+  const [partSearchTerm, setPartSearchTerm] = useState("");
+  const [showPartDropdown, setShowPartDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchVehicles();
+    fetchPartTypes();
 
     if (part) {
       setFormData({
-        partNumber: part.partNumber || "",
-        partName: part.partName || "",
+        vehicleId: part.vehicle?.id || part.vehicleId || "",
+        partTypeId: part.partType?.id || part.partTypeId || "",
         quantity: part.quantity || 1,
-        requestDate: part.requestDate || new Date().toISOString().split("T")[0],
-        deliveryDate: part.deliveryDate || "",
-        partTypeId: part.partTypeId || "",
-        vehicleId: part.vehicle?.vehicleId || "",
       });
     }
   }, [part]);
 
   const fetchVehicles = async () => {
     try {
-      setLoading(true);
       const response = await vehicleAPI.getAllVehicles({
         page: 0,
         size: 100,
@@ -60,9 +58,82 @@ function PartsForm({ part, onSave, onCancel }) {
       }
     } catch (error) {
       console.error("Error fetching vehicles:", error);
+    }
+  };
+
+  const fetchPartTypes = async () => {
+    try {
+      setLoading(true);
+      // Get all EVM part types for dropdown
+      const response = await evmInventoryAPI.getAllPartTypesNoPagination();
+
+      if (response.success && response.data) {
+        setPartTypes(response.data);
+        setFilteredPartTypes(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching part types:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePartSearch = (e) => {
+    const searchValue = e.target.value;
+    setPartSearchTerm(searchValue);
+    setShowPartDropdown(true);
+
+    if (searchValue.trim() === "") {
+      setFilteredPartTypes(partTypes);
+    } else {
+      const filtered = partTypes.filter((part) => {
+        const searchLower = searchValue.toLowerCase();
+        return (
+          part.id?.toLowerCase().includes(searchLower) ||
+          part.partName?.toLowerCase().includes(searchLower) ||
+          part.manufacturer?.toLowerCase().includes(searchLower) ||
+          part.partNumber?.toLowerCase().includes(searchLower)
+        );
+      });
+      setFilteredPartTypes(filtered);
+    }
+  };
+
+  const handleSelectPart = (part) => {
+    setFormData((prev) => ({
+      ...prev,
+      partTypeId: part.id,
+    }));
+    setPartSearchTerm(`${part.partName} - ${part.manufacturer || "N/A"}`);
+    setShowPartDropdown(false);
+
+    if (errors.partTypeId) {
+      setErrors((prev) => ({
+        ...prev,
+        partTypeId: "",
+      }));
+    }
+  };
+
+  const getStockStatusBadge = (status) => {
+    const statusMap = {
+      IN_STOCK: { label: "Còn hàng", color: "#22c55e" },
+      LOW_STOCK: { label: "Sắp hết", color: "#f59e0b" },
+      OUT_OF_STOCK: { label: "Hết hàng", color: "#ef4444" },
+    };
+    const info = statusMap[status] || { label: status, color: "#6b7280" };
+    return (
+      <span
+        style={{
+          color: info.color,
+          fontSize: "12px",
+          fontWeight: "600",
+          marginLeft: "8px",
+        }}
+      >
+        [{info.label}]
+      </span>
+    );
   };
 
   const handleChange = (e) => {
@@ -83,28 +154,16 @@ function PartsForm({ part, onSave, onCancel }) {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.partNumber.trim()) {
-      newErrors.partNumber = "Mã phụ tùng là bắt buộc";
+    if (!formData.vehicleId) {
+      newErrors.vehicleId = "VIN xe là bắt buộc";
     }
 
-    if (!formData.partName.trim()) {
-      newErrors.partName = "Tên phụ tùng là bắt buộc";
+    if (!formData.partTypeId) {
+      newErrors.partTypeId = "Phụ tùng cần thay thế là bắt buộc";
     }
 
     if (!formData.quantity || formData.quantity < 1) {
       newErrors.quantity = "Số lượng phải lớn hơn 0";
-    }
-
-    if (!formData.requestDate) {
-      newErrors.requestDate = "Ngày yêu cầu là bắt buộc";
-    }
-
-    if (!formData.partTypeId) {
-      newErrors.partTypeId = "Loại phụ tùng là bắt buộc";
-    }
-
-    if (!formData.vehicleId) {
-      newErrors.vehicleId = "Xe là bắt buộc";
     }
 
     setErrors(newErrors);
@@ -114,16 +173,27 @@ function PartsForm({ part, onSave, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
+      // Get selected part info
+      const selectedPart = partTypes.find(
+        (pt) => pt.id === formData.partTypeId
+      );
+      const selectedVehicle = vehicles.find((v) => v.id === formData.vehicleId);
+
       // Transform to match Backend PartsRequestCreateDTO
       const requestData = {
-        partNumber: formData.partNumber,
-        partName: formData.partName,
+        partNumber: selectedPart?.id || formData.partTypeId,
+        partName: selectedPart?.partName || "",
         quantity: parseInt(formData.quantity),
-        requestDate: formData.requestDate,
-        deliveryDate: formData.deliveryDate || null,
+        requestDate: new Date().toISOString().split("T")[0],
+        deliveryDate: null,
         partTypeId: formData.partTypeId,
-        vehicleId: formData.vehicleId,
-      };      onSave(requestData);
+        vin: selectedVehicle?.id || formData.vehicleId, // Send VIN (vehicle ID)
+        requestedByStaffId: user?.id || "", // Current user ID
+        branchOffice: user?.branchOffice || "", // User's branch
+      };
+
+      console.log("Sending parts request:", requestData);
+      onSave(requestData);
     }
   };
 
@@ -137,143 +207,164 @@ function PartsForm({ part, onSave, onCancel }) {
 
       <form onSubmit={handleSubmit} className="form">
         <div className="form-section">
-          <h4 className="section-title">Thông tin phụ tùng</h4>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Mã phụ tùng *</label>
-              <input
-                type="text"
-                name="partNumber"
-                value={formData.partNumber}
-                onChange={handleChange}
-                className={`form-control ${errors.partNumber ? "error" : ""}`}
-                placeholder="PT-2025-001"
-              />
-              {errors.partNumber && (
-                <div className="error-message">{errors.partNumber}</div>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Tên phụ tùng *</label>
-              <input
-                type="text"
-                name="partName"
-                value={formData.partName}
-                onChange={handleChange}
-                className={`form-control ${errors.partName ? "error" : ""}`}
-                placeholder="Pin Lithium 75kWh"
-              />
-              {errors.partName && (
-                <div className="error-message">{errors.partName}</div>
-              )}
-            </div>
+          <div className="form-group">
+            <label className="form-label">
+              <span className="label-icon">🚗</span>
+              VIN Xe <span className="required">*</span>
+            </label>
+            <select
+              name="vehicleId"
+              value={formData.vehicleId}
+              onChange={handleChange}
+              className={`form-control ${errors.vehicleId ? "error" : ""}`}
+              disabled={loading}
+            >
+              <option value="">-- Chọn xe cần thay phụ tùng --</option>
+              {vehicles.map((vehicle) => (
+                <option key={vehicle.id} value={vehicle.id}>
+                  VIN: {vehicle.id} - {vehicle.name} - Chủ xe: {vehicle.owner}
+                </option>
+              ))}
+            </select>
+            {errors.vehicleId && (
+              <div className="error-message">⚠️ {errors.vehicleId}</div>
+            )}
+            <small className="form-help">Chọn xe cần thay thế phụ tùng</small>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Loại phụ tùng *</label>
-              <select
-                name="partTypeId"
-                value={formData.partTypeId}
-                onChange={handleChange}
-                className={`form-control ${errors.partTypeId ? "error" : ""}`}
-              >
-                <option value="">-- Chọn loại phụ tùng --</option>
-                {PART_TYPES.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-              {errors.partTypeId && (
-                <div className="error-message">{errors.partTypeId}</div>
-              )}
-            </div>
+          <div className="form-group" style={{ position: "relative" }}>
+            <label className="form-label">
+              <span className="label-icon">🔧</span>
+              Phụ tùng cần thay thế <span className="required">*</span>
+            </label>
+            <input
+              type="text"
+              value={partSearchTerm}
+              onChange={handlePartSearch}
+              onFocus={() => setShowPartDropdown(true)}
+              className={`form-control ${errors.partTypeId ? "error" : ""}`}
+              placeholder="🔍 Tìm kiếm theo tên, ID, nhà sản xuất..."
+              disabled={loading}
+              autoComplete="off"
+            />
+            {errors.partTypeId && (
+              <div className="error-message">⚠️ {errors.partTypeId}</div>
+            )}
 
-            <div className="form-group">
-              <label className="form-label">Số lượng *</label>
-              <input
-                type="number"
-                name="quantity"
-                value={formData.quantity}
-                onChange={handleChange}
-                className={`form-control ${errors.quantity ? "error" : ""}`}
-                placeholder="1"
-                min="1"
-              />
-              {errors.quantity && (
-                <div className="error-message">{errors.quantity}</div>
-              )}
-            </div>
+            {showPartDropdown && filteredPartTypes.length > 0 && (
+              <div className="parts-dropdown">
+                <div className="parts-dropdown-header">
+                  <strong>{filteredPartTypes.length}</strong> phụ tùng tìm thấy
+                  <button
+                    type="button"
+                    onClick={() => setShowPartDropdown(false)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: "18px",
+                      color: "#666",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="parts-dropdown-list">
+                  {filteredPartTypes.map((partType) => (
+                    <div
+                      key={partType.id}
+                      className="parts-dropdown-item"
+                      onClick={() => handleSelectPart(partType)}
+                    >
+                      <div className="part-item-header">
+                        <strong style={{ color: "#1e40af", fontSize: "14px" }}>
+                          {partType.partName}
+                        </strong>
+                        {partType.stockStatus &&
+                          getStockStatusBadge(partType.stockStatus)}
+                      </div>
+                      <div className="part-item-details">
+                        <span style={{ fontSize: "12px", color: "#666" }}>
+                          🆔 {partType.id} | 🏭 {partType.manufacturer || "N/A"}
+                          {partType.partNumber &&
+                            ` | 🔢 ${partType.partNumber}`}
+                        </span>
+                      </div>
+                      <div className="part-item-stock">
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: "#059669",
+                            fontWeight: "500",
+                          }}
+                        >
+                          📦 Tồn kho:{" "}
+                          {partType.totalAmountOfProduct !== undefined
+                            ? partType.totalAmountOfProduct
+                            : "N/A"}
+                        </span>
+                        {partType.warrantyPeriod && (
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: "#7c3aed",
+                              marginLeft: "10px",
+                            }}
+                          >
+                            🛡️ BH: {partType.warrantyPeriod} tháng
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <small className="form-help">
+              Tìm kiếm và chọn phụ tùng từ kho trung tâm EVM
+            </small>
           </div>
-        </div>
 
-        <div className="form-section">
-          <h4 className="section-title">Thông tin xe</h4>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Chọn xe *</label>
-              <select
-                name="vehicleId"
-                value={formData.vehicleId}
-                onChange={handleChange}
-                className={`form-control ${errors.vehicleId ? "error" : ""}`}
-              >
-                <option value="">-- Chọn xe --</option>
-                {vehicles.map((vehicle) => (
-                  <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.id} - {vehicle.name} ({vehicle.owner})
-                  </option>
-                ))}
-              </select>
-              {errors.vehicleId && (
-                <div className="error-message">{errors.vehicleId}</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="form-section">
-          <h4 className="section-title">Thông tin thời gian</h4>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Ngày yêu cầu *</label>
-              <input
-                type="date"
-                name="requestDate"
-                value={formData.requestDate}
-                onChange={handleChange}
-                className={`form-control ${errors.requestDate ? "error" : ""}`}
-              />
-              {errors.requestDate && (
-                <div className="error-message">{errors.requestDate}</div>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Ngày giao hàng dự kiến</label>
-              <input
-                type="date"
-                name="deliveryDate"
-                value={formData.deliveryDate}
-                onChange={handleChange}
-                className="form-control"
-              />
-              <small className="form-help">Để trống nếu chưa xác định</small>
-            </div>
+          <div className="form-group">
+            <label className="form-label">
+              <span className="label-icon">📦</span>
+              Số lượng <span className="required">*</span>
+            </label>
+            <input
+              type="number"
+              name="quantity"
+              value={formData.quantity}
+              onChange={handleChange}
+              className={`form-control ${errors.quantity ? "error" : ""}`}
+              placeholder="Nhập số lượng cần yêu cầu"
+              min="1"
+              max="100"
+            />
+            {errors.quantity && (
+              <div className="error-message">⚠️ {errors.quantity}</div>
+            )}
+            <small className="form-help">
+              Số lượng phụ tùng cần yêu cầu (tối thiểu: 1)
+            </small>
           </div>
         </div>
 
         <div className="form-actions">
-          <button type="button" onClick={onCancel} className="btn btn-outline">
-            Hủy
+          <button
+            type="button"
+            onClick={onCancel}
+            className="btn btn-outline"
+            disabled={loading}
+          >
+            ❌ Hủy
           </button>
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {part ? "Cập nhật" : "Tạo yêu cầu"}
+            {loading
+              ? "⏳ Đang tải..."
+              : part
+              ? "✏️ Cập nhật"
+              : "✅ Tạo yêu cầu"}
           </button>
         </div>
       </form>

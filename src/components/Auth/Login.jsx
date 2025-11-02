@@ -12,44 +12,44 @@ function Login() {
     password: "",
     rememberMe: false,
   });
-  const [error, setError] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [hasError, setHasError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setFieldErrors({});
+    setHasError(false);
     setLoading(true);
 
     try {
       const result = await login(credentials);
       if (result.success) {
-        toast.success("Đăng nhập thành công!");
+        toast.success("Đăng nhập thành công!", {
+          position: "top-right",
+          autoClose: 2000,
+        });
         navigate("/");
       } else {
-        // Hiển thị lỗi chi tiết hơn
-        setError(result.message);
-        toast.error(result.message);
+        // Chỉ dùng toast để hiển thị lỗi
+        setHasError(true);
+        toast.error(result.message || "Đăng nhập thất bại", {
+          position: "top-right",
+          autoClose: 4000,
+        });
 
-        // Xử lý field-specific errors từ backend
-        if (result.errors && Array.isArray(result.errors)) {
-          const errors = {};
-          for (const err of result.errors) {
-            if (err.field) {
-              errors[err.field] = err.message;
-            }
-          }
-          setFieldErrors(errors);
-        }
+        // Auto remove highlight sau 3 giây
+        setTimeout(() => setHasError(false), 3000);
       }
     } catch (err) {
       console.error("Login error:", err);
-      const errorMsg = "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.";
-      setError(errorMsg);
-      toast.error(errorMsg);
+      setHasError(true);
+      toast.error("Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.", {
+        position: "top-right",
+        autoClose: 4000,
+      });
+      setTimeout(() => setHasError(false), 3000);
     } finally {
       setLoading(false);
     }
@@ -57,6 +57,10 @@ function Login() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    // Clear error state khi user bắt đầu nhập lại
+    if (hasError) {
+      setHasError(false);
+    }
     setCredentials({
       ...credentials,
       [name]: type === "checkbox" ? checked : value,
@@ -80,8 +84,6 @@ function Login() {
             <p>Đăng nhập để tiếp tục</p>
           </div>
 
-          {error && <div className="error-message">{error}</div>}
-
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="email" className="form-label">
@@ -91,35 +93,69 @@ function Login() {
                 type="email"
                 id="email"
                 name="email"
-                className={`form-control ${fieldErrors.email ? "error" : ""}`}
+                className={`form-control ${hasError ? "input-error" : ""}`}
                 value={credentials.email}
                 onChange={handleChange}
                 placeholder="Nhập email của bạn"
+                required
               />
-              {fieldErrors.email && (
-                <div className="field-error">{fieldErrors.email}</div>
-              )}
             </div>
 
             <div className="form-group">
               <label htmlFor="password" className="form-label">
                 Mật khẩu
               </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                className={`form-control ${
-                  fieldErrors.password ? "error" : ""
-                }`}
-                value={credentials.password}
-                onChange={handleChange}
-                placeholder="Nhập mật khẩu"
-                autoComplete="current-password"
-              />
-              {fieldErrors.password && (
-                <div className="field-error">{fieldErrors.password}</div>
-              )}
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  className={`form-control ${hasError ? "input-error" : ""}`}
+                  value={credentials.password}
+                  onChange={handleChange}
+                  placeholder="Nhập mật khẩu"
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                >
+                  {showPassword ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="form-group remember-me">

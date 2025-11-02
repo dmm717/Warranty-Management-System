@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import PartsList from "./PartsList";
 import PartsInventoryList from "./PartsInventoryList";
 import PartsForm from "./PartsForm";
 import PartsSearch from "./PartsSearch";
-import { partsRequestAPI, evmInventoryAPI } from "../../services/api";
+import {
+  partsRequestAPI,
+  evmInventoryAPI,
+  scInventoryAPI,
+} from "../../services/api";
 import "../../styles/PartsManagement.css";
 
 function PartsManagement() {
   const { user } = useAuth();
+  const location = useLocation();
   const [partsRequests, setPartsRequests] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [filteredPartsRequests, setFilteredPartsRequests] = useState([]);
@@ -20,25 +26,66 @@ function PartsManagement() {
   const [activeTab, setActiveTab] = useState("inventory");
   const [availableCategories, setAvailableCategories] = useState([]);
 
+  // Handle navigation từ notification
+  useEffect(() => {
+    if (
+      location.state?.fromNotification &&
+      location.state?.highlightRequestId &&
+      location.state?.activeTab === "requests"
+    ) {
+      // Chuyển sang tab requests
+      setActiveTab("requests");
+
+      // TODO: Scroll to and highlight the request
+      // Có thể thêm logic highlight request sau khi fetch xong
+    }
+  }, [location]);
+
   useEffect(() => {
     if (activeTab === "inventory") {
       fetchInventory();
     } else {
       fetchPartsRequests();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const fetchInventory = async () => {
     try {
       setLoading(true);
 
-      const response = await evmInventoryAPI.getAllPartTypes({
-        page: 0,
-        size: 100,
-        sortBy: "partName",
-        sortDir: "asc",
-      });
-      // ApiService wrap response: { success: true, data: Page<EVMPartTypeDTO> }
+      // Check role để gọi API tương ứng
+      const isEVMRole =
+        user?.role === "EVM_STAFF" || user?.role === "EVM_ADMIN";
+      const isSCRole = user?.role === "SC_STAFF" || user?.role === "SC_ADMIN";
+
+      let response;
+      if (isEVMRole) {
+        // EVM roles → fetch từ kho EVM
+        response = await evmInventoryAPI.getAllPartTypes({
+          page: 0,
+          size: 100,
+          sortBy: "partName",
+          sortDir: "asc",
+        });
+      } else if (isSCRole) {
+        // SC roles → fetch từ kho SC
+        response = await scInventoryAPI.getAllPartTypes({
+          page: 0,
+          size: 100,
+          sortBy: "partName",
+          sortDir: "asc",
+        });
+      } else {
+        // Unknown role
+        console.error("Unknown user role:", user?.role);
+        setInventory([]);
+        setFilteredInventory([]);
+        setLoading(false);
+        return;
+      }
+
+      // ApiService wrap response: { success: true, data: Page<PartTypeDTO> }
       if (response.success && response.data?.content) {
         const inventoryData = response.data.content;
         setInventory(inventoryData);
@@ -292,13 +339,13 @@ function PartsManagement() {
         <h1>Quản lý phụ tùng</h1>
         {!showForm && (
           <div className="header-actions">
-            {(user?.role === "SC_STAFF" || user?.role === "SC_TECHNICAL") &&
-              activeTab === "requests" && (
-                <button onClick={handleAddPart} className="btn btn-primary">
-                  <span>➕</span>
-                  Yêu cầu phụ tùng
-                </button>
-              )}
+            {/* Only SC_ADMIN can create parts request */}
+            {user?.role === "SC_ADMIN" && activeTab === "requests" && (
+              <button onClick={handleAddPart} className="btn btn-primary">
+                <span>➕</span>
+                Tạo yêu cầu phụ tùng
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -312,12 +359,17 @@ function PartsManagement() {
             >
               Kho phụ tùng
             </button>
-            <button
-              className={`tab-btn ${activeTab === "requests" ? "active" : ""}`}
-              onClick={() => setActiveTab("requests")}
-            >
-              Yêu cầu phụ tùng
-            </button>
+            {/* Chỉ SC_ADMIN và EVM_STAFF/EVM_ADMIN được xem tab yêu cầu phụ tùng */}
+            {user?.role !== "SC_STAFF" && (
+              <button
+                className={`tab-btn ${
+                  activeTab === "requests" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("requests")}
+              >
+                Yêu cầu phụ tùng
+              </button>
+            )}
           </div>
 
           <PartsSearch

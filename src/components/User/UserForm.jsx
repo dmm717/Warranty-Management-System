@@ -7,7 +7,7 @@ import {
 } from "../../constants";
 import "../../styles/UserForm.css";
 
-function UserForm({ user, onSave, onCancel }) {
+function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -15,6 +15,7 @@ function UserForm({ user, onSave, onCancel }) {
     department: "",
     phone: "",
     dateOfBirth: "",
+    specialty: "", // Thêm field specialty cho SC_TECHNICAL
     password: "",
     confirmPassword: "",
   });
@@ -22,7 +23,19 @@ function UserForm({ user, onSave, onCancel }) {
   const [errors, setErrors] = useState({});
   const [passwordStrength, setPasswordStrength] = useState("");
 
-  const roles = USER_ROLES;
+  // Lọc roles theo currentUser
+  const getAvailableRoles = () => {
+    if (currentUser?.role === "SC_ADMIN") {
+      // SC_ADMIN chỉ thấy SC_STAFF và SC_TECHNICAL
+      return USER_ROLES.filter(
+        (r) => r.value === "SC_STAFF" || r.value === "SC_TECHNICAL"
+      );
+    }
+    // EVM_ADMIN thấy tất cả roles
+    return USER_ROLES;
+  };
+
+  const roles = getAvailableRoles();
 
   useEffect(() => {
     if (user) {
@@ -52,6 +65,7 @@ function UserForm({ user, onSave, onCancel }) {
         department: user.branchOffice || "",
         phone: user.phoneNumber || "",
         dateOfBirth: formattedDate,
+        specialty: user.specialty || "", // Load specialty khi edit
         password: "",
         confirmPassword: "",
       });
@@ -70,10 +84,21 @@ function UserForm({ user, onSave, onCancel }) {
 
     if (name === "role") {
       const selectedRole = roles.find((r) => r.value === value);
+      let departmentValue = selectedRole
+        ? selectedRole.department
+        : formData.department;
+
+      // Nếu SC_ADMIN tạo SC_STAFF/SC_TECHNICAL, tự động set chi nhánh của SC_ADMIN
+      if (currentUser?.role === "SC_ADMIN" && !user && currentUserBranch) {
+        if (value === "SC_STAFF" || value === "SC_TECHNICAL") {
+          departmentValue = currentUserBranch;
+        }
+      }
+
       setFormData((prev) => ({
         ...prev,
         [name]: value,
-        department: selectedRole ? selectedRole.department : prev.department,
+        department: departmentValue,
       }));
     } else {
       setFormData((prev) => ({
@@ -125,6 +150,20 @@ function UserForm({ user, onSave, onCancel }) {
     ) {
       if (!formData.department.trim()) {
         newErrors.department = "Khu vực là bắt buộc cho vai trò SC";
+      }
+
+      // VALIDATION: SC_ADMIN chỉ được tạo user trong cùng chi nhánh
+      if (currentUser?.role === "SC_ADMIN" && !user && currentUserBranch) {
+        if (formData.department !== currentUserBranch) {
+          newErrors.department = `Bạn chỉ có thể tạo tài khoản trong chi nhánh "${currentUserBranch}"`;
+        }
+      }
+    }
+
+    // Specialty validation for SC_TECHNICAL
+    if (formData.role === "SC_TECHNICAL") {
+      if (!formData.specialty || !formData.specialty.trim()) {
+        newErrors.specialty = "Chuyên môn là bắt buộc cho Kỹ thuật viên SC";
       }
     }
 
@@ -285,30 +324,54 @@ function UserForm({ user, onSave, onCancel }) {
               )}
             </div>
 
-            {/* Chỉ SC roles mới có field Khu vực */}
+            {/* Chỉ SC roles mới có field Khu vực - KHÔNG hiển thị cho SC_ADMIN khi tạo mới */}
             {(formData.role === "SC_ADMIN" ||
               formData.role === "SC_STAFF" ||
-              formData.role === "SC_TECHNICAL") && (
+              formData.role === "SC_TECHNICAL") &&
+              !(currentUser?.role === "SC_ADMIN" && !user) && ( // Ẩn hoàn toàn khi SC_ADMIN tạo mới
+                <div className="form-group">
+                  <label className="form-label">Khu vực *</label>
+                  <select
+                    name="department"
+                    value={formData.department}
+                    onChange={handleChange}
+                    className={`form-control ${
+                      errors.department ? "error" : ""
+                    }`}
+                  >
+                    <option value="">Chọn khu vực</option>
+                    {REGIONS.filter((r) => r.value !== "ALL").map((region) => (
+                      <option key={region.value} value={region.label}>
+                        {region.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.department && (
+                    <div className="error-message">{errors.department}</div>
+                  )}
+                  <small className="form-help">
+                    Chọn quận/huyện khu vực hoạt động
+                  </small>
+                </div>
+              )}
+
+            {/* Specialty field - Chỉ cho SC_TECHNICAL */}
+            {formData.role === "SC_TECHNICAL" && (
               <div className="form-group">
-                <label className="form-label">Khu vực *</label>
-                <select
-                  name="department"
-                  value={formData.department}
+                <label className="form-label">Chuyên môn *</label>
+                <input
+                  type="text"
+                  name="specialty"
+                  value={formData.specialty}
                   onChange={handleChange}
-                  className={`form-control ${errors.department ? "error" : ""}`}
-                >
-                  <option value="">Chọn khu vực</option>
-                  {REGIONS.filter((r) => r.value !== "ALL").map((region) => (
-                    <option key={region.value} value={region.label}>
-                      {region.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.department && (
-                  <div className="error-message">{errors.department}</div>
+                  className={`form-control ${errors.specialty ? "error" : ""}`}
+                  placeholder="Ví dụ: Sửa chữa động cơ điện, Bảo dưỡng pin"
+                />
+                {errors.specialty && (
+                  <div className="error-message">{errors.specialty}</div>
                 )}
                 <small className="form-help">
-                  Chọn quận/huyện khu vực hoạt động
+                  Nhập chuyên môn của kỹ thuật viên
                 </small>
               </div>
             )}

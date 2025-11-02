@@ -33,7 +33,6 @@ class ApiService {
     // Chỉ thêm token nếu KHÔNG phải public endpoint
     if (!isPublicEndpoint) {
       const token = this.getToken();
-      console.log(`[ApiService] Endpoint: ${endpoint}, Token:`, token ? "EXISTS" : "MISSING");
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
@@ -99,8 +98,6 @@ class ApiService {
 
         // Xử lý 401 Unauthorized - KHÔNG tự động logout
         if (response.status === 401) {
-          console.error("❌ 401 Unauthorized:", endpoint);
-
           return {
             success: false,
             status: 401,
@@ -120,8 +117,6 @@ class ApiService {
       }
     } catch (error) {
       // Network error hoặc error khác
-      console.error("API Request Error:", error);
-
       // Kiểm tra loại lỗi để trả về message phù hợp
       let errorMessage = "Không thể kết nối đến server";
 
@@ -206,7 +201,6 @@ class ApiService {
   setToken(token, rememberMe = false) {
     const storage = rememberMe ? localStorage : sessionStorage;
     storage.setItem("authToken", token);
-    console.log(`[ApiService] Token saved to ${rememberMe ? 'localStorage' : 'sessionStorage'}:`, token.substring(0, 20) + "...");
   }
 
   /**

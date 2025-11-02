@@ -1,0 +1,167 @@
+.technician-assignment {
+  max-width: 600px;
+}
+
+.technician-assignment h3 {
+  margin-top: 0;
+  color: #2c3e50;
+  margin-bottom: 16px;
+  font-size: 20px;
+}
+
+.entity-info {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.entity-info p {
+  margin: 6px 0;
+  font-size: 14px;
+  color: #495057;
+}
+
+.entity-info strong {
+  color: #2c3e50;
+}
+
+.entity-info code {
+  background: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #667eea;
+  border: 1px solid #e9ecef;
+}
+
+.technician-assignment form label {
+  display: block;
+  margin-bottom: 6px;
+  margin-top: 16px;
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+.technician-assignment form label:first-of-type {
+  margin-top: 0;
+}
+
+.required {
+  color: #e74c3c;
+  margin-left: 2px;
+}
+
+.help-text {
+  display: block;
+  font-weight: 400;
+  color: #6c757d;
+  font-size: 12px;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.technician-assignment select,
+.technician-assignment textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.technician-assignment textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.technician-assignment select:focus,
+.technician-assignment textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.info-box {
+  background: #e7f3ff;
+  border-left: 4px solid #2196f3;
+  padding: 14px 16px;
+  border-radius: 6px;
+  margin-top: 20px;
+  font-size: 13px;
+}
+
+.info-box strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0c5460;
+}
+
+.info-box ol {
+  margin: 0;
+  padding-left: 20px;
+  color: #495057;
+}
+
+.info-box li {
+  margin: 4px 0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5568d3 0%, #63407a 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #5a6268;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .technician-assignment {
+    max-width: 95vw;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}

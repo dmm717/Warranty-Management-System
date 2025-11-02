@@ -8,6 +8,14 @@ function Sidebar() {
   const location = useLocation();
   const { user } = useAuth();
 
+  // Xác định tên Dashboard dựa trên role và branchOffice
+  const getDashboardName = () => {
+    if (user?.role === "SC_ADMIN" && user?.branchOffice) {
+      return `Trung tâm ${user.branchOffice}`;
+    }
+    return "Dashboard";
+  };
+
   const menuItems = [
     {
       path: "/",

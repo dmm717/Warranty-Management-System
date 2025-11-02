@@ -1,5 +1,7 @@
-import React from "react";
+
 import { Check, Wrench, X, Play, Eye, Edit } from 'lucide-react';
+import React, { useState } from "react";
+import Swal from "sweetalert2";
 import "../../styles/WarrantyClaimList.css";
 
 function WarrantyClaimList({
@@ -17,6 +19,9 @@ function WarrantyClaimList({
       REJECTED: "status-rejected",
       COMPLETED: "status-completed",
       CANCELLED: "status-cancelled",
+      ASSIGNED_TO_TECHNICIAN: "status-assigned",
+      INSPECTION_COMPLETED: "status-inspected",
+      PENDING_PARTS: "status-pending-parts",
     };
 
     const statusLabels = {
@@ -26,6 +31,9 @@ function WarrantyClaimList({
       REJECTED: "Từ chối",
       COMPLETED: "Hoàn thành",
       CANCELLED: "Đã hủy",
+      ASSIGNED_TO_TECHNICIAN: "👨‍🔧 Đã phân công",
+      INSPECTION_COMPLETED: "✅ Kiểm tra xong",
+      PENDING_PARTS: "⏳ Chờ phụ tùng",
     };
 
     const displayStatus = statusLabels[status] || status;
@@ -44,12 +52,15 @@ function WarrantyClaimList({
   };
 
   const canUpdateStatus = (status) => {
-    if (userRole === "EVM_STAFF" || userRole === "EVM_ADMIN") {
+    // SC_ADMIN: Có quyền duyệt/từ chối yêu cầu PENDING
+    if (userRole === "SC_ADMIN") {
       return ["PENDING"].includes(status);
     }
+    // SC_STAFF và SC_TECHNICAL: Xử lý yêu cầu đã duyệt
     if (userRole === "SC_STAFF" || userRole === "SC_TECHNICAL") {
       return ["APPROVED", "IN_PROGRESS"].includes(status);
     }
+    // EVM_ADMIN và EVM_STAFF: Không có quyền duyệt, chỉ xem
     return false;
   };
 
@@ -144,9 +155,53 @@ function WarrantyClaimList({
                           return (
                             <button
                               key={nextStatus}
-                              onClick={() =>
-                                onUpdateStatus(claim.claimId, nextStatus)
-                              }
+                              onClick={async () => {
+                                // Nếu là REJECT, yêu cầu nhập lý do
+                                if (nextStatus === "REJECTED") {
+                                  const result = await Swal.fire({
+                                    title: "Từ chối yêu cầu bảo hành",
+                                    input: "textarea",
+                                    inputLabel: "Lý do từ chối",
+                                    inputPlaceholder:
+                                      "Nhập lý do từ chối yêu cầu bảo hành...",
+                                    inputValidator: (value) => {
+                                      if (!value || value.trim() === "") {
+                                        return "Bạn cần nhập lý do từ chối!";
+                                      }
+                                    },
+                                    showCancelButton: true,
+                                    confirmButtonText: "Từ chối",
+                                    cancelButtonText: "Hủy",
+                                    confirmButtonColor: "#d33",
+                                  });
+
+                                  if (result.isConfirmed) {
+                                    onUpdateStatus(
+                                      claim.claimId,
+                                      nextStatus,
+                                      result.value
+                                    );
+                                  }
+                                } else if (nextStatus === "APPROVED") {
+                                  // Confirm approve
+                                  const result = await Swal.fire({
+                                    title: "Duyệt yêu cầu bảo hành",
+                                    text: `Bạn có chắc muốn duyệt yêu cầu ${claim.claimId}?`,
+                                    icon: "question",
+                                    showCancelButton: true,
+                                    confirmButtonText: "Duyệt",
+                                    cancelButtonText: "Hủy",
+                                    confirmButtonColor: "#28a745",
+                                  });
+
+                                  if (result.isConfirmed) {
+                                    onUpdateStatus(claim.claimId, nextStatus);
+                                  }
+                                } else {
+                                  // Các status khác
+                                  onUpdateStatus(claim.claimId, nextStatus);
+                                }
+                              }}
                               className={`btn btn-sm status-action-btn ${config.className}`}
                               title={config.label}
                             >
@@ -168,13 +223,17 @@ function WarrantyClaimList({
                     >
                       <Eye size={16} />
                     </button>
-                    <button
-                      onClick={() => onEdit(claim)}
-                      className="btn btn-sm btn-outline"
-                      title="Chỉnh sửa"
-                    >
-                      <Edit size={16} />
-                    </button>
+                    {/* Chỉ SC_STAFF và SC_TECHNICAL có quyền chỉnh sửa */}
+                    {(userRole === "SC_STAFF" ||
+                      userRole === "SC_TECHNICAL") && (
+                      <button
+                        onClick={() => onEdit(claim)}
+                        className="btn btn-sm btn-outline"
+                        title="Chỉnh sửa"
+                      >
+                        <Edit size={16} />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

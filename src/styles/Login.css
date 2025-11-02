@@ -142,6 +142,40 @@
   color: rgba(255, 255, 255, 0.95);
 }
 
+/* Input error state - animation đẹp */
+.form-control.input-error {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2;
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.form-control.input-error:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+/* Shake animation cho input error */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+/* Bỏ các CSS cũ không dùng nữa */
 .error-message {
   background-color: rgba(220, 38, 38, 0.15);
   color: #fca5a5;
@@ -165,6 +199,7 @@
 }
 
 .form-control.error {
+  /* Deprecated - dùng input-error thay thế */
   border-color: #dc2626 !important;
   background-color: rgba(220, 38, 38, 0.1);
 }
@@ -267,6 +302,54 @@
 
 .checkbox-label:hover {
   color: #1e293b;
+}
+
+/* Password input wrapper with toggle button */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper .form-control {
+  padding-right: 48px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  z-index: 10;
+}
+
+.password-toggle-btn:hover {
+  color: #1e40af;
+  background-color: #f1f5f9;
+}
+
+.password-toggle-btn:focus {
+  outline: 2px solid #1e40af;
+  outline-offset: 2px;
+}
+
+.password-toggle-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.password-toggle-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 @media (max-width: 480px) {

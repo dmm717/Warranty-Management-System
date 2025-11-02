@@ -2,10 +2,13 @@ import React, { useState } from "react";
 import { Edit, Trash2 } from "lucide-react";
 import "../../styles/UserList.css";
 
-function UserList({ users, onEdit, onDelete, onUpdateStatus }) {
+function UserList({ users, currentUser, onEdit, onDelete, onUpdateStatus }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Kiểm tra xem user hiện tại có quyền thay đổi trạng thái không
+  const canChangeStatus = currentUser?.role === "EVM_ADMIN";
 
   const getStatusBadge = (accountStatus) => {
     // Map backend enum sang Vietnamese
@@ -257,22 +260,25 @@ function UserList({ users, onEdit, onDelete, onUpdateStatus }) {
                         >
                           {getStatusBadge(user.accountStatus)}
                         </div>
-                        <div className="status-actions">
-                          {getAvailableStatuses(user.accountStatus).map(
-                            (newStatus) => (
-                              <button
-                                key={newStatus}
-                                onClick={() =>
-                                  onUpdateStatus(user.id, newStatus)
-                                }
-                                className="btn btn-sm status-btn"
-                                title={`Chuyển sang ${newStatus}`}
-                              >
-                                →{newStatus}
-                              </button>
-                            )
-                          )}
-                        </div>
+                        {/* Chỉ hiển thị nút thay đổi trạng thái nếu user là EVM_ADMIN */}
+                        {canChangeStatus && (
+                          <div className="status-actions">
+                            {getAvailableStatuses(user.accountStatus).map(
+                              (newStatus) => (
+                                <button
+                                  key={newStatus}
+                                  onClick={() =>
+                                    onUpdateStatus(user.id, newStatus)
+                                  }
+                                  className="btn btn-sm status-btn"
+                                  title={`Chuyển sang ${newStatus}`}
+                                >
+                                  →{newStatus}
+                                </button>
+                              )
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td>

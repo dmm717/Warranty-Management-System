@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { Check, Wrench, Package, AlertTriangle, Megaphone, Bell } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import { notificationAPI } from "../../services/api";
 import "./NotificationBell.css";
 
 function NotificationBell() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -12,30 +15,24 @@ function NotificationBell() {
   const dropdownRef = useRef(null);
 
   const fetchUnreadNotifications = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      return;
+    }
 
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/notifications/user/${user.id}/unread`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      const response = await notificationAPI.getUnreadNotifications(user.id);
 
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data);
-        setUnreadCount(data.length);
+      if (response.success && response.data) {
+        setNotifications(response.data);
+        setUnreadCount(response.data.length);
       }
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
+    } catch {
+      // Silent fail for notification fetching
     }
   };
 
   useEffect(() => {
-    if (user && user.role !== "SC_TECHNICIAN") {
+    if (user && user.role !== "SC_TECHNICAL") {
       fetchUnreadNotifications();
       // Poll every 30 seconds
       const interval = setInterval(fetchUnreadNotifications, 30000);
@@ -56,8 +53,8 @@ function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Don't show notification bell for SC_TECHNICIAN
-  if (!user || user.role === "SC_TECHNICIAN") {
+  // Don't show notification bell for SC_TECHNICAL
+  if (!user || user.role === "SC_TECHNICAL") {
     return null;
   }
 
@@ -67,23 +64,15 @@ function NotificationBell() {
 
   const handleMarkAsRead = async (notificationId) => {
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/notifications/${notificationId}/read`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      const response = await notificationAPI.markAsRead(notificationId);
 
-      if (response.ok) {
+      if (response.success) {
         // Remove from unread list
         setNotifications(notifications.filter((n) => n.id !== notificationId));
         setUnreadCount(Math.max(0, unreadCount - 1));
       }
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
+    } catch {
+      // Silent fail
     }
   };
 
@@ -92,22 +81,14 @@ function NotificationBell() {
 
     try {
       setLoading(true);
-      const response = await fetch(
-        `http://localhost:8080/api/notifications/user/${user.id}/read-all`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      const response = await notificationAPI.markAllAsRead(user.id);
 
-      if (response.ok) {
+      if (response.success) {
         setNotifications([]);
         setUnreadCount(0);
       }
-    } catch (error) {
-      console.error("Error marking all as read:", error);
+    } catch {
+      // Silent fail
     } finally {
       setLoading(false);
     }
@@ -115,12 +96,56 @@ function NotificationBell() {
 
   const getNotificationIcon = (type) => {
     const icons = {
-      WARRANTY_CLAIM: <Wrench size={18} className="notif-type-icon" />,
-      PARTS_REQUEST: <Package size={18} className="notif-type-icon" />,
-      RECALL: <AlertTriangle size={18} className="notif-type-icon" />,
-      SERVICE_CAMPAIGN: <Megaphone size={18} className="notif-type-icon" />,
+      WARRANTY_CLAIM: "🔧",
+      WARRANTY_CLAIM_APPROVED: "✅",
+      WARRANTY_CLAIM_REJECTED: "❌",
+      PARTS_REQUEST: "📦",
+      PARTS_REQUEST_APPROVED: "✅",
+      PARTS_REQUEST_REJECTED: "❌",
+      RECALL: "🚨",
+      SERVICE_CAMPAIGN: "📢",
     };
-    return icons[type] || <Bell size={18} className="notif-type-icon" />;
+    return icons[type] || "🔔";
+  };
+
+  const handleNotificationClick = async (notification) => {
+    try {
+      // Đánh dấu đã đọc
+      await handleMarkAsRead(notification.id);
+
+      // Navigate dựa vào type
+      if (
+        notification.type === "WARRANTY_CLAIM" ||
+        notification.type === "WARRANTY_CLAIM_APPROVED" ||
+        notification.type === "WARRANTY_CLAIM_REJECTED"
+      ) {
+        // Navigate đến trang warranty claims với claimId
+        navigate("/warranty-claims", {
+          state: {
+            highlightClaimId: notification.relatedEntityId,
+            fromNotification: true,
+          },
+        });
+      } else if (
+        notification.type === "PARTS_REQUEST" ||
+        notification.type === "PARTS_REQUEST_APPROVED" ||
+        notification.type === "PARTS_REQUEST_REJECTED"
+      ) {
+        // Navigate đến trang parts management với requestId
+        navigate("/parts", {
+          state: {
+            highlightRequestId: notification.relatedEntityId,
+            fromNotification: true,
+            activeTab: "requests", // Tự động chuyển sang tab requests
+          },
+        });
+      }
+
+      // Đóng dropdown
+      setShowDropdown(false);
+    } catch {
+      // Silent fail
+    }
   };
 
   const formatTimeAgo = (dateString) => {
@@ -175,7 +200,8 @@ function NotificationBell() {
                 <div
                   key={notification.id}
                   className="notification-item"
-                  onClick={() => handleMarkAsRead(notification.id)}
+                  onClick={() => handleNotificationClick(notification)}
+                  style={{ cursor: "pointer" }}
                 >
                   <div className="notif-icon">
                     {getNotificationIcon(notification.type)}

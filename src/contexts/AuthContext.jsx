@@ -67,10 +67,13 @@ export function AuthProvider({ children }) {
 
         // Tạo user object theo format cũ để tương thích với code hiện tại
         const userInfo = {
+          id: response.data.id, // Backend trả về id
           name: response.data.username,
           email: credentials.email,
           role: primaryRole,
           roles: response.data.roles,
+          branchOffice: response.data.branchOffice,
+          username: response.data.username,
         };
 
         setUser(userInfo);

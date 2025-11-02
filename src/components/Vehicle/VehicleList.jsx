@@ -101,21 +101,15 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
                 </td>
                 <td>
                   <div className="contact-cell">
-                    <div className="contact-phone">
-                      <Phone size={14} style={{ display: 'inline', marginRight: '4px' }} />
-                      {vehicle.Phone_Number || '—'}
-                    </div>
-                    <small className="contact-email">
-                      <Mail size={12} style={{ display: 'inline', marginRight: '4px' }} />
-                      {vehicle.Email || '—'}
-                    </small>
+                    <div><Phone size={14} style={{ display: 'inline', marginRight: '4px' }} /> {vehicle.Phone_Number}</div>
+                    <small><Mail size={12} style={{ display: 'inline', marginRight: '4px' }} /> {vehicle.Email}</small>
                   </div>
                 </td>
-                <td className="km-cell">{formatKM(vehicle.Total_KM || 0)}</td>
+                <td>{formatKM(vehicle.Total_KM || 0)}</td>
                 <td>
                   {vehicle.Purchase_Date
-                    ? <span className="purchase-date-cell">{formatDate(vehicle.Purchase_Date)}</span>
-                    : <span className="purchase-date-cell">N/A</span>}
+                    ? formatDate(vehicle.Purchase_Date)
+                    : "N/A"}
                 </td>
                 <td>{getStatusBadge(vehicle.Status)}</td>
                 <td>

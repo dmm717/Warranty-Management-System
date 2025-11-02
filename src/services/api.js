@@ -89,6 +89,11 @@ export const warrantyClaimAPI = {
       method: "PATCH",
     }),
 
+  // POST /api/WarrantyClaim/approve-reject - SC_ADMIN duyệt/từ chối claim
+  // Body: { claimId, action: "APPROVE" | "REJECT", rejectionReason?, approvedByUserId }
+  approveOrRejectClaim: (data) =>
+    apiService.post("/WarrantyClaim/approve-reject", data),
+
   // PATCH /api/WarrantyClaim/{claimId}/required_part - Cập nhật phụ tùng cần thiết
   updateRequiredPart: (claimId, requiredPart) =>
     apiService.request(
@@ -240,6 +245,7 @@ export const partsRequestAPI = {
   // DELETE /api/parts-requests/{id} - Xóa yêu cầu
   deletePartsRequest: (id) => apiService.delete(`/parts-requests/${id}`),
 
+  // ===== OLD METHODS (DEPRECATED) =====
   // PATCH /api/parts-requests/{id}/approve - Approve request (auto-decrease stock)
   approvePartsRequest: (id) =>
     apiService.request(`/parts-requests/${id}/approve`, { method: "PATCH" }),
@@ -252,6 +258,15 @@ export const partsRequestAPI = {
         method: "PATCH",
       }
     ),
+
+  // ===== NEW 3-STEP WORKFLOW =====
+  // POST /api/parts-requests/evm-approval - EVM_STAFF approve/reject
+  evmStaffApproveOrReject: (data) =>
+    apiService.post("/parts-requests/evm-approval", data),
+
+  // POST /api/parts-requests/confirm-receive - SC_ADMIN confirm delivery
+  scAdminConfirmReceive: (data) =>
+    apiService.post("/parts-requests/confirm-receive", data),
 };
 
 // =============================================================================
@@ -290,6 +305,35 @@ export const evmInventoryAPI = {
 
   // GET /api/parts/inventory/categories - Get unique part categories
   getPartCategories: () => apiService.get("/parts/inventory/categories"),
+};
+
+// =============================================================================
+// SC INVENTORY APIs - Quản lý kho phụ tùng SC
+// =============================================================================
+
+export const scInventoryAPI = {
+  // GET /api/sc-parts/inventory - Lấy danh sách inventory SC (có phân trang)
+  // Params: page=0, size=10, sortBy=partName, sortDir=asc
+  getAllPartTypes: (params = {}) => {
+    const {
+      page = 0,
+      size = 10,
+      sortBy = "partName",
+      sortDir = "asc",
+    } = params;
+    return apiService.get(
+      `/sc-parts/inventory?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
+    );
+  },
+
+  // GET /api/sc-parts/inventory/all - Lấy tất cả part types (không phân trang) - cho dropdown
+  getAllPartTypesNoPagination: () => apiService.get("/sc-parts/inventory/all"),
+
+  // GET /api/sc-parts/inventory/{id} - Lấy chi tiết part type
+  getPartTypeById: (id) => apiService.get(`/sc-parts/inventory/${id}`),
+
+  // GET /api/sc-parts/inventory/categories - Get unique part categories
+  getPartCategories: () => apiService.get("/sc-parts/inventory/categories"),
 };
 
 // =============================================================================
@@ -417,6 +461,165 @@ export const transformPartsRequestToBackend = (partsRequest) => {
   };
 };
 
+// =============================================================================
+// NOTIFICATION APIs - Hệ thống thông báo
+// =============================================================================
+
+export const notificationAPI = {
+  // GET /api/notifications/user/{userId} - Lấy tất cả notifications (có phân trang)
+  getNotificationsByUserId: (userId, params = {}) => {
+    const { page = 0, size = 20 } = params;
+    return apiService.get(
+      `/notifications/user/${userId}?page=${page}&size=${size}`
+    );
+  },
+
+  // GET /api/notifications/user/{userId}/unread - Lấy notifications chưa đọc
+  getUnreadNotifications: (userId) =>
+    apiService.get(`/notifications/user/${userId}/unread`),
+
+  // GET /api/notifications/user/{userId}/unread/count - Đếm số notifications chưa đọc
+  countUnreadNotifications: (userId) =>
+    apiService.get(`/notifications/user/${userId}/unread/count`),
+
+  // PATCH /api/notifications/{id}/read - Đánh dấu notification đã đọc
+  markAsRead: (notificationId) =>
+    apiService.request(`/notifications/${notificationId}/read`, {
+      method: "PATCH",
+    }),
+
+  // PATCH /api/notifications/user/{userId}/read-all - Đánh dấu tất cả đã đọc
+  markAllAsRead: (userId) =>
+    apiService.request(`/notifications/user/${userId}/read-all`, {
+      method: "PATCH",
+    }),
+
+  // DELETE /api/notifications/{id} - Xóa notification
+  deleteNotification: (notificationId) =>
+    apiService.delete(`/notifications/${notificationId}`),
+
+  // POST /api/notifications/warranty-claim - Gửi notification yêu cầu bảo hành
+  sendWarrantyClaimNotification: (data) =>
+    apiService.post("/notifications/warranty-claim", data),
+};
+
+// =============================================================================
+// INSPECTION APIs - SC_TECHNICAL Inspection Workflow
+// =============================================================================
+
+export const inspectionAPI = {
+  // GET /api/inspections/claims/{claimId}/warranty-parts - Lấy danh sách phụ tùng warranty cho claim
+  getWarrantyPartsForClaim: (claimId) =>
+    apiService.get(`/inspections/claims/${claimId}/warranty-parts`),
+
+  // POST /api/inspections/submit - Submit kết quả kiểm tra
+  submitInspectionResult: (data) =>
+    apiService.post("/inspections/submit", data),
+
+  // GET /api/inspections/claims/{claimId}/result - Lấy kết quả kiểm tra của claim
+  getInspectionResult: (claimId) =>
+    apiService.get(`/inspections/claims/${claimId}/result`),
+};
+
+// =============================================================================
+// REPORT APIs - Report Management System
+// =============================================================================
+
+export const reportAPI = {
+  // POST /api/reports - SC_STAFF tạo báo cáo mới
+  createReport: (data) => apiService.post("/reports", data),
+
+  // POST /api/reports/review - SC_ADMIN duyệt báo cáo
+  reviewReport: (data) => apiService.post("/reports/review", data),
+
+  // POST /api/reports/forward - SC_ADMIN chuyển tiếp cho EVM_ADMIN
+  forwardToEvmAdmin: (data) => apiService.post("/reports/forward", data),
+
+  // GET /api/reports/{id} - Lấy chi tiết báo cáo
+  getReportById: (id) => apiService.get(`/reports/${id}`),
+
+  // GET /api/reports - Lấy danh sách tất cả báo cáo
+  getAllReports: (params = {}) => {
+    const {
+      page = 0,
+      size = 10,
+      sortBy = "submittedAt",
+      sortDir = "desc",
+    } = params;
+    return apiService.get(
+      `/reports?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
+    );
+  },
+
+  // GET /api/reports/status/{status} - Lấy báo cáo theo trạng thái
+  getReportsByStatus: (status, params = {}) => {
+    const { page = 0, size = 10 } = params;
+    return apiService.get(
+      `/reports/status/${status}?page=${page}&size=${size}`
+    );
+  },
+
+  // GET /api/reports/staff/{scStaffId} - Lấy báo cáo của SC_STAFF
+  getReportsByStaff: (scStaffId, params = {}) => {
+    const { page = 0, size = 10 } = params;
+    return apiService.get(
+      `/reports/staff/${scStaffId}?page=${page}&size=${size}`
+    );
+  },
+
+  // GET /api/reports/pending-review - Lấy báo cáo chờ duyệt
+  getPendingReviewReports: (params = {}) => {
+    const { page = 0, size = 10 } = params;
+    return apiService.get(`/reports/pending-review?page=${page}&size=${size}`);
+  },
+};
+
+// =============================================================================
+// CAMPAIGN & RECALL APIs - District-based Assignment
+// =============================================================================
+
+export const campaignDistrictAPI = {
+  // GET /api/ServiceCampaigns/district/{district} - Lấy campaigns theo quận
+  getCampaignsByDistrict: (district, params = {}) => {
+    const { page = 0, size = 10 } = params;
+    return apiService.get(
+      `/ServiceCampaigns/district/${district}?page=${page}&size=${size}`
+    );
+  },
+
+  // POST /api/ServiceCampaigns/{id}/assign-technicians-by-district - Phân công kỹ thuật viên
+  assignTechniciansByDistrict: (campaignId, data) =>
+    apiService.post(
+      `/ServiceCampaigns/${campaignId}/assign-technicians-by-district`,
+      data
+    ),
+
+  // GET /api/ServiceCampaigns/{id}/progress - Lấy tiến độ campaign
+  getCampaignProgress: (campaignId) =>
+    apiService.get(`/ServiceCampaigns/${campaignId}/progress`),
+};
+
+export const recallDistrictAPI = {
+  // GET /api/recalls/district/{district} - Lấy recalls theo quận
+  getRecallsByDistrict: (district, params = {}) => {
+    const { page = 0, size = 10 } = params;
+    return apiService.get(
+      `/recalls/district/${district}?page=${page}&size=${size}`
+    );
+  },
+
+  // POST /api/recalls/{id}/assign-technicians-by-district - Phân công kỹ thuật viên
+  assignTechniciansByDistrict: (recallId, data) =>
+    apiService.post(
+      `/recalls/${recallId}/assign-technicians-by-district`,
+      data
+    ),
+
+  // GET /api/recalls/{id}/progress - Lấy tiến độ recall
+  getRecallProgress: (recallId) =>
+    apiService.get(`/recalls/${recallId}/progress`),
+};
+
 // Export default object với tất cả APIs
 export default {
   auth: authAPI,
@@ -426,5 +629,11 @@ export default {
   serviceCampaign: serviceCampaignAPI,
   partsRequest: partsRequestAPI,
   evmInventory: evmInventoryAPI,
+  scInventory: scInventoryAPI,
   passwordRecovery: passwordRecoveryAPI,
+  notification: notificationAPI,
+  inspection: inspectionAPI,
+  report: reportAPI,
+  campaignDistrict: campaignDistrictAPI,
+  recallDistrict: recallDistrictAPI,
 };

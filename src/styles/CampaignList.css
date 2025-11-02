@@ -191,6 +191,20 @@
   box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
 }
 
+.btn-paused-status {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white;
+  font-weight: 600;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.btn-paused-status:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+}
+
 .status-preparing {
   background: linear-gradient(90deg, rgba(255, 191, 0, 0.18), rgba(255, 126, 0, 0.12));
   color: #fff;
@@ -244,6 +258,20 @@
 .action-buttons .btn:hover {
   transform: translateY(-2px);
   background: rgba(255,255,255,0.08);
+}
+
+.btn-paused {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white;
+  border: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-paused:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
 }
 
 .btn-paused {

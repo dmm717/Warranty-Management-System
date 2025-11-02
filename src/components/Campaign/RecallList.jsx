@@ -3,7 +3,7 @@ import { AlertTriangle, FileText, Eye, Edit, Plus } from "lucide-react";
 import "../../styles/RecallList.css";
 import { VEHICLE_TYPES, REGIONS } from "../../constants";
 
-function RecallList({ recalls, onEdit, onView, userRole }) {
+function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
   const isEVMAdmin = userRole === "EVM_ADMIN";
   const isEVMStaff = userRole === "EVM_STAFF";
 
@@ -127,7 +127,7 @@ function RecallList({ recalls, onEdit, onView, userRole }) {
                         className="btn btn-sm btn-outline"
                         title="Xem chi tiết"
                       >
-                        <Eye size={16} />
+                        👁️
                       </button>
                       <button
                         onClick={() => onEdit(recall)}
@@ -136,6 +136,24 @@ function RecallList({ recalls, onEdit, onView, userRole }) {
                       >
                         <Edit size={16} />
                       </button>
+                      {/* EVM_ADMIN có quyền xóa recall */}
+                      {onDelete && (
+                        <button
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Bạn có chắc chắn muốn xóa recall "${recall.RecallName}"?`
+                              )
+                            ) {
+                              onDelete(recall.Recall_ID);
+                            }
+                          }}
+                          className="btn btn-sm btn-danger"
+                          title="Xóa"
+                        >
+                          🗑️
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -159,9 +177,7 @@ function RecallList({ recalls, onEdit, onView, userRole }) {
     if (availableRecalls.length === 0) {
       return (
         <div className="no-data-container">
-          <div className="no-data-icon">
-            <FileText size={48} />
-          </div>
+          <div className="no-data-icon">📋</div>
           <h3>Chưa có recall nào</h3>
           <p>Đang chờ EVM_ADMIN tạo recall mới</p>
         </div>
@@ -226,19 +242,27 @@ function RecallList({ recalls, onEdit, onView, userRole }) {
                         className="btn btn-sm btn-outline"
                         title="Xem chi tiết"
                       >
-                        <Eye size={16} />
+                        👁️
                       </button>
-                      <button
-                        onClick={() => onEdit(recall)}
-                        className="btn btn-sm btn-primary"
-                        title={
-                          recall.IssueDescription
-                            ? "Chỉnh sửa"
-                            : "Bổ sung thông tin"
-                        }
-                      >
-                        {recall.IssueDescription ? <Edit size={16} /> : <Plus size={16} />}
-                      </button>
+                      {/* EVM_STAFF chỉ có thể xem, không thể chỉnh sửa */}
+                      {/* EVM_STAFF có quyền xóa recall */}
+                      {onDelete && (
+                        <button
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Bạn có chắc chắn muốn xóa recall "${recall.RecallName}"?`
+                              )
+                            ) {
+                              onDelete(recall.Recall_ID);
+                            }
+                          }}
+                          className="btn btn-sm btn-danger"
+                          title="Xóa"
+                        >
+                          🗑️
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
