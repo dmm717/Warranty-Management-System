@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import "../../styles/ReportList.css";
 
 function ReportList({ reports, onEdit, onView, onDelete, userRole }) {
+  // console.log("ReportList received reports:", reports);
+  // console.log("ReportList received userRole:", userRole);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -51,9 +54,9 @@ function ReportList({ reports, onEdit, onView, onDelete, userRole }) {
 
   const filteredReports = reports.filter((report) => {
     const matchesSearch =
-      report.ReportName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.Description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.ID_Report.toLowerCase().includes(searchTerm.toLowerCase());
+      (report.ReportName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (report.Description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (report.ID_Report || "").toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesType =
       typeFilter === "all" || report.ReportType === typeFilter;
@@ -62,6 +65,9 @@ function ReportList({ reports, onEdit, onView, onDelete, userRole }) {
 
     return matchesSearch && matchesType && matchesStatus;
   });
+
+  // console.log("Filtered reports:", filteredReports);
+  // console.log("Filter states - search:", searchTerm, "type:", typeFilter, "status:", statusFilter);
 
   const reportTypes = [
     "Warranty Analysis",

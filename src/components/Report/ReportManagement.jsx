@@ -5,7 +5,7 @@ import ReportList from "./ReportList";
 import ReportForm from "./ReportForm";
 import ReportDetail from "./ReportDetail";
 import ReportChart from "./ReportChart";
-import { warrantyClaimAPI, serviceCampaignAPI } from "../../services/api";
+import { warrantyClaimAPI, serviceCampaignAPI, reportAPI } from "../../services/api";
 import { toast } from "react-toastify";
 import "../../styles/ReportManagement.css";
 
@@ -21,56 +21,64 @@ function ReportManagement() {
 
   useEffect(() => {
     fetchReportsAndStats();
+    fetchReportsFromAPI();
   }, []);
+
+  const fetchReportsFromAPI = async () => {
+    try {
+      // console.log("Fetching reports from API...");
+      const response = await reportAPI.getAllReports({
+        page: 0,
+        size: 100,
+        sortBy: "submittedAt",
+        sortDir: "desc",
+      });
+
+      // console.log("Report API response:", response);
+
+      if (response.success && response.data) {
+        const reportsData = response.data.content || response.data || [];
+        // console.log("Reports data:", reportsData);
+        
+        const transformedReports = reportsData.map((report) => ({
+          ID_Report: report.id || report.reportId || `RPT-${report.id}`,
+          ReportName: report.title || report.reportName || "Untitled Report",
+          Description: report.description,
+          Image: report.image || "/api/placeholder/400/200",
+          Error: report.error || "Không có",
+          Status: report.status || "Đang xử lý",
+          ReportType: "General Report",
+          Priority: "Trung bình",
+          CreatedDate: report.submittedAt || report.createdAt || new Date().toISOString(),
+          ScStaffId: report.scStaffId,
+          ScAdminId: report.scAdminId,
+          EvmAdminId: report.evmAdminId,
+        }));
+
+        // console.log("Transformed reports:", transformedReports);
+        // Set reports directly from API
+        setReports(transformedReports);
+      } else {
+        // console.log("No data in response or response not successful");
+        setReports([]);
+      }
+    } catch (error) {
+      console.error("Fetch reports from API error:", error);
+      setReports([]);
+    }
+  };
 
   const fetchReportsAndStats = async () => {
     try {
       setLoading(true);
 
-      // Fetch campaign reports và warranty claims từ backend
-      const [campaignsRes, claimsRes] = await Promise.all([
-        serviceCampaignAPI.getAllCampaigns({ page: 0, size: 100 }),
-        warrantyClaimAPI.getAllClaims({ page: 0, size: 1000 }),
-      ]);
+      // Fetch warranty claims từ backend for statistics only
+      const claimsRes = await warrantyClaimAPI.getAllClaims({ 
+        page: 0, 
+        size: 1000 
+      });
 
-      // Transform campaigns thành reports
-      const campaignReports = [];
-      if (campaignsRes.success && campaignsRes.data?.content) {
-        for (const campaign of campaignsRes.data.content) {
-          // Fetch report cho từng campaign
-          try {
-            const reportRes = await serviceCampaignAPI.getCampaignReport(
-              campaign.id
-            );
-            if (reportRes.success && reportRes.data) {
-              campaignReports.push({
-                ID_Report: `RPT-${campaign.id}`,
-                ReportName: `Báo cáo chiến dịch: ${campaign.campaignName}`,
-                Description:
-                  campaign.description ||
-                  `Báo cáo cho chiến dịch ${campaign.campaignName}`,
-                Image: "/api/placeholder/400/200",
-                Error: "Không có",
-                Status:
-                  campaign.status === "COMPLETED"
-                    ? "Hoàn thành"
-                    : campaign.status === "ACTIVE"
-                    ? "Đang xử lý"
-                    : "Chờ duyệt",
-                CampaignsID: campaign.id,
-                Recall_ID: null,
-                SC_StaffID: "SC001",
-                EVM_Staff_ID: "EVM001",
-                CreatedDate: campaign.startDate,
-                ReportType: "Campaign Performance",
-                Priority: "Trung bình",
-              });
-            }
-          } catch (err) {          }
-        }
-      }
-
-      setReports(campaignReports);
+      // Don't modify reports here - fetchReportsFromAPI handles that
 
       // Calculate statistics từ warranty claims
       if (claimsRes.success && claimsRes.data?.content) {
@@ -201,26 +209,49 @@ function ReportManagement() {
     setShowForm(false);
   };
 
-  const handleSaveReport = (reportFormData) => {
-    if (selectedReport) {
-      const updatedReports = reports.map((r) =>
-        r.ID_Report === selectedReport.ID_Report
-          ? { ...r, ...reportFormData }
-          : r
-      );
-      setReports(updatedReports);
-    } else {
-      const newReport = {
-        ...reportFormData,
-        ID_Report: `RPT${String(reports.length + 1).padStart(3, "0")}`,
-        CreatedDate: new Date().toISOString().split("T")[0],
-        SC_StaffID: user.id,
-        Status: "Đang xử lý",
-      };
-      setReports([...reports, newReport]);
+  const handleSaveReport = async (reportFormData) => {
+    try {
+      setLoading(true);
+      
+      if (selectedReport) {
+        // Update existing report (keep old logic for now)
+        const updatedReports = reports.map((r) =>
+          r.ID_Report === selectedReport.ID_Report
+            ? { ...r, ...reportFormData }
+            : r
+        );
+        setReports(updatedReports);
+        toast.success("Cập nhật báo cáo thành công!");
+      } else {
+        // Create new report via API
+        const backendData = {
+          title: reportFormData.ReportName,
+          description: reportFormData.Description,
+          image: reportFormData.Image || "",
+          error: reportFormData.Error || "",
+          recallId: reportFormData.referenceType === "RECALL" ? reportFormData.recallId : null,
+          serviceCampaignId: reportFormData.referenceType === "SERVICE_CAMPAIGN" ? reportFormData.serviceCampaignId : null,
+        };
+
+        // console.log("Creating report with data:", backendData);
+
+        const response = await reportAPI.createReport(backendData);
+
+        if (response.success) {
+          toast.success("Tạo báo cáo thành công!");
+          await fetchReportsFromAPI(); // Reload reports from API
+        } else {
+          toast.error(response.message || "Không thể tạo báo cáo");
+        }
+      }
+    } catch (error) {
+      console.error("Save report error:", error);
+      toast.error("Đã xảy ra lỗi khi lưu báo cáo");
+    } finally {
+      setLoading(false);
+      setShowForm(false);
+      setSelectedReport(null);
     }
-    setShowForm(false);
-    setSelectedReport(null);
   };
 
   const handleDeleteReport = (reportId) => {
@@ -236,11 +267,15 @@ function ReportManagement() {
   };
 
   const canCreateEdit = () => {
-    return (
+    // console.log("Checking canCreateEdit - user.role:", user?.role);
+    const canCreate = (
       user?.role === "SC_Staff" ||
+      user?.role === "SC_ADMIN" ||
       user?.role === "EVM_Staff" ||
       user?.role === "Admin"
     );
+    // console.log("canCreateEdit result:", canCreate);
+    return canCreate;
   };
 
   if (loading) {

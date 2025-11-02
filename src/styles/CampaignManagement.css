@@ -1,12 +1,12 @@
 .campaign-management {
   width: 100% !important;
   max-width: 100% !important;
-  /* glassy card background to match app theme */
   background: rgba(255,255,255,0.06) !important;
+  backdrop-filter: blur(15px) !important;
   border-radius: 12px !important;
-  padding: 20px !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
-  border: 1px solid rgba(255,255,255,0.06) !important;
+  padding: 24px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.37) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
 }
 
 .page-header {
@@ -32,42 +32,45 @@
 
 .campaign-tabs {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   margin-bottom: 24px;
-  margin-left: 8px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
   padding-bottom: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tab-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 12px 24px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0;
-  font-weight: 300;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px 10px 0 0;
+  font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-transform: uppercase;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .tab-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(96, 165, 250, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
 }
 
 .tab-btn.active {
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
-  font-weight: 400;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(59, 130, 246, 0.1));
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  box-shadow: 0 4px 16px rgba(96, 165, 250, 0.25), 0 0 20px rgba(96, 165, 250, 0.1) inset;
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.4);
 }
 
 .tab-btn span {
@@ -86,10 +89,11 @@
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid var(--border-color);
-  border-top: 4px solid var(--primary-color);
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid #60a5fa;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.3);
 }
 
 @keyframes spin {
@@ -98,8 +102,9 @@
 }
 
 .loading-container p {
-  color: #6b7280;
-  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  letter-spacing: 0.5px;
 }
 
 @media (max-width: 768px) {

@@ -1,43 +1,77 @@
 import React, { useState, useEffect } from "react";
+import { serviceCampaignAPI, recallAPI } from "../../services/api";
 import "../../styles/ReportForm.css";
 
 function ReportForm({ report, onSave, onCancel }) {
   const [formData, setFormData] = useState({
     ReportName: "",
     Description: "",
-    ReportType: "",
-    Priority: "Trung bình",
     Error: "",
-    CampaignsID: "",
-    Recall_ID: "",
-    EVM_Staff_ID: "",
+    Image: "",
+    referenceType: "", // "RECALL" or "SERVICE_CAMPAIGN"
+    recallId: "",
+    serviceCampaignId: "",
   });
 
   const [errors, setErrors] = useState({});
-
-  const reportTypes = [
-    "Warranty Analysis",
-    "Campaign Performance",
-    "Recall Progress",
-    "Parts Analysis",
-    "Service Quality",
-    "Customer Satisfaction",
-    "Monthly Summary",
-    "Annual Review",
-  ];
+  const [recalls, setRecalls] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
 
   useEffect(() => {
     if (report) {
       setFormData(report);
     }
+    fetchRecallsAndCampaigns();
   }, [report]);
+
+  const fetchRecallsAndCampaigns = async () => {
+    try {
+      setLoadingOptions(true);
+      
+      // Fetch recalls using recallAPI
+      // console.log("Fetching recalls...");
+      const recallsRes = await recallAPI.getAllRecalls({ page: 0, size: 100 });
+      // console.log("Recalls response:", recallsRes);
+      if (recallsRes.success && recallsRes.data) {
+        const recallsData = recallsRes.data.content || recallsRes.data || [];
+        // console.log("Recalls data:", recallsData);
+        setRecalls(recallsData);
+      }
+
+      // Fetch campaigns
+      // console.log("Fetching campaigns...");
+      const campaignsRes = await serviceCampaignAPI.getAllCampaigns({ page: 0, size: 100 });
+      // console.log("Campaigns response:", campaignsRes);
+      if (campaignsRes.success && campaignsRes.data) {
+        const campaignsData = campaignsRes.data.content || campaignsRes.data || [];
+        // console.log("Campaigns data:", campaignsData);
+        setCampaigns(campaignsData);
+      }
+    } catch (error) {
+      console.error("Error fetching recalls/campaigns:", error);
+    } finally {
+      setLoadingOptions(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    
+    // If changing reference type, clear the IDs
+    if (name === "referenceType") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        recallId: "",
+        serviceCampaignId: "",
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
 
     if (errors[name]) {
       setErrors((prev) => ({
@@ -60,8 +94,14 @@ function ReportForm({ report, onSave, onCancel }) {
       newErrors.Description = "Mô tả phải có ít nhất 10 ký tự";
     }
 
-    if (!formData.ReportType) {
-      newErrors.ReportType = "Loại báo cáo là bắt buộc";
+    // Validate reference type and ID
+    if (formData.referenceType) {
+      if (formData.referenceType === "RECALL" && !formData.recallId) {
+        newErrors.recallId = "Vui lòng chọn một Recall";
+      }
+      if (formData.referenceType === "SERVICE_CAMPAIGN" && !formData.serviceCampaignId) {
+        newErrors.serviceCampaignId = "Vui lòng chọn một Service Campaign";
+      }
     }
 
     setErrors(newErrors);
@@ -101,41 +141,24 @@ function ReportForm({ report, onSave, onCancel }) {
                 <div className="error-message">{errors.ReportName}</div>
               )}
             </div>
-            <div className="form-group">
-              <label className="form-label">Loại báo cáo *</label>
-              <select
-                name="ReportType"
-                value={formData.ReportType}
-                onChange={handleChange}
-                className={`form-control ${errors.ReportType ? "error" : ""}`}
-              >
-                <option value="">Chọn loại báo cáo</option>
-                {reportTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-              {errors.ReportType && (
-                <div className="error-message">{errors.ReportType}</div>
-              )}
-            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Mô tả *</label>
+            <textarea
+              name="Description"
+              value={formData.Description}
+              onChange={handleChange}
+              className={`form-control ${errors.Description ? "error" : ""}`}
+              placeholder="Mô tả chi tiết về báo cáo..."
+              rows="4"
+            />
+            {errors.Description && (
+              <div className="error-message">{errors.Description}</div>
+            )}
           </div>
 
           <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Độ ưu tiên</label>
-              <select
-                name="Priority"
-                value={formData.Priority}
-                onChange={handleChange}
-                className="form-control"
-              >
-                <option value="Thấp">Thấp</option>
-                <option value="Trung bình">Trung bình</option>
-                <option value="Cao">Cao</option>
-              </select>
-            </div>
             <div className="form-group">
               <label className="form-label">Lỗi/Vấn đề</label>
               <input
@@ -170,75 +193,81 @@ function ReportForm({ report, onSave, onCancel }) {
         </div>
 
         <div className="form-section">
-          <h4 className="section-title">Liên kết (Tùy chọn)</h4>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">ID Chiến dịch</label>
-              <input
-                type="text"
-                name="CampaignsID"
-                value={formData.CampaignsID}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="SC001"
-              />
-              <small className="form-help">
-                Liên kết với chiến dịch cụ thể
-              </small>
-            </div>
-            <div className="form-group">
-              <label className="form-label">ID Recall</label>
-              <input
-                type="text"
-                name="Recall_ID"
-                value={formData.Recall_ID}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="RC001"
-              />
-              <small className="form-help">Liên kết với recall cụ thể</small>
-            </div>
+          <h4 className="section-title">Liên kết Recall/Campaign (Tùy chọn)</h4>
+          
+          <div className="form-group">
+            <label className="form-label">Chọn loại liên kết</label>
+            <select
+              name="referenceType"
+              value={formData.referenceType}
+              onChange={handleChange}
+              className="form-control"
+            >
+              <option value="">-- Không liên kết --</option>
+              <option value="RECALL">Recall</option>
+              <option value="SERVICE_CAMPAIGN">Service Campaign</option>
+            </select>
           </div>
 
-          <div className="form-row">
+          {formData.referenceType === "RECALL" && (
             <div className="form-group">
-              <label className="form-label">ID Nhân viên EVM</label>
-              <input
-                type="text"
-                name="EVM_Staff_ID"
-                value={formData.EVM_Staff_ID}
+              <label className="form-label">Chọn Recall *</label>
+              <select
+                name="recallId"
+                value={formData.recallId}
                 onChange={handleChange}
-                className="form-control"
-                placeholder="EVM001"
-              />
-              <small className="form-help">Nhân viên EVM phụ trách</small>
-            </div>
-          </div>
-        </div>
-
-        <div className="report-preview">
-          <h4 className="section-title">Xem trước báo cáo</h4>
-          <div className="preview-content">
-            <div className="preview-header">
-              <h5>{formData.ReportName || "Tên báo cáo"}</h5>
-              <span className="preview-type">
-                {formData.ReportType || "Loại báo cáo"}
-              </span>
-            </div>
-            <div className="preview-body">
-              <p>
-                {formData.Description || "Mô tả báo cáo sẽ hiển thị ở đây..."}
-              </p>
-              {formData.Error && (
-                <div className="preview-error">
-                  <strong>Lỗi:</strong> {formData.Error}
-                </div>
+                className={`form-control ${errors.recallId ? "error" : ""}`}
+                disabled={loadingOptions}
+              >
+                <option value="">-- Chọn Recall --</option>
+                {recalls.map((recall) => (
+                  <option key={recall.id} value={recall.id}>
+                    {recall.name || recall.id}
+                  </option>
+                ))}
+              </select>
+              {errors.recallId && (
+                <div className="error-message">{errors.recallId}</div>
               )}
             </div>
-            <div className="preview-meta">
-              <span>Độ ưu tiên: {formData.Priority}</span>
-              <span>Ngày tạo: {new Date().toLocaleDateString("vi-VN")}</span>
+          )}
+
+          {formData.referenceType === "SERVICE_CAMPAIGN" && (
+            <div className="form-group">
+              <label className="form-label">Chọn Service Campaign *</label>
+              <select
+                name="serviceCampaignId"
+                value={formData.serviceCampaignId}
+                onChange={handleChange}
+                className={`form-control ${errors.serviceCampaignId ? "error" : ""}`}
+                disabled={loadingOptions}
+              >
+                <option value="">-- Chọn Campaign --</option>
+                {campaigns.map((campaign) => (
+                  <option key={campaign.id} value={campaign.id}>
+                    {campaign.campaignName || campaign.name || campaign.id || "Unnamed"}
+                  </option>
+                ))}
+              </select>
+              {errors.serviceCampaignId && (
+                <div className="error-message">{errors.serviceCampaignId}</div>
+              )}
             </div>
+          )}
+        </div>
+
+        <div className="form-section">
+          <h4 className="section-title">Hình ảnh (Tùy chọn)</h4>
+          <div className="form-group">
+            <label className="form-label">URL Hình ảnh</label>
+            <input
+              type="text"
+              name="Image"
+              value={formData.Image}
+              onChange={handleChange}
+              className="form-control"
+              placeholder="https://example.com/image.jpg"
+            />
           </div>
         </div>
 
@@ -247,7 +276,7 @@ function ReportForm({ report, onSave, onCancel }) {
             Hủy
           </button>
           <button type="submit" className="btn btn-primary">
-            {report ? "Cập nhật báo cáo" : "Tạo báo cáo"}
+            {report ? "Cập nhật" : "Tạo báo cáo"}
           </button>
         </div>
       </form>

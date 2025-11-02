@@ -47,41 +47,51 @@
 
 /* Inventory List Styles */
 .parts-list-container {
-  background: white;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(15px);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   overflow: hidden;
 }
 
 .parts-table {
   width: 100%;
   border-collapse: collapse;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .parts-table thead {
-  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-  color: white;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .parts-table thead th {
-  padding: 16px 12px;
+  padding: 14px 16px;
   text-align: left;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.96);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 1.2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   white-space: nowrap;
 }
 
 .parts-table tbody tr {
-  border-bottom: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .parts-table tbody tr:hover {
-  background-color: #f9fafb;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
 .parts-table tbody tr:last-child {
@@ -89,9 +99,10 @@
 }
 
 .parts-table tbody td {
-  padding: 16px 12px;
-  font-size: 0.9375rem;
-  color: #374151;
+  padding: 14px 16px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  vertical-align: middle;
 }
 
 .part-info {

@@ -599,6 +599,24 @@ export const campaignDistrictAPI = {
     apiService.get(`/ServiceCampaigns/${campaignId}/progress`),
 };
 
+export const recallAPI = {
+  // GET /api/recalls - Lấy danh sách tất cả recalls
+  getAllRecalls: (params = {}) => {
+    const {
+      page = 0,
+      size = 10,
+      sortBy = "startDate",
+      sortDir = "desc",
+    } = params;
+    return apiService.get(
+      `/recalls?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
+    );
+  },
+
+  // GET /api/recalls/{id} - Lấy chi tiết recall
+  getRecallById: (id) => apiService.get(`/recalls/${id}`),
+};
+
 export const recallDistrictAPI = {
   // GET /api/recalls/district/{district} - Lấy recalls theo quận
   getRecallsByDistrict: (district, params = {}) => {
