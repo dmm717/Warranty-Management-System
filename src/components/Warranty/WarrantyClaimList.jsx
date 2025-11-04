@@ -1,3 +1,5 @@
+
+import { Check, Wrench, X, Play, Eye, Edit } from 'lucide-react';
 import React, { useState } from "react";
 import Swal from "sweetalert2";
 import "../../styles/WarrantyClaimList.css";
@@ -76,22 +78,22 @@ function WarrantyClaimList({
       APPROVED: {
         label: "Duyệt",
         className: "btn-approve",
-        icon: "✓",
+        icon: <Check size={14} />,
       },
       REJECTED: {
         label: "Từ chối",
         className: "btn-reject",
-        icon: "✕",
+        icon: <X size={14} />,
       },
       IN_PROGRESS: {
         label: "Bắt đầu xử lý",
         className: "btn-process",
-        icon: "▶",
+        icon: <Play size={14} />,
       },
       COMPLETED: {
         label: "Hoàn thành",
         className: "btn-complete",
-        icon: "✓",
+        icon: <Check size={14} />,
       },
     };
     return configs[status] || { label: status, className: "", icon: "" };
@@ -100,7 +102,9 @@ function WarrantyClaimList({
   if (claims.length === 0) {
     return (
       <div className="no-data-container">
-        <div className="no-data-icon">🔧</div>
+        <div className="no-data-icon">
+          <Wrench size={48} />
+        </div>
         <h3>Không tìm thấy yêu cầu bảo hành nào</h3>
         <p>Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
       </div>
@@ -217,7 +221,7 @@ function WarrantyClaimList({
                       className="btn btn-sm btn-outline"
                       title="Xem chi tiết"
                     >
-                      👁️
+                      <Eye size={16} />
                     </button>
                     {/* Chỉ SC_STAFF và SC_TECHNICAL có quyền chỉnh sửa */}
                     {(userRole === "SC_STAFF" ||
@@ -227,7 +231,7 @@ function WarrantyClaimList({
                         className="btn btn-sm btn-outline"
                         title="Chỉnh sửa"
                       >
-                        ✏️
+                        <Edit size={16} />
                       </button>
                     )}
                   </div>

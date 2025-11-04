@@ -1,10 +1,12 @@
 import React from "react";
+import { AlertTriangle, FileText, Eye, Edit, Plus } from "lucide-react";
 import "../../styles/RecallList.css";
 import { VEHICLE_TYPES, REGIONS } from "../../constants";
 
 function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
   const isEVMAdmin = userRole === "EVM_ADMIN";
   const isEVMStaff = userRole === "EVM_STAFF";
+  const isSCAdmin = userRole === "SC_ADMIN";
 
   const getStatusBadge = (status) => {
     const statusClasses = {
@@ -58,7 +60,9 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
   if (recalls.length === 0) {
     return (
       <div className="no-data-container">
-        <div className="no-data-icon">🚨</div>
+        <div className="no-data-icon">
+          <AlertTriangle size={48} />
+        </div>
         <h3>Chưa có recall nào</h3>
         <p>
           {isEVMAdmin
@@ -131,7 +135,7 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
                         className="btn btn-sm btn-outline"
                         title="Chỉnh sửa"
                       >
-                        ✏️
+                        <Edit size={16} />
                       </button>
                       {/* EVM_ADMIN có quyền xóa recall */}
                       {onDelete && (
@@ -260,6 +264,94 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
                           🗑️
                         </button>
                       )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================
+  // VIEW FOR SC_ADMIN - Read-only access
+  // ============================================
+  if (isSCAdmin) {
+    if (recalls.length === 0) {
+      return (
+        <div className="no-data-container">
+          <div className="no-data-icon">
+            <AlertTriangle size={48} />
+          </div>
+          <h3>Chưa có recall nào</h3>
+          <p>Chưa có recall nào được tạo</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="recall-list">
+        <div className="table-container">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Mã Recall</th>
+                <th>Tên Recall</th>
+                <th>Model xe</th>
+                <th>Vấn đề</th>
+                <th>Ngày bắt đầu</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recalls.map((recall) => (
+                <tr key={recall.Recall_ID}>
+                  <td>
+                    <div className="recall-id">
+                      <strong>{recall.Recall_ID}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="recall-name">
+                      <strong>{recall.RecallName || "N/A"}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="model-info">
+                      {getModelNames(recall.VehicleModels)}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="issue-cell">
+                      {recall.IssueDescription ? (
+                        recall.IssueDescription.length > 60 ? (
+                          `${recall.IssueDescription.substring(0, 60)}...`
+                        ) : (
+                          recall.IssueDescription
+                        )
+                      ) : (
+                        <em className="text-muted">Chưa có thông tin</em>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="date-cell">
+                      {formatDate(recall.StartDate)}
+                    </div>
+                  </td>
+                  <td>{getStatusBadge(recall.Status)}</td>
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        onClick={() => onView(recall)}
+                        className="btn btn-sm btn-outline"
+                        title="Xem chi tiết"
+                      >
+                        👁️
+                      </button>
                     </div>
                   </td>
                 </tr>

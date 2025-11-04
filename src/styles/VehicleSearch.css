@@ -1,5 +1,11 @@
 .vehicle-search {
   margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0;
+  padding: 24px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .search-row {
@@ -26,9 +32,12 @@
 .search-label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 600;
-  color: var(--dark-color);
+  font-weight: 300 !important;
+  color: #ffffff !important;
   font-size: 14px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .search-input-container {
@@ -37,6 +46,26 @@
 
 .search-input {
   padding-right: 40px;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 300;
+  letter-spacing: 1px;
+  height: 44px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-weight: 300;
+}
+
+.search-input:focus {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1) !important;
 }
 
 .search-icon {
@@ -44,8 +73,53 @@
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 16px;
+}
+
+/* Select/Dropdown Styling */
+.filter-group select,
+.search-group select,
+.filter-group .form-control,
+.search-group .form-control {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 300;
+  letter-spacing: 1px;
+  padding: 10px 12px !important;
+  border-radius: 0;
+  height: 44px !important;
+}
+
+.filter-group select:focus,
+.search-group select:focus,
+.filter-group .form-control:focus,
+.search-group .form-control:focus {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1) !important;
+}
+
+.filter-group select option,
+.search-group select option {
+  background: rgba(0, 0, 0, 0.9);
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 300;
+  padding: 8px;
+}
+
+/* Button Styling */
+.search-actions .btn,
+.search-actions .btn-outline {
+  height: 44px !important;
+  padding: 10px 20px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 300;
+  letter-spacing: 1px;
 }
 
 @media (max-width: 768px) {

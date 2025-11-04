@@ -1,4 +1,5 @@
 import React from "react";
+import { Megaphone, Eye, Edit } from "lucide-react";
 import "../../styles/CampaignList.css";
 
 function CampaignList({
@@ -242,7 +243,7 @@ function CampaignList({
                       className="btn btn-sm btn-outline"
                       title="Xem chi tiết"
                     >
-                      👁️
+                      <Eye size={16} />
                     </button>
 
                     {/* SC_ADMIN: Button bắt đầu chiến dịch (PLANNED → ACTIVE) */}
@@ -265,7 +266,7 @@ function CampaignList({
                         className="btn btn-sm btn-outline"
                         title="Chỉnh sửa"
                       >
-                        ✏️
+                        <Edit size={16} />
                       </button>
                     )}
 

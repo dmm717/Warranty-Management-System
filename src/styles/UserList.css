@@ -26,13 +26,36 @@
 .filter-actions {
   flex-shrink: 0;
 }
+/* Table styling */
+.users-table .table thead th {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+  font-weight: 300 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  font-size: 12px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.users-table .table tbody td {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 300 !important;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.users-table .table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
 
 .filter-label {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: var(--dark-color);
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .search-input-container {
@@ -53,10 +76,12 @@
 }
 
 .users-table {
-  background: white;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .table-container {
@@ -122,12 +147,17 @@
   color: #92400e;
 }
 
-.branch-office,
-.phone,
-.date-of-birth {
-  font-size: 14px;
-  font-weight: 500;
+.department {
+  font-size: 13px;
   color: #374151;
+}
+
+.phone {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 500;
+  letter-spacing: 0.6px;
 }
 
 .last-login {

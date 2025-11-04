@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import "../../styles/ReportList.css";
 
-function ReportList({ reports, onEdit, onView, onDelete, userRole }) {
+function ReportList({ reports, onEdit, onView, onDelete, onAssign, userRole }) {
+  // console.log("ReportList received reports:", reports);
+  // console.log("ReportList received userRole:", userRole);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -46,14 +49,14 @@ function ReportList({ reports, onEdit, onView, onDelete, userRole }) {
   };
 
   const canEditDelete = () => {
-    return userRole === "EVM_Staff" || userRole === "Admin";
+    return userRole === "SC_ADMIN" || userRole === "EVM_STAFF" || userRole === "EVM_ADMIN" || userRole === "Admin";
   };
 
   const filteredReports = reports.filter((report) => {
     const matchesSearch =
-      report.ReportName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.Description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.ID_Report.toLowerCase().includes(searchTerm.toLowerCase());
+      (report.ReportName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (report.Description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (report.ID_Report || "").toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesType =
       typeFilter === "all" || report.ReportType === typeFilter;
@@ -62,6 +65,9 @@ function ReportList({ reports, onEdit, onView, onDelete, userRole }) {
 
     return matchesSearch && matchesType && matchesStatus;
   });
+
+  // console.log("Filtered reports:", filteredReports);
+  // console.log("Filter states - search:", searchTerm, "type:", typeFilter, "status:", statusFilter);
 
   const reportTypes = [
     "Warranty Analysis",
@@ -200,6 +206,13 @@ function ReportList({ reports, onEdit, onView, onDelete, userRole }) {
                 </button>
                 {canEditDelete() && (
                   <>
+                    <button
+                      onClick={() => onAssign(report)}
+                      className="btn btn-sm btn-outline"
+                      title="Assign Campaign/Recall"
+                    >
+                      🎯 Assign
+                    </button>
                     <button
                       onClick={() => onEdit(report)}
                       className="btn btn-sm btn-outline"

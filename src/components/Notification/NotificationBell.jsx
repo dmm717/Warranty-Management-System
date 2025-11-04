@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { Check, Wrench, Package, AlertTriangle, Megaphone, Bell } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { notificationAPI } from "../../services/api";
 import "./NotificationBell.css";
@@ -165,7 +166,7 @@ function NotificationBell() {
   return (
     <div className="notification-bell-container" ref={dropdownRef}>
       <button className="notification-bell-button" onClick={handleBellClick}>
-        <span className="bell-icon">🔔</span>
+        <Bell size={20} className="bell-icon" />
         {unreadCount > 0 && (
           <span className="notification-badge">
             {unreadCount > 99 ? "99+" : unreadCount}
@@ -191,7 +192,7 @@ function NotificationBell() {
           <div className="notification-list">
             {notifications.length === 0 ? (
               <div className="no-notifications">
-                <span className="no-notif-icon">✅</span>
+                <Check size={48} className="no-notif-icon" />
                 <p>Không có thông báo mới</p>
               </div>
             ) : (

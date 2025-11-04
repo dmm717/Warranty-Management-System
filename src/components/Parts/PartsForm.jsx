@@ -3,6 +3,18 @@ import { vehicleAPI, evmInventoryAPI } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import "../../styles/PartsForm.css";
 
+// Temporary EVM Part Types - TODO: Get from Backend API /api/evm/part-types
+const PART_TYPES = [
+  { id: "EVM-PT001", name: "Pin (Battery)" },
+  { id: "EVM-PT002", name: "Động cơ điện (Electric Motor)" },
+  { id: "EVM-PT003", name: "Bộ sạc (Charger)" },
+  { id: "EVM-PT004", name: "Hệ thống phanh (Brake System)" },
+  { id: "EVM-PT005", name: "Lốp xe (Tires)" },
+  { id: "EVM-PT006", name: "Đèn (Lights)" },
+  { id: "EVM-PT007", name: "Camera (Camera)" },
+  { id: "EVM-PT008", name: "Màn hình điều khiển (Display)" },
+];
+
 function PartsForm({ part, onSave, onCancel }) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({

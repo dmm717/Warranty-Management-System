@@ -2,6 +2,11 @@ import React, { useState } from "react";
 import "./RoleBasedFeatureDemo.css";
 import rolePermissionService from "../../services/RolePermissionService";
 import { useAuth } from "../../contexts/AuthContext";
+import { 
+  Wrench, Car, Package, Megaphone, FileText, 
+  Edit, Mail, MapPin, Calendar, Users, 
+  X, BarChart3, Check, RefreshCw 
+} from "lucide-react";
 
 function RoleBasedFeatureDemo() {
   const { user } = useAuth();
@@ -13,98 +18,98 @@ function RoleBasedFeatureDemo() {
       name: "Tạo recall",
       description: "Tạo chiến dịch recall mới",
       roles: ["EVM_Staff", "Admin"],
-      icon: "📝",
+      icon: <FileText size={24} />,
     },
     {
       id: "update_recall",
       name: "Cập nhật recall",
       description: "Chỉnh sửa thông tin recall",
       roles: ["EVM_Staff", "Admin"],
-      icon: "✏️",
+      icon: <Edit size={24} />,
     },
     {
       id: "notify_campaign_to_sc",
       name: "Thông báo chiến dịch recall cho SC",
       description: "Gửi thông báo đến service center",
       roles: ["EVM_Staff", "Admin"],
-      icon: "📧",
+      icon: <Mail size={24} />,
     },
     {
       id: "view_affected_vehicles",
       name: "Xem danh sách xe thuộc diện chiến dịch",
       description: "Truy cập danh sách xe bị ảnh hưởng",
       roles: ["SC_Staff", "SC_Admin", "EVM_Staff", "Admin"],
-      icon: "🚗",
+      icon: <Car size={24} />,
     },
     {
       id: "distribute_vehicles_to_centers",
       name: "Phân bổ danh sách xe đến các trung tâm dịch vụ",
       description: "Phân chia xe theo địa lý và công suất",
       roles: ["EVM_Staff", "Admin"],
-      icon: "📍",
+      icon: <MapPin size={24} />,
     },
     {
       id: "send_notification_to_sc",
       name: "Gửi thông báo cho SC",
       description: "SC gửi thông báo nội bộ",
       roles: ["SC_Staff", "SC_Admin"],
-      icon: "📢",
+      icon: <Megaphone size={24} />,
     },
     {
       id: "confirm_appointment_date",
       name: "Xác nhận ngày hẹn",
       description: "Xác nhận lịch hẹn với khách hàng",
       roles: ["SC_Staff", "SC_Admin"],
-      icon: "📅",
+      icon: <Calendar size={24} />,
     },
     {
       id: "assign_work_to_technician",
       name: "Phân công việc cho Technician",
       description: "Giao việc cho kỹ thuật viên",
       roles: ["SC_Staff", "SC_Admin"],
-      icon: "👥",
+      icon: <Users size={24} />,
     },
     {
       id: "reject_campaign",
       name: "Reject chiến dịch",
       description: "Từ chối thực hiện chiến dịch",
       roles: ["SC_Staff", "SC_Admin"],
-      icon: "❌",
+      icon: <X size={24} />,
     },
     {
       id: "record_and_report",
       name: "Ghi nhận và báo cáo",
       description: "Tạo báo cáo thực hiện",
       roles: ["SC_Staff", "SC_Admin"],
-      icon: "📊",
+      icon: <BarChart3 size={24} />,
     },
     {
       id: "update_work_results",
       name: "Cập nhật kết quả xử lý lên hệ thống",
       description: "Technician cập nhật kết quả công việc",
       roles: ["SC_Technician"],
-      icon: "🔧",
+      icon: <Wrench size={24} />,
     },
     {
       id: "confirm_manufacturer_report",
       name: "Xác nhận báo cáo của hãng",
       description: "EVM xác nhận báo cáo từ SC",
       roles: ["EVM_Staff", "Admin"],
-      icon: "✅",
+      icon: <Check size={24} />,
     },
     {
       id: "update_report",
       name: "Cập nhật báo cáo",
       description: "SC cập nhật báo cáo",
       roles: ["SC_Staff", "SC_Admin"],
-      icon: "📝",
+      icon: <FileText size={24} />,
     },
     {
       id: "update_campaign_status_per_vehicle",
       name: "Cập nhật trạng thái chiến dịch cho từng xe",
       description: "Cập nhật status từng xe",
       roles: ["EVM_Staff", "Admin"],
-      icon: "🔄",
+      icon: <RefreshCw size={24} />,
     },
   ];
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { LayoutDashboard, Car, Wrench, Package, Users, FileText, Megaphone, UserCircle } from "lucide-react";
 import "../../styles/Sidebar.css";
 
 function Sidebar() {
@@ -18,44 +19,44 @@ function Sidebar() {
   const menuItems = [
     {
       path: "/",
-      name: getDashboardName(),
-      icon: "📊",
+      name: "Dashboard",
+      icon: <LayoutDashboard size={20} />,
       roles: ["SC_STAFF", "SC_TECHNICAL", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/vehicles",
       name: "Quản lý xe",
-      icon: "🚗",
-      roles: ["SC_STAFF", "SC_TECHNICAL", "SC_ADMIN", "EVM_ADMIN"],
+      icon: <Car size={20} />,
+      roles: ["SC_STAFF", "SC_TECHNICAL", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/warranty-claims",
       name: "Yêu cầu bảo hành",
-      icon: "🔧",
+      icon: <Wrench size={20} />,
       roles: ["SC_STAFF", "SC_TECHNICAL", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/parts",
       name: "Quản lý phụ tùng",
-      icon: "⚙️",
+      icon: <Package size={20} />,
       roles: ["SC_STAFF", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/campaigns",
       name: "Chiến dịch & Recall",
-      icon: "📢",
+      icon: <Megaphone size={20} />,
       roles: ["SC_STAFF", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/reports",
       name: "Báo cáo",
-      icon: "📈",
+      icon: <FileText size={20} />,
       roles: ["SC_STAFF", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/users",
       name: "Quản lý người dùng",
-      icon: "👥",
+      icon: <Users size={20} />,
       roles: ["SC_ADMIN", "EVM_ADMIN"],
     },
   ];

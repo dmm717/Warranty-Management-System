@@ -4,6 +4,8 @@ import { warrantyClaimAPI, vehicleAPI } from "../../services/api";
 import StatsCard from "./StatsCard";
 import ChartComponent from "./ChartComponent";
 import RecentActivity from "./RecentActivity";
+import EVMStaffDashboard from "./EVMStaffDashboard";
+import { Check, X, FileClock, Bike, Wrench, Clock } from 'lucide-react';
 import "../../styles/Dashboard.css";
 
 function Dashboard() {
@@ -28,7 +30,10 @@ function Dashboard() {
       }
     };
 
-    loadDashboard();
+    // Skip loading for EVM_STAFF as they have dedicated dashboard
+    if (user?.role !== "EVM_STAFF") {
+      loadDashboard();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role]);
 
@@ -65,13 +70,13 @@ function Dashboard() {
           {
             title: "Tổng số xe đăng ký",
             value: vehicles.length.toString(),
-            icon: "🚗",
+            icon: <Bike size={31} className="bike-icon" />,
             color: "blue",
           },
           {
             title: "Yêu cầu bảo hành",
             value: claims.length.toString(),
-            icon: "🔧",
+            icon: <Wrench size={30} className="wrench-icon" />,
             color: "orange",
           },
           {
@@ -79,7 +84,7 @@ function Dashboard() {
             value: claims
               .filter((c) => c.status === "COMPLETED")
               .length.toString(),
-            icon: "✅",
+            icon: <Check size={30} className="check-icon" />,
             color: "green",
           },
           {
@@ -89,7 +94,7 @@ function Dashboard() {
                 (c) => c.status === "PENDING" || c.status === "IN_PROGRESS"
               )
               .length.toString(),
-            icon: "⏳",
+            icon: <Clock size={30} className="clock-icon" />,
             color: "yellow",
           },
         ];
@@ -100,7 +105,7 @@ function Dashboard() {
             value: claims
               .filter((c) => c.status === "PENDING")
               .length.toString(),
-            icon: "📋",
+            icon: <FileClock size={30} className="fileclock-icon" />,
             color: "orange",
           },
           {
@@ -110,7 +115,7 @@ function Dashboard() {
                 (c) => c.status === "APPROVED" || c.status === "COMPLETED"
               )
               .length.toString(),
-            icon: "✅",
+            icon: <Check size={30} className="check-icon" />,
             color: "green",
           },
           {
@@ -118,13 +123,13 @@ function Dashboard() {
             value: claims
               .filter((c) => c.status === "REJECTED")
               .length.toString(),
-            icon: "❌",
+            icon: <X size={30} className="x-icon" />,
             color: "red",
           },
           {
             title: "Tổng số xe",
             value: vehicles.length.toString(),
-            icon: "�",
+            icon: <Bike size={24} className="bike-icon" />,
             color: "blue",
           },
         ];
@@ -179,22 +184,22 @@ function Dashboard() {
         </div>
       )}
 
-      <div className="stats-grid">
-        {statsData.map((stat, index) => (
-          <StatsCard key={index} {...stat} />
-        ))}
-      </div>
+      
 
-      <div className="dashboard-content">
-        <div className="dashboard-row">
+      <div className="dashboard-row">
           <div className="dashboard-col-8">
+            
+            <div className="stats-grid">
+              {statsData.map((stat, index) => (
+                <StatsCard key={index} {...stat} />
+              ))}
+            </div>
             <ChartComponent userRole={user?.role} />
           </div>
           <div className="dashboard-col-4">
             <RecentActivity userRole={user?.role} />
           </div>
         </div>
-      </div>
     </div>
   );
 }

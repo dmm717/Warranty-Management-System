@@ -1,4 +1,5 @@
 import React from "react";
+import { Car, Phone, Mail, Edit, Trash2 } from "lucide-react";
 import "../../styles/VehicleList.css";
 
 function VehicleList({ vehicles, onEdit, onDelete }) {
@@ -50,7 +51,9 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
   if (vehicles.length === 0) {
     return (
       <div className="no-data-container">
-        <div className="no-data-icon">🚗</div>
+        <div className="no-data-icon">
+          <Car size={48} />
+        </div>
         <h3>Không tìm thấy xe nào</h3>
         <p>Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
       </div>
@@ -98,8 +101,8 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
                 </td>
                 <td>
                   <div className="contact-cell">
-                    <div>📞 {vehicle.Phone_Number}</div>
-                    <small>✉️ {vehicle.Email}</small>
+                    <div><Phone size={14} style={{ display: 'inline', marginRight: '4px' }} /> {vehicle.Phone_Number}</div>
+                    <small><Mail size={12} style={{ display: 'inline', marginRight: '4px' }} /> {vehicle.Email}</small>
                   </div>
                 </td>
                 <td>{formatKM(vehicle.Total_KM || 0)}</td>
@@ -116,14 +119,14 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
                       className="btn btn-sm btn-outline"
                       title="Chỉnh sửa"
                     >
-                      ✏️
+                      <Edit size={16} />
                     </button>
                     <button
                       onClick={() => onDelete(vehicle.vehicleId)}
                       className="btn btn-sm btn-danger"
                       title="Xóa"
                     >
-                      🗑️
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </td>
