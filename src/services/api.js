@@ -572,6 +572,26 @@ export const reportAPI = {
     const { page = 0, size = 10 } = params;
     return apiService.get(`/reports/pending-review?page=${page}&size=${size}`);
   },
+
+  // PUT /api/reports/{id} - Update report (title, description, status, error, image)
+  updateReport: (reportId, data) =>
+    apiService.put(`/reports/${reportId}`, data),
+
+  // DELETE /api/reports/{id} - Delete report
+  deleteReport: (reportId) =>
+    apiService.delete(`/reports/${reportId}`),
+
+  // POST /api/reports/{reportId}/service-campaigns/{serviceCampaignId} - Assign Service Campaign
+  assignServiceCampaign: (reportId, serviceCampaignId) =>
+    apiService.post(`/reports/${reportId}/service-campaigns/${serviceCampaignId}`),
+
+  // POST /api/reports/{reportId}/recalls/{recallId} - Assign Recall
+  assignRecall: (reportId, recallId) =>
+    apiService.post(`/reports/${reportId}/recalls/${recallId}`),
+
+  // POST /api/reports/{reportId}/warranty-claims/{warrantyClaimId} - Assign Warranty Claim
+  assignWarrantyClaim: (reportId, warrantyClaimId) =>
+    apiService.post(`/reports/${reportId}/warranty-claims/${warrantyClaimId}`),
 };
 
 // =============================================================================

@@ -65,8 +65,9 @@
 }
 
 .part-info strong {
+  font-weight: 600;
   color: rgba(255,255,255,0.95);
-  font-size: 14px;
+  font-size: 0.9375rem;
   margin-bottom: 4px;
 }
 

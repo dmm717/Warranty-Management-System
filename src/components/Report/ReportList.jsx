@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "../../styles/ReportList.css";
 
-function ReportList({ reports, onEdit, onView, onDelete, userRole }) {
+function ReportList({ reports, onEdit, onView, onDelete, onAssign, userRole }) {
   // console.log("ReportList received reports:", reports);
   // console.log("ReportList received userRole:", userRole);
   
@@ -49,7 +49,7 @@ function ReportList({ reports, onEdit, onView, onDelete, userRole }) {
   };
 
   const canEditDelete = () => {
-    return userRole === "EVM_Staff" || userRole === "Admin";
+    return userRole === "SC_ADMIN" || userRole === "EVM_STAFF" || userRole === "EVM_ADMIN" || userRole === "Admin";
   };
 
   const filteredReports = reports.filter((report) => {
@@ -206,6 +206,13 @@ function ReportList({ reports, onEdit, onView, onDelete, userRole }) {
                 </button>
                 {canEditDelete() && (
                   <>
+                    <button
+                      onClick={() => onAssign(report)}
+                      className="btn btn-sm btn-outline"
+                      title="Assign Campaign/Recall"
+                    >
+                      🎯 Assign
+                    </button>
                     <button
                       onClick={() => onEdit(report)}
                       className="btn btn-sm btn-outline"

@@ -1,22 +1,64 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { Target, AlertTriangle } from "lucide-react";
+import { serviceCampaignAPI, recallAPI } from "../../services/api";
 import "../../styles/ReportDetail.css";
 
 function ReportDetail({ report, onEdit, userRole }) {
+  const [campaignName, setCampaignName] = useState("");
+  const [recallName, setRecallName] = useState("");
+
+  useEffect(() => {
+    const fetchCampaignAndRecallNames = async () => {
+      try {
+        // Fetch campaign name if serviceCampaignId exists
+        if (report.serviceCampaignId) {
+          const campaignsRes = await serviceCampaignAPI.getAllCampaigns({ page: 0, size: 1000 });
+          if (campaignsRes.success && campaignsRes.data) {
+            const campaignsData = campaignsRes.data.content || campaignsRes.data || [];
+            const campaign = campaignsData.find(c => c.campaignsId === report.serviceCampaignId);
+            if (campaign) {
+              setCampaignName(campaign.campaignsTypeName || campaign.campaignName || "Unnamed Campaign");
+            }
+          }
+        }
+
+        // Fetch recall name if recallId exists
+        if (report.recallId) {
+          const recallsRes = await recallAPI.getAllRecalls({ page: 0, size: 1000 });
+          if (recallsRes.success && recallsRes.data) {
+            const recallsData = recallsRes.data.content || recallsRes.data || [];
+            const recall = recallsData.find(r => r.id === report.recallId);
+            if (recall) {
+              setRecallName(recall.name || "Unnamed Recall");
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching campaign/recall names:", error);
+      }
+    };
+
+    if (report) {
+      fetchCampaignAndRecallNames();
+    }
+  }, [report]);
+
   if (!report) return null;
 
   const getStatusBadge = (status) => {
-    const statusClasses = {
-      "Đang xử lý": "status-processing",
-      "Hoàn thành": "status-completed",
-      "Từ chối": "status-rejected",
-      "Chờ duyệt": "status-pending",
+    const statusMap = {
+      "PENDING": { label: "Chờ duyệt", class: "status-pending" },
+      "APPROVED": { label: "Đã duyệt", class: "status-completed" },
+      "REJECTED": { label: "Từ chối", class: "status-rejected" },
+      "IN_PROGRESS": { label: "Đang xử lý", class: "status-processing" },
+      "COMPLETED": { label: "Hoàn thành", class: "status-completed" },
     };
 
+    const statusInfo = statusMap[status] || { label: status, class: "status-pending" };
+
     return (
-      <span
-        className={`status-badge ${statusClasses[status] || "status-pending"}`}
-      >
-        {status}
+      <span className={`status-badge ${statusInfo.class}`}>
+        {statusInfo.label}
       </span>
     );
   };
@@ -30,9 +72,8 @@ function ReportDetail({ report, onEdit, userRole }) {
 
     return (
       <span
-        className={`priority-badge ${
-          priorityClasses[priority] || "priority-medium"
-        }`}
+        className={`priority-badge ${priorityClasses[priority] || "priority-medium"
+          }`}
       >
         {priority}
       </span>
@@ -44,24 +85,26 @@ function ReportDetail({ report, onEdit, userRole }) {
       year: "numeric",
       month: "long",
       day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const canEdit = () => {
-    return userRole === "EVM_Staff" || userRole === "Admin";
+    return userRole === "EVM_STAFF" || userRole === "EVM_ADMIN" || userRole === "SC_ADMIN";
   };
 
   return (
     <div className="report-detail">
       <div className="detail-header">
         <div className="report-basic-info">
-          <h2>Báo cáo #{report.ID_Report}</h2>
-          <h3>{report.ReportName}</h3>
+          <h2>Báo cáo {report.ReportName || report.title} </h2>
+          <h3>#{report.ID_Report || report.id}</h3>
           <div className="report-meta">
-            {getStatusBadge(report.Status)}
-            {getPriorityBadge(report.Priority)}
+            {getStatusBadge(report.Status || report.status)}
+            {report.Priority && getPriorityBadge(report.Priority)}
             <span className="report-date">
-              {formatDate(report.CreatedDate)}
+              {formatDate(report.CreatedDate || report.createdAt)}
             </span>
           </div>
         </div>
@@ -72,10 +115,6 @@ function ReportDetail({ report, onEdit, userRole }) {
               Chỉnh sửa
             </button>
           )}
-          <button className="btn btn-primary">
-            <span>📊</span>
-            Xuất báo cáo
-          </button>
         </div>
       </div>
 
@@ -88,24 +127,53 @@ function ReportDetail({ report, onEdit, userRole }) {
                 <h3 className="section-title">Thông tin báo cáo</h3>
                 <div className="info-grid">
                   <div className="info-item">
+                    <label>Tiêu đề</label>
+                    <span className="report-type">{report.ReportName || report.title}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Trạng thái</label>
+                    {getStatusBadge(report.Status || report.status)}
+                  </div>
+                  <div className="info-item">
                     <label>Loại báo cáo</label>
-                    <span className="report-type">{report.ReportType}</span>
+                    <span>{report.ReportType || "General Report"}</span>
                   </div>
                   <div className="info-item">
                     <label>Ngày tạo</label>
-                    <span>{formatDate(report.CreatedDate)}</span>
-                  </div>
-                  <div className="info-item">
-                    <label>Nhân viên SC</label>
-                    <span>{report.SC_StaffID}</span>
-                  </div>
-                  <div className="info-item">
-                    <label>Nhân viên EVM</label>
-                    <span>{report.EVM_Staff_ID}</span>
+                    <span>{formatDate(report.CreatedDate || report.createdAt)}</span>
                   </div>
                 </div>
               </div>
 
+              {/* Links to Campaign/Recall */}
+              {(report.serviceCampaignId || report.recallId) && (
+                <div className="info-section card">
+                  <h3 className="section-title">Chiến dịch liên quan</h3>
+                  <div className="links-content">
+                    {report.serviceCampaignId && (
+                      <div className="link-item">
+                        <Target size={20} style={{ color: '#4CAF50' }} />
+                        <div className="link-info">
+                          <strong>Service Campaign</strong>
+                          <span>{campaignName || report.serviceCampaignId}</span>
+                          <small>ID: {report.serviceCampaignId}</small>
+                        </div>
+                      </div>
+                    )}
+                    {report.recallId && (
+                      <div className="link-item">
+                        <AlertTriangle size={20} style={{ color: '#FF9800' }} />
+                        <div className="link-info">
+                          <strong>Recall</strong>
+                          <span>{recallName || report.recallId}</span>
+                          <small>ID: {report.recallId}</small>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               {/* Content */}
               <div className="info-section card">
                 <h3 className="section-title">Nội dung chi tiết</h3>
@@ -113,138 +181,60 @@ function ReportDetail({ report, onEdit, userRole }) {
                   <div className="info-item full-width">
                     <label>Mô tả</label>
                     <div className="description-content">
-                      {report.Description}
+                      {report.Description || report.description}
                     </div>
                   </div>
 
-                  {report.Error && report.Error !== "Không có" && (
+                  {(report.Error || report.error) && (
                     <div className="info-item full-width">
                       <label>Lỗi/Vấn đề</label>
-                      <div className="error-content">{report.Error}</div>
+                      <div className="error-content">{report.Error || report.error}</div>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Links */}
-              {(report.CampaignsID || report.Recall_ID) && (
+              {/* Image */}
+              {(report.Image || report.image) && (
                 <div className="info-section card">
-                  <h3 className="section-title">Liên kết</h3>
-                  <div className="links-content">
-                    {report.CampaignsID && (
-                      <div className="link-item">
-                        <span className="link-icon">📢</span>
-                        <div className="link-info">
-                          <strong>Chiến dịch liên quan</strong>
-                          <span>#{report.CampaignsID}</span>
-                        </div>
-                      </div>
-                    )}
-                    {report.Recall_ID && (
-                      <div className="link-item">
-                        <span className="link-icon">🚨</span>
-                        <div className="link-info">
-                          <strong>Recall liên quan</strong>
-                          <span>#{report.Recall_ID}</span>
-                        </div>
-                      </div>
-                    )}
+                  <h3 className="section-title">Hình ảnh</h3>
+                  <div className="image-content">
+                    <img
+                      src={report.Image || report.image}
+                      alt="Report"
+                      style={{ maxWidth: "100%", borderRadius: "8px" }}
+                    />
                   </div>
                 </div>
               )}
 
-              {/* Charts/Data Visualization */}
-              <div className="info-section card">
-                <h3 className="section-title">Dữ liệu & Biểu đồ</h3>
-                <div className="chart-placeholder">
-                  <div className="chart-mockup">
-                    <div className="chart-title">Thống kê theo thời gian</div>
-                    <div className="chart-bars">
-                      <div className="bar" style={{ height: "60%" }}></div>
-                      <div className="bar" style={{ height: "80%" }}></div>
-                      <div className="bar" style={{ height: "45%" }}></div>
-                      <div className="bar" style={{ height: "90%" }}></div>
-                      <div className="bar" style={{ height: "70%" }}></div>
-                    </div>
-                    <div className="chart-labels">
-                      <span>T5</span>
-                      <span>T6</span>
-                      <span>T7</span>
-                      <span>T8</span>
-                      <span>T9</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
 
           <div className="detail-col-4">
             {/* Summary Stats */}
             <div className="summary-section card">
-              <h3 className="section-title">Tổng quan</h3>
+              <h3 className="section-title">Thông tin thêm</h3>
               <div className="summary-stats">
-                <div className="stat-item">
-                  <div className="stat-number">234</div>
-                  <div className="stat-label">Tổng số case</div>
-                </div>
-                <div className="stat-item">
-                  <div className="stat-number">189</div>
-                  <div className="stat-label">Đã giải quyết</div>
-                </div>
-                <div className="stat-item">
-                  <div className="stat-number">22</div>
-                  <div className="stat-label">Đang xử lý</div>
-                </div>
-                <div className="stat-item">
-                  <div className="stat-number">5.2</div>
-                  <div className="stat-label">Thời gian TB (ngày)</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="actions-section card">
-              <h3 className="section-title">Thao tác</h3>
-              <div className="action-buttons">
-                <button className="action-btn export-btn">
-                  <span>📄</span>
-                  Xuất PDF
-                </button>
-                <button className="action-btn excel-btn">
-                  <span>📊</span>
-                  Xuất Excel
-                </button>
-                <button className="action-btn email-btn">
-                  <span>📧</span>
-                  Gửi email
-                </button>
-                <button className="action-btn print-btn">
-                  <span>🖨️</span>
-                  In báo cáo
-                </button>
-              </div>
-            </div>
-
-            {/* Report History */}
-            <div className="history-section card">
-              <h3 className="section-title">Lịch sử thay đổi</h3>
-              <div className="history-timeline">
-                <div className="history-item">
-                  <div className="history-date">09/10/2025</div>
-                  <div className="history-action">Tạo báo cáo</div>
-                  <div className="history-user">SC Staff</div>
-                </div>
-                <div className="history-item">
-                  <div className="history-date">08/10/2025</div>
-                  <div className="history-action">Cập nhật dữ liệu</div>
-                  <div className="history-user">EVM Staff</div>
-                </div>
-                <div className="history-item">
-                  <div className="history-date">07/10/2025</div>
-                  <div className="history-action">Phê duyệt</div>
-                  <div className="history-user">Admin</div>
-                </div>
+                {report.ScStaffId && (
+                  <div className="info-item">
+                    <label>SC Staff ID</label>
+                    <span>{report.ScStaffId}</span>
+                  </div>
+                )}
+                {report.EvmAdminId && (
+                  <div className="info-item">
+                    <label>EVM Admin ID</label>
+                    <span>{report.EvmAdminId}</span>
+                  </div>
+                )}
+                {report.warrantyClaimId && (
+                  <div className="info-item">
+                    <label>Warranty Claim ID</label>
+                    <span>{report.warrantyClaimId}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

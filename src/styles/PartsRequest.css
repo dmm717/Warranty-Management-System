@@ -91,8 +91,9 @@
 }
 
 .part-info strong {
-  color: var(--dark-color);
-  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+  font-size: 0.9375rem;
 }
 
 .part-info small {

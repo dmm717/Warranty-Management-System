@@ -6,7 +6,8 @@ import CampaignForm from "./CampaignForm";
 import CampaignDetail from "./CampaignDetail";
 import RecallList from "./RecallList";
 import RecallForm from "./RecallForm";
-import { serviceCampaignAPI, vehicleAPI } from "../../services/api";
+import RecallDetail from "./RecallDetail";
+import { serviceCampaignAPI, vehicleAPI, recallAPI } from "../../services/api";
 import "./CampaignManagement.css";
 import AssignTechnicianModal from "../AssignTechnicianModal/AssignTechnicianModal";
 import { mockTechnicians } from "../Technician/TechnicianManagement";
@@ -31,48 +32,6 @@ function CampaignManagement() {
   ]);
   const [vehicles, setVehicles] = useState([]);
   const [recallVehicleMap, setRecallVehicleMap] = useState([]);
-
-  // ✅ Load recalls từ localStorage khi component mount
-  useEffect(() => {
-    const savedRecalls = localStorage.getItem("recalls");
-    const savedRecallVehicleMap = localStorage.getItem("recallVehicleMap");
-
-    if (savedRecalls) {
-      try {
-        setRecalls(JSON.parse(savedRecalls));
-      } catch (error) {
-        console.error("Error loading recalls from localStorage:", error);
-      }
-    }
-
-    if (savedRecallVehicleMap) {
-      try {
-        setRecallVehicleMap(JSON.parse(savedRecallVehicleMap));
-      } catch (error) {
-        console.error(
-          "Error loading recallVehicleMap from localStorage:",
-          error
-        );
-      }
-    }
-  }, []);
-
-  // ✅ Lưu recalls vào localStorage mỗi khi thay đổi
-  useEffect(() => {
-    if (recalls.length > 0) {
-      localStorage.setItem("recalls", JSON.stringify(recalls));
-    }
-  }, [recalls]);
-
-  // ✅ Lưu recallVehicleMap vào localStorage mỗi khi thay đổi
-  useEffect(() => {
-    if (recallVehicleMap.length > 0) {
-      localStorage.setItem(
-        "recallVehicleMap",
-        JSON.stringify(recallVehicleMap)
-      );
-    }
-  }, [recallVehicleMap]);
 
   useEffect(() => {
     fetchData();
@@ -121,6 +80,43 @@ function CampaignManagement() {
         setCampaigns([]);
       }
 
+      // Fetch recalls from API
+      const recallsRes = await recallAPI.getAllRecalls({
+        page: 0,
+        size: 100,
+        sortBy: "startDate",
+        sortDir: "desc",
+      });
+
+      if (recallsRes.success && recallsRes.data) {
+        const transformedRecalls = recallsRes.data.content.map((recall) => ({
+          // Map backend fields to frontend format
+          Recall_ID: recall.id,
+          id: recall.id,
+          RecallName: recall.name,
+          name: recall.name,
+          Description: recall.description,
+          description: recall.description,
+          IssueDescription: recall.description,
+          StartDate: recall.startDate,
+          startDate: recall.startDate,
+          EndDate: recall.endDate,
+          endDate: recall.endDate,
+          Status: recall.status,
+          status: recall.status,
+          NotificationSent: recall.notificationSent,
+          notificationSent: recall.notificationSent,
+          VehicleModels: recall.vehicleTypes?.map(vt => vt.id) || [],
+          vehicleTypes: recall.vehicleTypes || [],
+          vehicles: recall.vehicles || [],
+          technicians: recall.technicians || [],
+          reports: recall.reports || [],
+        }));
+        setRecalls(transformedRecalls);
+      } else {
+        setRecalls([]);
+      }
+
       // Fetch vehicles
       const vehiclesRes = await vehicleAPI.getAllVehicles({
         page: 0,
@@ -139,9 +135,6 @@ function CampaignManagement() {
         }));
         setVehicles(transformedVehicles);
       }
-
-      // Note: Recalls được quản lý bởi localStorage, không cần fetch từ API
-      // Không set empty array để tránh ghi đè dữ liệu từ localStorage
     } catch (error) {
       console.error("Fetch data error:", error);
       setError("Không thể tải dữ liệu");
@@ -520,6 +513,11 @@ function CampaignManagement() {
             vehicleList={vehicles} // ✅ Truyền fake vehicle data
           />
         )
+      ) : formType === "recall" ? (
+        <RecallDetail
+          recallId={selectedItem?.Recall_ID || selectedItem?.id}
+          onBack={handleBack}
+        />
       ) : (
         <CampaignDetail
           item={selectedItem}

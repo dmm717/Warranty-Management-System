@@ -113,7 +113,7 @@
 
 .part-info strong {
   font-weight: 600;
-  color: #111827;
+  color: rgba(255,255,255,0.95);
   font-size: 0.9375rem;
 }
 
