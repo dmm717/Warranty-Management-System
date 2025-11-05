@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { PARTS_REQUEST_STATUS } from "../../constants";
+import PartsRequestDetail from "./PartsRequestDetail";
 import "../../styles/PartsList.css";
 
-function PartsList({ parts, onEdit, onDelete, userRole}) {
+function PartsList({ parts, onEdit, onDelete, onApprove, onReject, userRole }) {
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
   const getStatusBadge = (status) => {
     const statusClasses = {
       PENDING: "status-pending",
@@ -31,6 +34,30 @@ function PartsList({ parts, onEdit, onDelete, userRole}) {
 
   const canEditDelete = () => {
     return userRole === "EVM_STAFF" || userRole === "EVM_ADMIN";
+  };
+
+  const handleViewDetail = (request) => {
+    setSelectedRequest(request);
+    setShowDetail(true);
+  };
+
+  const handleCloseDetail = () => {
+    setShowDetail(false);
+    setSelectedRequest(null);
+  };
+
+  const handleApproveRequest = (requestId) => {
+    if (onApprove) {
+      onApprove(requestId);
+    }
+    handleCloseDetail();
+  };
+
+  const handleRejectRequest = (requestId) => {
+    if (onReject) {
+      onReject(requestId);
+    }
+    handleCloseDetail();
   };
 
   if (parts.length === 0) {
@@ -108,6 +135,13 @@ function PartsList({ parts, onEdit, onDelete, userRole}) {
                   <td>
                     <div className="action-buttons">
                       <button
+                        onClick={() => handleViewDetail(request)}
+                        className="btn btn-sm btn-primary"
+                        title="Xem chi tiết"
+                      >
+                        👁️
+                      </button>
+                      <button
                         onClick={() => onEdit(request)}
                         className="btn btn-sm btn-outline"
                         title="Chỉnh sửa"
@@ -129,6 +163,16 @@ function PartsList({ parts, onEdit, onDelete, userRole}) {
           </tbody>
         </table>
       </div>
+
+      {showDetail && selectedRequest && (
+        <PartsRequestDetail
+          request={selectedRequest}
+          onClose={handleCloseDetail}
+          onApprove={handleApproveRequest}
+          onReject={handleRejectRequest}
+          userRole={userRole}
+        />
+      )}
     </div>
   );
 }
