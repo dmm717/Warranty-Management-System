@@ -215,8 +215,8 @@ function PartsManagement() {
     }
   };
 
-  const handleAddPart = () => {
-    setEditingRequest(null);
+  const handleAddPart = (prefilledPart = null) => {
+    setEditingRequest(prefilledPart);
     setShowForm(true);
   };
 
@@ -381,6 +381,7 @@ function PartsManagement() {
             <PartsInventoryList
               inventory={filteredInventory}
               onUpdateStock={handleUpdateStock}
+              onRequestCreated={handleAddPart}
             />
           ) : (
             <PartsList

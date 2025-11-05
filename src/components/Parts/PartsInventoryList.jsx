@@ -7,8 +7,6 @@ import "../../styles/PartsManagement.css";
 function PartsInventoryList({ inventory, onUpdateStock, onRequestCreated }) {
   const { user } = useAuth();
   const [editingStatus, setEditingStatus] = useState(null);
-  const [requestFormOpen, setRequestFormOpen] = useState(false);
-  const [selectedPart, setSelectedPart] = useState(null);
 
   if (!inventory || inventory.length === 0) {
     return (
@@ -37,14 +35,15 @@ function PartsInventoryList({ inventory, onUpdateStock, onRequestCreated }) {
   };
 
   const openRequestForm = (part) => {
-    setSelectedPart(part);
-    setRequestFormOpen(true);
-  };
-
-  const handleRequestSuccess = () => {
-    setRequestFormOpen(false);
     if (onRequestCreated) {
-      onRequestCreated();
+      onRequestCreated({
+        partType: {
+          id: part.id,
+          partName: part.partName,
+          manufacturer: part.manufacturer
+        },
+        quantity: 1
+      });
     }
   };
 
@@ -177,15 +176,6 @@ function PartsInventoryList({ inventory, onUpdateStock, onRequestCreated }) {
           })}
         </tbody>
       </table>
-
-      {/* Parts Request Form Modal */}
-      <PartsRequestForm
-        isOpen={requestFormOpen}
-        onClose={() => setRequestFormOpen(false)}
-        onSuccess={handleRequestSuccess}
-        prefilledPart={selectedPart}
-        userInfo={user}
-      />
     </div>
   );
 }
