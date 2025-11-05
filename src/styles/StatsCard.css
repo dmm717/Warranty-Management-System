@@ -1,45 +1,61 @@
 .stats-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   position: relative;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .stats-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .stats-card-content {
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .stats-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: auto;
+  min-height: 44px;
 }
 
 .stats-card-title {
   font-size: 14px;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.85);
   line-height: 1.4;
   flex: 1;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .stats-card-icon {
-  font-size: 24px;
-  opacity: 0.8;
+  font-size: 28px;
+  opacity: 0.9;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  line-height: 1;
 }
 
 .stats-card-value {
   font-size: 32px;
-  font-weight: 700;
-  color: var(--dark-color);
+  font-weight: 300;
+  color: #ffffff;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+  letter-spacing: 1px;
+  line-height: 1;
+  margin-top: 12px;
 }
 
 .stats-card-accent {

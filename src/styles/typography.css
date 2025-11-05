@@ -24,7 +24,7 @@ body {
 /* ==================== HEADING STYLES ==================== */
 .vf-heading-1,
 h1 {
-  font-size: var(--vf-text-6xl);
+  font-size: var(--vf-text-4xl);
   font-weight: var(--vf-font-weight-black);
   line-height: var(--vf-leading-tight);
   letter-spacing: -0.025em;
@@ -45,11 +45,12 @@ h2 {
 .vf-heading-3,
 h3 {
   font-size: var(--vf-text-4xl);
-  font-weight: var(--vf-font-weight-bold);
+  font-weight: 300;
   line-height: var(--vf-leading-snug);
-  letter-spacing: -0.025em;
-  color: var(--vf-neutral-900);
+  letter-spacing: 2px;
+  color: #ffffff;
   margin-bottom: var(--vf-space-4);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .vf-heading-4,
@@ -100,33 +101,33 @@ h6 {
 .vf-text-xl {
   font-size: var(--vf-text-xl);
   line-height: var(--vf-leading-relaxed);
-  color: var(--vf-neutral-700);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .vf-text-lg {
   font-size: var(--vf-text-lg);
   line-height: var(--vf-leading-relaxed);
-  color: var(--vf-neutral-700);
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .vf-text-base,
 p {
   font-size: var(--vf-text-base);
   line-height: var(--vf-leading-relaxed);
-  color: var(--vf-neutral-700);
+  color: rgba(255, 255, 255, 0.85);
   margin-bottom: var(--vf-space-4);
 }
 
 .vf-text-sm {
   font-size: var(--vf-text-sm);
   line-height: var(--vf-leading-normal);
-  color: var(--vf-neutral-600);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .vf-text-xs {
   font-size: var(--vf-text-xs);
   line-height: var(--vf-leading-normal);
-  color: var(--vf-neutral-500);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 /* ==================== SPECIALIZED TEXT ==================== */
@@ -134,14 +135,14 @@ p {
   font-size: var(--vf-text-xl);
   font-weight: var(--vf-font-weight-medium);
   line-height: var(--vf-leading-relaxed);
-  color: var(--vf-neutral-600);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .vf-caption {
   font-size: var(--vf-text-sm);
   font-weight: var(--vf-font-weight-medium);
   line-height: var(--vf-leading-tight);
-  color: var(--vf-neutral-500);
+  color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -150,7 +151,7 @@ p {
   font-size: var(--vf-text-xs);
   font-weight: var(--vf-font-weight-semibold);
   line-height: var(--vf-leading-tight);
-  color: var(--vf-neutral-500);
+  color: rgba(255, 255, 255, 0.65);
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
@@ -158,11 +159,12 @@ p {
 .vf-code {
   font-family: var(--vf-font-mono);
   font-size: 0.875em;
-  background-color: var(--vf-neutral-100);
-  color: var(--vf-neutral-800);
+  background: rgba(96, 165, 250, 0.12);
+  color: #60a5fa;
   padding: var(--vf-space-1) var(--vf-space-2);
   border-radius: var(--vf-radius-base);
-  border: 1px solid var(--vf-neutral-200);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  text-shadow: 0 0 5px rgba(96, 165, 250, 0.3);
 }
 
 /* ==================== FONT WEIGHT UTILITIES ==================== */

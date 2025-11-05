@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { FileText } from "lucide-react";
 import AssignTechnicianModal from "./AssignTechnicianModal";
 
 const AssignTechnicianManagement = ({ campaigns = [], technicians = [] }) => {
@@ -100,7 +101,10 @@ const AssignTechnicianManagement = ({ campaigns = [], technicians = [] }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Campaign Table */}
         <div>
-          <h3 className="text-lg font-bold mb-3">📋 Campaigns ({campaigns.length})</h3>
+          <h3 className="text-lg font-bold mb-3">
+            <FileText size={18} style={{ display: 'inline', marginRight: '6px' }} />
+            Campaigns ({campaigns.length})
+          </h3>
           <div className="overflow-x-auto border border-gray-300 rounded">
             <table className="w-full text-sm">
               <thead>

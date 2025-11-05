@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { warrantyClaimAPI } from "../../services/api";
 import StatsCard from "./StatsCard";
+import { Wrench, FileText, Check, X, BarChart3, AlertTriangle } from "lucide-react";
 import "../../styles/Dashboard.css";
 import "../../styles/EVMStaffDashboard.css";
 
@@ -175,35 +176,35 @@ function EVMStaffDashboard() {
         <StatsCard
           title="Chờ xét duyệt"
           value={stats.pendingApproval}
-          icon="📋"
+          icon={<FileText size={24} />}
           color="orange"
           subtitle="Cần hành động ngay"
         />
         <StatsCard
           title="Đã phê duyệt hôm nay"
           value={stats.approvedToday}
-          icon="✅"
+          icon={<Check size={24} />}
           color="green"
           subtitle="Năng suất ngày"
         />
         <StatsCard
           title="Đã từ chối hôm nay"
           value={stats.rejectedToday}
-          icon="❌"
+          icon={<X size={24} />}
           color="red"
           subtitle="Kiểm soát từ chối"
         />
         <StatsCard
           title="Quá hạn xử lý"
           value={stats.overdueApproval}
-          icon="⏰"
+          icon={<AlertTriangle size={24} />}
           color="purple"
           subtitle="> 48 giờ"
         />
         <StatsCard
           title="Tổng yêu cầu tháng này"
           value={stats.totalThisMonth}
-          icon="📊"
+          icon={<BarChart3 size={24} />}
           color="blue"
           subtitle="Khối lượng công việc"
         />
@@ -212,7 +213,10 @@ function EVMStaffDashboard() {
       {/* Priority Queue */}
       <div className="dashboard-section">
         <div className="section-header">
-          <h2>📋 Danh sách yêu cầu cần xử lý</h2>
+          <h2>
+            <FileText size={20} style={{ display: 'inline', marginRight: '8px' }} />
+            Danh sách yêu cầu cần xử lý
+          </h2>
           <button
             className="btn btn-primary"
             onClick={() => navigate("/warranty")}
@@ -261,7 +265,7 @@ function EVMStaffDashboard() {
                         }
                       >
                         {getWaitingTime(claim.createdDate)}
-                        {isOverdue(claim.createdDate) && " ⚠️"}
+                        {isOverdue(claim.createdDate) && <AlertTriangle size={14} style={{ display: 'inline', marginLeft: '4px' }} />}
                       </span>
                     </td>
                     <td>
@@ -284,7 +288,7 @@ function EVMStaffDashboard() {
       <div className="charts-grid">
         {/* Claims by Type */}
         <div className="dashboard-card">
-          <h3>🔧 Loại lỗi thường gặp</h3>
+          <h3><Wrench size={20} style={{ display: 'inline', marginRight: '8px' }} /> Loại lỗi thường gặp</h3>
           <div className="chart-container">
             {claimsByType.length === 0 ? (
               <p className="empty-chart">Chưa có dữ liệu</p>
@@ -364,7 +368,7 @@ function EVMStaffDashboard() {
                       claim.status === "APPROVED" ? "approved" : "rejected"
                     }`}
                   >
-                    {claim.status === "APPROVED" ? "✅" : "❌"}
+                    {claim.status === "APPROVED" ? <Check size={16} /> : <X size={16} />}
                   </span>
                   <div className="activity-content">
                     <p>
@@ -396,7 +400,7 @@ function EVMStaffDashboard() {
           className="action-btn primary"
           onClick={() => navigate("/warranty")}
         >
-          <span className="action-icon">📋</span>
+          <FileText size={20} className="action-icon" />
           <span className="action-text">Xét duyệt ngay</span>
         </button>
         <button
@@ -410,7 +414,7 @@ function EVMStaffDashboard() {
           className="action-btn secondary"
           onClick={() => navigate("/report")}
         >
-          <span className="action-icon">📊</span>
+          <BarChart3 size={20} className="action-icon" />
           <span className="action-text">Báo cáo của tôi</span>
         </button>
       </div>

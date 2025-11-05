@@ -1,12 +1,22 @@
+.chart-component {
+  margin-top: 30px;
+}
+
 .chart-container {
   padding: 20px 0;
+  min-height: 450px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .chart-legend {
   display: flex;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 60px;
   justify-content: center;
+  height: 40px;
+  align-items: center;
 }
 
 .legend-item {
@@ -14,7 +24,7 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: var(--dark-color);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .legend-color {
@@ -40,10 +50,11 @@
   gap: 24px;
   justify-content: space-around;
   align-items: flex-end;
-  height: 300px;
+  height: 240px;
   padding: 20px;
   border-bottom: 2px solid var(--border-color);
   position: relative;
+  margin-top: auto;
 }
 
 .bar-group {
@@ -57,7 +68,7 @@
   display: flex;
   gap: 4px;
   align-items: flex-end;
-  height: 250px;
+  height: 200px;
   margin-bottom: 12px;
 }
 

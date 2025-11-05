@@ -14,10 +14,70 @@
 }
 
 .profile-form-container .form-section h3 {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   margin-bottom: 1rem;
-  color: var(--dark-color);
-  font-weight: 600;
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 12px rgba(96, 165, 250, 0.3);
+  letter-spacing: 0.5px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary-color);
+  display: inline-block;
+}
+
+.profile-form-container label,
+.profile-form-container .form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 8px;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.profile-form-container .form-section input,
+.profile-form-container .form-section textarea,
+.profile-form-container .form-section select,
+.profile-form-container .form-section .form-control {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.profile-form-container .form-section input:focus,
+.profile-form-container .form-section textarea:focus,
+.profile-form-container .form-section select:focus,
+.profile-form-container .form-section .form-control:focus {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.9);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 6px 24px rgba(96, 165, 250, 0.12), 0 0 0 4px rgba(96, 165, 250, 0.08);
+}
+
+.profile-form-container .form-section input::placeholder,
+.profile-form-container .form-section textarea::placeholder {
+  color: rgba(255, 255, 255, 0.46);
+}
+
+/* Override browser autofill styles to keep dark background */
+.profile-form-container .form-section input:-webkit-autofill,
+.profile-form-container .form-section input:-webkit-autofill:hover,
+.profile-form-container .form-section input:-webkit-autofill:focus,
+.profile-form-container .form-section input:-webkit-autofill:active,
+.profile-form-container .form-section textarea:-webkit-autofill,
+.profile-form-container .form-section select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.04) inset !important;
+  box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.04) inset !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 .alert {
@@ -40,6 +100,8 @@
 }
 
 input.disabled {
-  background-color: #f3f4f6;
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
   cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.04) !important;
 }

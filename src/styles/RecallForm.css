@@ -5,12 +5,16 @@
 
 .form-section {
   margin-bottom: 32px;
+  padding: 24px;
   padding-bottom: 24px;
-  border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .form-section:last-of-type {
-  border-bottom: none;
   margin-bottom: 0;
 }
 
@@ -71,16 +75,18 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .checkbox-item:hover {
-  border-color: var(--primary-color);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-color: rgba(96, 165, 250, 0.6);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 16px rgba(96, 165, 250, 0.12);
 }
 
 .checkbox-item input[type="checkbox"] {
@@ -92,14 +98,27 @@
 
 .checkbox-item span {
   font-size: 14px;
-  color: var(--dark-color);
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 400;
 }
 
 .card-subtitle {
   font-size: 13px;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.65);
   margin-top: 4px;
-  font-weight: normal;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.card-subtitle p {
+  margin: 0 0 8px 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.card-subtitle p:last-child {
+  margin-bottom: 0;
 }
 
 /* Info Section for EVM_STAFF */
@@ -126,15 +145,19 @@
 .info-item label {
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.65);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1.2px;
+  margin-bottom: 4px;
+  display: block;
 }
 
 .info-item span {
-  font-size: 14px;
-  color: var(--dark-color);
-  font-weight: 500;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 400;
+  line-height: 1.5;
+  display: block;
 }
 
 textarea.form-control {

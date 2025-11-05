@@ -1,0 +1,514 @@
+/* RecallDetail.css - Matches CampaignDetail style */
+
+.recall-detail {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.item-basic-info h2 {
+  font-size: 28px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.item-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.recall-id-badge {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+  padding: 8px 20px;
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.3), 0 0 10px rgba(96, 165, 250, 0.1) inset;
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+}
+
+.detail-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.detail-content {
+  padding: 0;
+}
+
+.detail-row {
+  display: flex;
+  gap: 32px;
+}
+
+.detail-col-8 {
+  flex: 2;
+}
+
+.detail-col-4 {
+  flex: 1;
+  min-width: 300px;
+}
+
+.info-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.info-section {
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0;
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.3);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #60a5fa;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.section-title svg {
+  color: #60a5fa;
+  filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.5));
+}
+
+.section-title h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.info-item label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+.info-item div,
+.info-item p {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 15px;
+  font-weight: 300;
+  letter-spacing: 0.3px;
+}
+
+.description-text {
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  font-weight: 300;
+}
+
+.date-value {
+  color: #60a5fa;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  border: 1px solid;
+}
+
+.status-badge.status-active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.status-badge.status-inactive {
+  background: rgba(156, 163, 175, 0.15);
+  color: #9ca3af;
+  border-color: rgba(156, 163, 175, 0.4);
+  box-shadow: 0 0 15px rgba(156, 163, 175, 0.2);
+}
+
+.status-badge.status-completed {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+.status-badge.status-cancelled {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.notification-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  border: 1px solid;
+}
+
+.notification-badge.sent {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+}
+
+.notification-badge.pending {
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border-color: rgba(251, 146, 60, 0.4);
+  box-shadow: 0 0 15px rgba(251, 146, 60, 0.2);
+}
+
+/* Vehicles List */
+.vehicles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vehicle-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vehicle-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 0 15px rgba(96, 165, 250, 0.2);
+}
+
+.vin-number {
+  font-family: 'Courier New', monospace;
+  color: #60a5fa;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+}
+
+.vehicle-model {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+/* Vehicle Types */
+.vehicle-types-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.vehicle-type-chip {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+  padding: 10px 20px;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  box-shadow: 0 0 15px rgba(96, 165, 250, 0.2);
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.4);
+  text-transform: uppercase;
+}
+
+/* Technicians List */
+.technicians-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.technician-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.technician-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+}
+
+.technician-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 0;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4ade80;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.2);
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.technician-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.technician-name {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.technician-email {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Reports List */
+.reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.report-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.report-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(251, 146, 60, 0.4);
+  box-shadow: 0 0 15px rgba(251, 146, 60, 0.2);
+}
+
+.report-id {
+  color: #fb923c;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 10px rgba(251, 146, 60, 0.3);
+}
+
+.report-title {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+/* More Items */
+.more-items {
+  padding: 12px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+/* Loading & Error States */
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+  min-height: 400px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(96, 165, 250, 0.2);
+  border-top-color: #60a5fa;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.3);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state p,
+.error-state p,
+.empty-state p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.empty-state svg {
+  color: rgba(255, 255, 255, 0.3);
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 24px;
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid;
+}
+
+.btn-primary {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.2);
+}
+
+.btn-primary:hover {
+  background: rgba(96, 165, 250, 0.25);
+  box-shadow: 0 0 30px rgba(96, 165, 250, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 0 15px rgba(96, 165, 250, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .detail-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .detail-row {
+    flex-direction: column;
+  }
+
+  .detail-col-4 {
+    min-width: 100%;
+  }
+
+  .item-basic-info h2 {
+    font-size: 24px;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}

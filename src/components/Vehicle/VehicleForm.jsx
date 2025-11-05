@@ -191,7 +191,7 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
               onChange={handleChange}
               className={`form-control ${
                 errors.ID_Electric_Vehicle_Type ? "error" : ""
-              }`}
+              } ${!formData.ID_Electric_Vehicle_Type ? "placeholder" : ""}`}
             >
               <option value="">Chọn loại xe</option>
               {vehicleTypes.map((type) => (

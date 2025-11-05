@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Edit, Trash2 } from "lucide-react";
 import "../../styles/UserList.css";
 
 function UserList({ users, currentUser, onEdit, onDelete, onUpdateStatus }) {
@@ -287,14 +288,14 @@ function UserList({ users, currentUser, onEdit, onDelete, onUpdateStatus }) {
                           className="btn btn-sm btn-outline"
                           title="Chỉnh sửa"
                         >
-                          ✏️
+                          <Edit size={16} />
                         </button>
                         <button
                           onClick={() => onDelete(user.id)}
                           className="btn btn-sm btn-danger"
                           title="Xóa"
                         >
-                          🗑️
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>

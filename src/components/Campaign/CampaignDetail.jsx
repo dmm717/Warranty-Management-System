@@ -8,6 +8,7 @@ import campaignResultTrackingService from "../../services/CampaignResultTracking
 import reportConfirmationService from "../../services/ReportConfirmationService";
 import rolePermissionService from "../../services/RolePermissionService";
 import { useAuth } from "../../contexts/AuthContext";
+import { Wrench } from "lucide-react";
 
 function CampaignDetail({ item, type, onEdit, onUpdateStatus, userRole }) {
   const { user } = useAuth();
@@ -706,7 +707,7 @@ function CampaignDetail({ item, type, onEdit, onUpdateStatus, userRole }) {
                   currentUserRole
                 ) && (
                   <button className="action-btn results-btn">
-                    <span>🔧</span>
+                    <Wrench size={18} style={{ marginRight: '6px' }} />
                     Cập nhật kết quả
                   </button>
                 )}

@@ -23,11 +23,17 @@
 
 /* Modal Header */
 .modal-header {
-  background: linear-gradient(to right, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg, 
+    rgba(96, 165, 250, 0.15) 0%, 
+    rgba(59, 130, 246, 0.2) 100%);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 12px 12px 0 0;
   padding: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-shadow: 0 4px 16px rgba(96, 165, 250, 0.2);
 }
 
 .modal-title {
@@ -191,6 +197,7 @@
 .btn-icon {
   width: 1rem;
   height: 1rem;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
 }
 
 /* Empty State */

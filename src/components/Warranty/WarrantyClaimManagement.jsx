@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { ArrowLeft, Plus } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import WarrantyClaimList from "./WarrantyClaimList";
@@ -308,7 +309,7 @@ function WarrantyClaimManagement() {
           )}
         {(showForm || showDetail) && (
           <button onClick={handleBack} className="btn btn-outline">
-            <span>⬅️</span>
+            <ArrowLeft size={16} />
             Quay lại
           </button>
         )}
