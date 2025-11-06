@@ -337,6 +337,28 @@ export const ERROR_MESSAGES = {
 };
 
 // Export default object
+// =============================================================================
+// RECALL VEHICLE STATUS - Trạng thái xe trong recall
+// =============================================================================
+
+export const RECALL_VEHICLE_STATUS = {
+  PENDING: "Chờ xử lý",
+  NOTIFIED: "Đã thông báo",
+  SCHEDULED: "Đã lên lịch",
+  IN_PROGRESS: "Đang xử lý",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Đã hủy",
+};
+
+export const RECALL_VEHICLE_STATUS_OPTIONS = [
+  { value: "PENDING", label: "Chờ xử lý" },
+  { value: "NOTIFIED", label: "Đã thông báo" },
+  { value: "SCHEDULED", label: "Đã lên lịch" },
+  { value: "IN_PROGRESS", label: "Đang xử lý" },
+  { value: "COMPLETED", label: "Hoàn thành" },
+  { value: "CANCELLED", label: "Đã hủy" },
+];
+
 export default {
   USER_ROLES,
   ROLE_DESCRIPTIONS,
@@ -358,6 +380,8 @@ export default {
   SEVERITY_LEVELS,
   REPORT_TYPES,
   CAMPAIGN_STATUS,
+  RECALL_VEHICLE_STATUS,
+  RECALL_VEHICLE_STATUS_OPTIONS,
   TECHNICIAN_SPECIALTIES,
   PASSWORD_REQUIREMENTS,
   PAGINATION_CONFIG,

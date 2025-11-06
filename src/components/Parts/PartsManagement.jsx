@@ -3,9 +3,12 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import PartsList from "./PartsList";
-import PartsInventoryList from "./PartsInventoryList";
+import PartsInventoryListEVM from "./PartsInventoryListEVM";
+import PartsInventoryListSC from "./PartsInventoryListSC";
 import PartsForm from "./PartsForm";
 import PartsSearch from "./PartsSearch";
+import PartsByTypeView from "./PartsByTypeView";
+import SCPartsByTypeView from "./SCPartsByTypeView";
 import {
   partsRequestAPI,
   evmInventoryAPI,
@@ -25,6 +28,10 @@ function PartsManagement() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("inventory");
   const [availableCategories, setAvailableCategories] = useState([]);
+  const [viewMode, setViewMode] = useState("list"); // 'list' | 'partsByType'
+  const [selectedPartType, setSelectedPartType] = useState(null);
+  const [scViewMode, setScViewMode] = useState("list"); // 'list' | 'partsByType'
+  const [selectedSCPartType, setSelectedSCPartType] = useState(null);
 
   // Handle navigation từ notification
   useEffect(() => {
@@ -324,6 +331,26 @@ function PartsManagement() {
     }
   };
 
+  const handleViewPartsByType = (partTypeId, partName) => {
+    setSelectedPartType({ id: partTypeId, name: partName });
+    setViewMode("partsByType");
+  };
+
+  const handleBackToList = () => {
+    setViewMode("list");
+    setSelectedPartType(null);
+  };
+
+  const handleSCViewPartsByType = (partTypeId, partName) => {
+    setSelectedSCPartType({ id: partTypeId, name: partName });
+    setScViewMode("partsByType");
+  };
+
+  const handleBackToSCList = () => {
+    setScViewMode("list");
+    setSelectedSCPartType(null);
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -335,68 +362,95 @@ function PartsManagement() {
 
   return (
     <div className="parts-management">
-      <div className="page-header">
-        <h1>Quản lý phụ tùng</h1>
-        {!showForm && (
-          <div className="header-actions">
-            {/* Only SC_ADMIN can create parts request */}
-            {user?.role === "SC_ADMIN" && activeTab === "requests" && (
-              <button onClick={handleAddPart} className="btn btn-primary">
-                <span>➕</span>
-                Tạo yêu cầu phụ tùng
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {!showForm ? (
+      {viewMode === "partsByType" && selectedPartType ? (
+        // EVM View Parts by Type
+        <PartsByTypeView
+          partTypeId={selectedPartType.id}
+          partTypeName={selectedPartType.name}
+          onBack={handleBackToList}
+        />
+      ) : scViewMode === "partsByType" && selectedSCPartType ? (
+        // SC View Parts by Type
+        <SCPartsByTypeView
+          partTypeId={selectedSCPartType.id}
+          partTypeName={selectedSCPartType.name}
+          onBack={handleBackToSCList}
+        />
+      ) : (
+        // Default List View
         <>
-          <div className="parts-tabs">
-            <button
-              className={`tab-btn ${activeTab === "inventory" ? "active" : ""}`}
-              onClick={() => setActiveTab("inventory")}
-            >
-              Kho phụ tùng
-            </button>
-            {/* Chỉ SC_ADMIN và EVM_STAFF/EVM_ADMIN được xem tab yêu cầu phụ tùng */}
-            {user?.role !== "SC_STAFF" && (
-              <button
-                className={`tab-btn ${
-                  activeTab === "requests" ? "active" : ""
-                }`}
-                onClick={() => setActiveTab("requests")}
-              >
-                Yêu cầu phụ tùng
-              </button>
+          <div className="page-header">
+            <h1>Quản lý phụ tùng</h1>
+            {!showForm && (
+              <div className="header-actions">
+                {/* Only SC_ADMIN can create parts request */}
+                {user?.role === "SC_ADMIN" && activeTab === "requests" && (
+                  <button onClick={handleAddPart} className="btn btn-primary">
+                    <span>➕</span>
+                    Tạo yêu cầu phụ tùng
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
-          <PartsSearch
-            onSearch={handleSearch}
-            availableCategories={availableCategories}
-          />
+          {!showForm ? (
+            <>
+              <div className="parts-tabs">
+                <button
+                  className={`tab-btn ${activeTab === "inventory" ? "active" : ""}`}
+                  onClick={() => setActiveTab("inventory")}
+                >
+                  Kho phụ tùng
+                </button>
+                {/* Chỉ SC_ADMIN và EVM_STAFF/EVM_ADMIN được xem tab yêu cầu phụ tùng */}
+                {user?.role !== "SC_STAFF" && (
+                  <button
+                    className={`tab-btn ${
+                      activeTab === "requests" ? "active" : ""
+                    }`}
+                    onClick={() => setActiveTab("requests")}
+                  >
+                    Yêu cầu phụ tùng
+                  </button>
+                )}
+              </div>
 
-          {activeTab === "inventory" ? (
-            <PartsInventoryList
-              inventory={filteredInventory}
-              onUpdateStock={handleUpdateStock}
-            />
+              <PartsSearch
+                onSearch={handleSearch}
+                availableCategories={availableCategories}
+              />
+
+              {activeTab === "inventory" ? (
+                user?.role === "EVM_STAFF" || user?.role === "EVM_ADMIN" ? (
+                  <PartsInventoryListEVM
+                    inventory={filteredInventory}
+                    onUpdateStock={handleUpdateStock}
+                    onViewPartsByType={handleViewPartsByType}
+                  />
+                ) : (
+                  <PartsInventoryListSC
+                    inventory={filteredInventory}
+                    onViewPartsByType={handleSCViewPartsByType}
+                  />
+                )
+              ) : (
+                <PartsList
+                  parts={filteredPartsRequests}
+                  onEdit={handleEditPart}
+                  onDelete={handleDeletePart}
+                  userRole={user?.role}
+                />
+              )}
+            </>
           ) : (
-            <PartsList
-              parts={filteredPartsRequests}
-              onEdit={handleEditPart}
-              onDelete={handleDeletePart}
-              userRole={user?.role}
+            <PartsForm
+              part={editingRequest}
+              onSave={handleSavePart}
+              onCancel={handleCancelForm}
             />
           )}
         </>
-      ) : (
-        <PartsForm
-          part={editingRequest}
-          onSave={handleSavePart}
-          onCancel={handleCancelForm}
-        />
       )}
     </div>
   );

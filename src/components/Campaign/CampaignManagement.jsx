@@ -7,7 +7,7 @@ import CampaignDetail from "./CampaignDetail";
 import RecallList from "./RecallList";
 import RecallForm from "./RecallForm";
 import RecallDetail from "./RecallDetail";
-import { serviceCampaignAPI, vehicleAPI, recallAPI } from "../../services/api";
+import { serviceCampaignAPI, vehicleAPI, recallAPI, scTechnicianAPI } from "../../services/api";
 import "./CampaignManagement.css";
 import AssignTechnicianModal from "../AssignTechnicianModal/AssignTechnicianModal";
 import { mockTechnicians } from "../Technician/TechnicianManagement";
@@ -81,15 +81,89 @@ function CampaignManagement() {
       }
 
       // Fetch recalls from API
-      const recallsRes = await recallAPI.getAllRecalls({
-        page: 0,
-        size: 100,
-        sortBy: "startDate",
-        sortDir: "desc",
-      });
+      let recallsData = [];
 
-      if (recallsRes.success && recallsRes.data) {
-        const transformedRecalls = recallsRes.data.content.map((recall) => ({
+      // Nếu là SC_TECHNICAL, chỉ lấy recalls được assign cho technician này
+      if (user?.role === "SC_TECHNICAL" && user?.id) {
+        console.log("🔍 SC_TECHNICAL detected, fetching assigned recalls...");
+        console.log("👤 User ID:", user.id);
+        
+        try {
+          // Bước 1: Lấy technician info từ userId bằng API mới
+          const techResponse = await scTechnicianAPI.getTechnicianByUserId(user.id);
+          console.log("🎯 Current technician:", techResponse.data);
+          
+          if (techResponse.success && techResponse.data?.id) {
+            const technicianId = techResponse.data.id;
+            
+            // Bước 2: Thử lấy recalls của technician từ API mới
+            try {
+              const recallsRes = await recallAPI.getRecallsByTechnicianId(technicianId);
+              console.log("📋 Recalls for technician (từ API):", recallsRes.data);
+              console.log("📋 API success status:", recallsRes.success);
+              
+              if (recallsRes.success && recallsRes.data) {
+                recallsData = Array.isArray(recallsRes.data) ? recallsRes.data : [];
+                console.log("✅ Sử dụng data từ API mới");
+              } else {
+                // API không success hoặc data rỗng -> fallback
+                throw new Error("API returned no data");
+              }
+            } catch (apiError) {
+              console.warn("⚠️ API /technicians/{id}/recalls lỗi, fallback về filter...", apiError);
+              
+              // Fallback: Lấy tất cả recalls rồi filter
+              const allRecallsRes = await recallAPI.getAllRecalls({
+                page: 0,
+                size: 100,
+                sortBy: "startDate",
+                sortDir: "desc",
+              });
+              
+              if (allRecallsRes.success && allRecallsRes.data?.content) {
+                // Fetch detail cho từng recall để lấy technicianBasicDTOS
+                const recallsWithDetails = await Promise.all(
+                  allRecallsRes.data.content.map(async (recall) => {
+                    try {
+                      const detailRes = await recallAPI.getRecallById(recall.id);
+                      return detailRes.data;
+                    } catch (err) {
+                      console.error(`Error fetching recall ${recall.id}:`, err);
+                      return recall;
+                    }
+                  })
+                );
+                
+                // Filter recalls có technicianId
+                recallsData = recallsWithDetails.filter(recall => 
+                  recall.technicianBasicDTOS?.some(tech => tech.id === technicianId)
+                );
+                console.log("📋 Filtered recalls:", recallsData);
+              }
+            }
+          } else {
+            console.warn("⚠️ No technician found for userId:", user.id);
+          }
+        } catch (err) {
+          console.error("❌ Error fetching recalls for SC_TECHNICAL:", err);
+        }
+      } else {
+        // Các role khác: lấy tất cả recalls
+        const recallsRes = await recallAPI.getAllRecalls({
+          page: 0,
+          size: 100,
+          sortBy: "startDate",
+          sortDir: "desc",
+        });
+        
+        if (recallsRes.success && recallsRes.data) {
+          recallsData = recallsRes.data.content || [];
+        }
+      }
+
+      // Transform data
+      if (recallsData.length > 0) {
+        const transformedRecalls = recallsData.map((recall) => ({
           // Map backend fields to frontend format
           Recall_ID: recall.id,
           id: recall.id,
@@ -111,7 +185,9 @@ function CampaignManagement() {
           vehicles: recall.vehicles || [],
           technicians: recall.technicians || [],
           reports: recall.reports || [],
+          technicianBasicDTOS: recall.technicianBasicDTOS || [],
         }));
+
         setRecalls(transformedRecalls);
       } else {
         setRecalls([]);
@@ -495,6 +571,7 @@ function CampaignManagement() {
                 handleUpdateStatus(id, status, "recall")
               }
               userRole={user?.role}
+              userId={user?.id} // Sửa từ userId thành id
             />
           )}
         </>

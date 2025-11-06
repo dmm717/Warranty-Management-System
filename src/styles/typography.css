@@ -35,11 +35,12 @@ h1 {
 .vf-heading-2,
 h2 {
   font-size: var(--vf-text-5xl);
-  font-weight: var(--vf-font-weight-extrabold);
+  font-weight: 300; /* Light weight for elegant look */
   line-height: var(--vf-leading-tight);
-  letter-spacing: -0.025em;
-  color: var(--vf-neutral-900);
+  letter-spacing: 2px; /* Increased spacing for sophistication */
+  color: #ffffff; /* White text for dark theme */
   margin-bottom: var(--vf-space-5);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow for depth */
 }
 
 .vf-heading-3,

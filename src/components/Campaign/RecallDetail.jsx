@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, AlertTriangle, Users, Car, FileText, Clock } from "lucide-react";
-import { recallAPI } from "../../services/api";
+import { Calendar, AlertTriangle, Users, Car, FileText, Clock, RefreshCw, UserPlus } from "lucide-react";
+import { recallAPI, recallDistrictAPI, vehicleAPI, scTechnicianAPI } from "../../services/api";
+import { RECALL_VEHICLE_STATUS_OPTIONS } from "../../constants";
+import { toast } from "react-toastify";
+import { useAuth } from "../../contexts/AuthContext";
+import VehicleDetail from "../Vehicle/VehicleDetail";
 import "../../styles/RecallDetail.css";
 
 function RecallDetail({ recallId, onBack }) {
+  const { user } = useAuth();
   const [recall, setRecall] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [assigningVehicles, setAssigningVehicles] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState(null);
+  const [showVehicleDetail, setShowVehicleDetail] = useState(false);
+  const [showAssignTechModal, setShowAssignTechModal] = useState(false);
+  const [availableTechnicians, setAvailableTechnicians] = useState([]);
 
   useEffect(() => {
     if (recallId) {
@@ -14,12 +24,58 @@ function RecallDetail({ recallId, onBack }) {
     }
   }, [recallId]);
 
+  // Chặn scroll của body khi modal mở
+  useEffect(() => {
+    if (showAssignTechModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    // Cleanup khi component unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showAssignTechModal]);
+
   const fetchRecallDetail = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await recallAPI.getRecallById(recallId);
-      setRecall(response.data);
+      console.log("🔍 Recall data:", response.data);
+      console.log("🚗 Vehicles:", response.data?.vehicleBasicInfoDTOS);
+      console.log("👨‍🔧 Technicians:", response.data?.technicianBasicDTOS);
+      
+      const recallData = response.data;
+      
+      // Fetch trạng thái thực của từng xe từ API
+      if (recallData.vehicleBasicInfoDTOS && recallData.vehicleBasicInfoDTOS.length > 0) {
+        const vehiclesWithStatus = await Promise.all(
+          recallData.vehicleBasicInfoDTOS.map(async (vehicle) => {
+            try {
+              const vehicleId = vehicle.vehicleId || vehicle.vin;
+              const detailResponse = await recallAPI.getRecallVehicleDetail(recallId, vehicleId);
+              console.log(`📊 Status for vehicle ${vehicleId}:`, detailResponse.data);
+              return {
+                ...vehicle,
+                status: detailResponse.data?.recallVehicleStatus || "PENDING"
+              };
+            } catch (err) {
+              console.error(`❌ Error fetching status for vehicle ${vehicle.vehicleId}:`, err);
+              return {
+                ...vehicle,
+                status: "PENDING"
+              };
+            }
+          })
+        );
+        
+        console.log("✅ Vehicles with status:", vehiclesWithStatus);
+        recallData.vehicleBasicInfoDTOS = vehiclesWithStatus;
+      }
+      
+      setRecall(recallData);
     } catch (err) {
       console.error("Error fetching recall detail:", err);
       setError("Không thể tải thông tin recall. Vui lòng thử lại.");
@@ -27,6 +83,159 @@ function RecallDetail({ recallId, onBack }) {
       setLoading(false);
     }
   };
+
+  const handleAutoAssignVehicles = async () => {
+    try {
+      setAssigningVehicles(true);
+      
+      // 1. Lấy danh sách vehicle type IDs từ recall
+      const vehicleTypeIds = recall.vehicleTypeInfoDTOS?.map(vt => vt.id) || [];
+      
+      if (vehicleTypeIds.length === 0) {
+        toast.warning("Recall này chưa có vehicle type nào");
+        return;
+      }
+
+      // 2. Lấy tất cả xe từ backend (có thể cần phân trang nếu số lượng lớn)
+      const vehiclesResponse = await vehicleAPI.getAllVehicles({ 
+        page: 0, 
+        size: 1000 // Lấy tất cả xe
+      });
+      
+      const allVehicles = vehiclesResponse.data?.content || [];
+      
+      // 3. Filter xe có vehicleType matching
+      const matchingVehicles = allVehicles.filter(vehicle => 
+        vehicleTypeIds.includes(vehicle.electricVehicleTypeId || vehicle.vehicleTypeId)
+      );
+
+      if (matchingVehicles.length === 0) {
+        toast.info("Không tìm thấy xe nào có loại xe phù hợp");
+        return;
+      }
+
+      // 4. Loop gọi API add từng xe vào recall
+      let successCount = 0;
+      let errorCount = 0;
+
+      toast.info(`Đang gán ${matchingVehicles.length} xe vào recall...`);
+
+      for (const vehicle of matchingVehicles) {
+        try {
+          await recallAPI.addVehicleToRecall(recallId, vehicle.vin || vehicle.id);
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to add vehicle ${vehicle.vin}:`, err);
+          errorCount++;
+        }
+      }
+
+      // 5. Show result
+      if (successCount > 0) {
+        toast.success(`Đã gán thành công ${successCount} xe vào recall!`);
+        // Refresh recall detail
+        await fetchRecallDetail();
+      }
+      
+      if (errorCount > 0) {
+        toast.warning(`Có ${errorCount} xe không thể gán (có thể đã được gán trước đó)`);
+      }
+
+    } catch (err) {
+      console.error("Error auto-assigning vehicles:", err);
+      toast.error(err.message || "Có lỗi xảy ra khi gán xe");
+    } finally {
+      setAssigningVehicles(false);
+    }
+  };
+
+  const handleViewVehicleDetail = (vehicleId) => {
+    setSelectedVehicleId(vehicleId);
+    setShowVehicleDetail(true);
+  };
+
+  const handleBackFromVehicle = () => {
+    setShowVehicleDetail(false);
+    setSelectedVehicleId(null);
+  };
+
+  const handleOpenAssignTechModal = async () => {
+    try {
+      // Fetch danh sách technicians từ SC Technician API
+      const response = await scTechnicianAPI.getAllTechnicians({ page: 0, size: 100 });
+      console.log("👨‍🔧 Available technicians:", response.data);
+      
+      let technicians = response.data?.content || [];
+      
+      // Lọc chỉ lấy technicians cùng branchOffice với user hiện tại
+      if (user?.branchOffice) {
+        technicians = technicians.filter(tech => 
+          tech.branchOffice === user.branchOffice
+        );
+        console.log(`✅ Filtered technicians for branch "${user.branchOffice}":`, technicians);
+      }
+      
+      setAvailableTechnicians(technicians);
+      setShowAssignTechModal(true);
+    } catch (err) {
+      console.error("Error fetching technicians:", err);
+      toast.error("Không thể tải danh sách kỹ thuật viên");
+    }
+  };
+
+  const handleAssignTechnician = async (technicianId) => {
+    try {
+      console.log("🔄 Adding technician:", technicianId, "to recall:", recallId);
+      
+      const response = await recallAPI.addTechnicianToRecall(recallId, technicianId);
+      console.log("✅ Add technician response:", response);
+      
+      toast.success("Đã gán kỹ thuật viên");
+      
+      // Refresh data to show updated technician list
+      console.log("🔄 Refreshing recall data...");
+      await fetchRecallDetail();
+      console.log("✅ Recall data refreshed");
+      
+      setShowAssignTechModal(false);
+    } catch (err) {
+      console.error("❌ Error adding technician:", err);
+      console.error("❌ Error response:", err.response?.data);
+      toast.error(err.response?.data?.message || "Không thể gán kỹ thuật viên");
+    }
+  };
+
+  const handleVehicleStatusChange = async (vehicleId, newStatus) => {
+    try {
+      // Cập nhật state local ngay lập tức
+      setRecall(prevRecall => ({
+        ...prevRecall,
+        vehicleBasicInfoDTOS: prevRecall.vehicleBasicInfoDTOS.map(vehicle => 
+          (vehicle.vehicleId === vehicleId || vehicle.vin === vehicleId)
+            ? { ...vehicle, status: newStatus }
+            : vehicle
+        )
+      }));
+
+      // Gọi API để lưu vào backend
+      await recallAPI.updateRecallVehicleStatus(recallId, vehicleId, {
+        status: newStatus
+      });
+      
+      toast.success("Đã cập nhật trạng thái xe");
+    } catch (err) {
+      console.error("Error updating vehicle status:", err);
+      toast.error("Không thể cập nhật trạng thái xe");
+      
+      // Rollback nếu API thất bại
+      await fetchRecallDetail();
+    }
+  };
+
+  // Nếu đang xem vehicle detail, hiển thị VehicleDetail component
+  if (showVehicleDetail && selectedVehicleId) {
+    return <VehicleDetail vehicleId={selectedVehicleId} onBack={handleBackFromVehicle} />;
+  }
 
   const getStatusBadge = (status) => {
     const statusClasses = {
@@ -101,7 +310,33 @@ function RecallDetail({ recallId, onBack }) {
           </div>
         </div>
         <div className="detail-actions">
-          
+          <button className="btn btn-outline" onClick={onBack}>
+            ← Quay lại
+          </button>
+          <button 
+            className="btn btn-secondary"
+            onClick={handleOpenAssignTechModal}
+          >
+            <UserPlus size={16} />
+            Gán kỹ thuật viên
+          </button>
+          <button 
+            className="btn btn-primary"
+            onClick={handleAutoAssignVehicles}
+            disabled={assigningVehicles || recall.status === 'COMPLETED'}
+          >
+            {assigningVehicles ? (
+              <>
+                <RefreshCw size={16} className="spinning" />
+                Đang gán xe...
+              </>
+            ) : (
+              <>
+                <Car size={16} />
+                Tự động gán xe
+              </>
+            )}
+          </button>
         </div>
       </div>
 
@@ -143,39 +378,85 @@ function RecallDetail({ recallId, onBack }) {
               </div>
 
               {/* Affected Vehicles Section */}
-              {recall.vehicles && recall.vehicles.length > 0 && (
+              {recall.vehicleBasicInfoDTOS && recall.vehicleBasicInfoDTOS.length > 0 ? (
                 <div className="info-section">
                   <div className="section-title">
                     <Car size={20} />
-                    <h3>Xe bị ảnh hưởng ({recall.vehicles.length})</h3>
+                    <h3>Xe bị ảnh hưởng ({recall.vehicleBasicInfoDTOS.length})</h3>
                   </div>
                   <div className="vehicles-list">
-                    {recall.vehicles.slice(0, 20).map((vehicle, index) => (
-                      <div key={index} className="vehicle-item">
-                        <span className="vin-number">{vehicle.vin || vehicle.id}</span>
-                        {vehicle.model && <span className="vehicle-model">{vehicle.model}</span>}
+                    {recall.vehicleBasicInfoDTOS.map((vehicle, index) => (
+                      <div 
+                        key={vehicle.vehicleId || vehicle.vin || index} 
+                        className="vehicle-item-with-status"
+                      >
+                        <div 
+                          className="vehicle-info clickable"
+                          onClick={() => handleViewVehicleDetail(vehicle.vehicleId || vehicle.vin)}
+                        >
+                          {(vehicle.vehicleName || vehicle.modelName) && (
+                            <span className="vehicle-model">🚗 {vehicle.vehicleName || vehicle.modelName}</span>
+                          )}
+                          <span className="vin-number">📋 VIN: {vehicle.vehicleId || vehicle.vin || vehicle.id || `Xe #${index + 1}`}</span>
+                          {vehicle.yearModelYear && (
+                            <span className="vehicle-year-badge">📅 {vehicle.yearModelYear}</span>
+                          )}
+                          {vehicle.batteryType && (
+                            <span className="vehicle-battery-badge">🔋 {vehicle.batteryType}</span>
+                          )}
+                        </div>
+                        <div className="vehicle-status-control" onClick={(e) => e.stopPropagation()}>
+                          <label>Trạng thái:</label>
+                          <select
+                            className="status-select"
+                            value={vehicle.status || "PENDING"}
+                            onChange={(e) => handleVehicleStatusChange(vehicle.vehicleId || vehicle.vin, e.target.value)}
+                          >
+                            {RECALL_VEHICLE_STATUS_OPTIONS.map(option => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     ))}
-                    {recall.vehicles.length > 20 && (
-                      <div className="more-items">
-                        +{recall.vehicles.length - 20} xe khác...
-                      </div>
-                    )}
+                  </div>
+                  {recall.vehicleBasicInfoDTOS.length > 50 && (
+                    <div className="vehicle-summary">
+                      <p>Hiển thị tất cả {recall.vehicleBasicInfoDTOS.length} xe bị ảnh hưởng</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="info-section">
+                  <div className="section-title">
+                    <Car size={20} />
+                    <h3>Xe bị ảnh hưởng</h3>
+                  </div>
+                  <div className="empty-state">
+                    <AlertTriangle size={32} color="#fb923c" />
+                    <p>Chưa có xe nào được gán vào recall này</p>
+                    <p className="hint">Nhấn nút "Tự động gán xe" để tự động tìm và gán xe theo loại xe đã chọn</p>
                   </div>
                 </div>
               )}
 
               {/* Vehicle Types Section */}
-              {recall.vehicleTypes && recall.vehicleTypes.length > 0 && (
+              {recall.vehicleTypeInfoDTOS && recall.vehicleTypeInfoDTOS.length > 0 && (
                 <div className="info-section">
                   <div className="section-title">
                     <Car size={20} />
-                    <h3>Loại xe bị ảnh hưởng</h3>
+                    <h3>Loại xe bị ảnh hưởng ({recall.vehicleTypeInfoDTOS.length})</h3>
                   </div>
                   <div className="vehicle-types-list">
-                    {recall.vehicleTypes.map((type, index) => (
-                      <div key={index} className="vehicle-type-chip">
-                        {type.name || type.typeName || type.id}
+                    {recall.vehicleTypeInfoDTOS.map((type) => (
+                      <div key={type.id} className="vehicle-type-chip">
+                        <div className="vehicle-type-name">{type.modelName}</div>
+                        <div className="vehicle-type-details">
+                          <span className="vehicle-year">{type.yearModelYear}</span>
+                          <span className="vehicle-battery">{type.batteryType}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -187,15 +468,15 @@ function RecallDetail({ recallId, onBack }) {
           {/* Sidebar */}
           <div className="detail-col-4">
             {/* Assigned Technicians Section */}
-            {recall.technicians && recall.technicians.length > 0 && (
+            {recall.technicianBasicDTOS && recall.technicianBasicDTOS.length > 0 && (
               <div className="info-section">
                 <div className="section-title">
                   <Users size={20} />
-                  <h3>Kỹ thuật viên ({recall.technicians.length})</h3>
+                  <h3>Kỹ thuật viên ({recall.technicianBasicDTOS.length})</h3>
                 </div>
                 <div className="technicians-list">
-                  {recall.technicians.map((tech, index) => (
-                    <div key={index} className="technician-item">
+                  {recall.technicianBasicDTOS.map((tech) => (
+                    <div key={tech.id} className="technician-item">
                       <div className="technician-avatar">
                         {tech.name ? tech.name.charAt(0).toUpperCase() : "T"}
                       </div>
@@ -228,7 +509,7 @@ function RecallDetail({ recallId, onBack }) {
             )}
 
             {/* Empty state for sidebar */}
-            {(!recall.technicians || recall.technicians.length === 0) &&
+            {(!recall.technicianBasicDTOS || recall.technicianBasicDTOS.length === 0) &&
               (!recall.reports || recall.reports.length === 0) && (
                 <div className="info-section">
                   <div className="empty-state">
@@ -240,6 +521,66 @@ function RecallDetail({ recallId, onBack }) {
           </div>
         </div>
       </div>
+
+      {/* Assign Technician Modal */}
+      {showAssignTechModal && (
+        <div className="modal-overlay" onClick={() => setShowAssignTechModal(false)}>
+          <div className="modal-content assign-tech-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <UserPlus size={24} />
+                Gán kỹ thuật viên
+              </h2>
+              <button className="modal-close" onClick={() => setShowAssignTechModal(false)}>
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="technician-list">
+                {availableTechnicians.length === 0 ? (
+                  <div className="empty-state">
+                    <p>Không có kỹ thuật viên nào</p>
+                  </div>
+                ) : (
+                  availableTechnicians.map(tech => {
+                    const isAssigned = recall.technicianBasicDTOS?.some(t => t.id === tech.id);
+                    return (
+                      <div key={tech.id} className="technician-card">
+                        <div className="tech-info">
+                          <div className="tech-avatar">
+                            {tech.name?.charAt(0).toUpperCase() || "T"}
+                          </div>
+                          <div className="tech-details">
+                            <div className="tech-name">{tech.name || "N/A"}</div>
+                            {tech.email && <div className="tech-email">{tech.email}</div>}
+                            {tech.branchOffice && (
+                              <div className="tech-branch">📍 {tech.branchOffice}</div>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          className={`btn ${isAssigned ? "btn-success" : "btn-primary"}`}
+                          onClick={() => handleAssignTechnician(tech.id)}
+                          disabled={isAssigned}
+                        >
+                          {isAssigned ? "✓ Đã gán" : "Gán"}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowAssignTechModal(false)}>
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

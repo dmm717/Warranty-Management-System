@@ -45,7 +45,7 @@ function Sidebar() {
       path: "/campaigns",
       name: "Chiến dịch & Recall",
       icon: <Megaphone size={20} />,
-      roles: ["SC_STAFF", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
+      roles: ["SC_STAFF", "SC_TECHNICAL", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/reports",

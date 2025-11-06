@@ -54,6 +54,75 @@ export const userAPI = {
 };
 
 // =============================================================================
+// SC TECHNICIAN APIs - Quản lý kỹ thuật viên Service Center
+// =============================================================================
+
+export const scTechnicianAPI = {
+  // POST /api/sc-technicians - Tạo kỹ thuật viên mới
+  createTechnician: (data) => apiService.post("/sc-technicians", data),
+
+  // GET /api/sc-technicians/{id} - Lấy chi tiết kỹ thuật viên
+  getTechnicianById: (id) => apiService.get(`/sc-technicians/${id}`),
+
+  // PUT /api/sc-technicians/{id} - Cập nhật kỹ thuật viên
+  updateTechnician: (id, data) => apiService.put(`/sc-technicians/${id}`, data),
+
+  // DELETE /api/sc-technicians/{id} - Xóa kỹ thuật viên
+  deleteTechnician: (id) => apiService.delete(`/sc-technicians/${id}`),
+
+  // GET /api/sc-technicians - Lấy danh sách tất cả kỹ thuật viên (có phân trang)
+  getAllTechnicians: (params = {}) => {
+    const {
+      page = 0,
+      size = 100,
+      sortBy = "name",
+      sortDir = "asc",
+    } = params;
+    return apiService.get(
+      `/sc-technicians?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
+    );
+  },
+
+  // GET /api/sc-technicians/search - Tìm kiếm kỹ thuật viên
+  searchTechnicians: (keyword, params = {}) => {
+    const {
+      page = 0,
+      size = 10,
+      sortBy = "name",
+      sortDir = "asc",
+    } = params;
+    return apiService.get(
+      `/sc-technicians/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
+    );
+  },
+
+  // GET /api/sc-technicians/branch/{branchOffice} - Lấy kỹ thuật viên theo chi nhánh
+  getTechniciansByBranch: (branchOffice, params = {}) => {
+    const { page = 0, size = 10 } = params;
+    return apiService.get(
+      `/sc-technicians/branch/${encodeURIComponent(branchOffice)}?page=${page}&size=${size}`
+    );
+  },
+
+  // GET /api/sc-technicians/specialty/{specialty} - Lấy kỹ thuật viên theo chuyên môn
+  getTechniciansBySpecialty: (specialty, params = {}) => {
+    const { page = 0, size = 10 } = params;
+    return apiService.get(
+      `/sc-technicians/specialty/${encodeURIComponent(specialty)}?page=${page}&size=${size}`
+    );
+  },
+
+  // GET /api/sc-technicians/user/{userId} - Lấy technician theo userId
+  getTechnicianByUserId: (userId) => apiService.get(`/sc-technicians/user/${userId}`),
+
+  // PATCH /api/sc-technicians/{id}/password - Cập nhật mật khẩu kỹ thuật viên
+  updatePassword: (id, newPassword) =>
+    apiService.request(`/sc-technicians/${id}/password?newPassword=${encodeURIComponent(newPassword)}`, {
+      method: "PATCH",
+    }),
+};
+
+// =============================================================================
 // WARRANTY CLAIM APIs - Quản lý yêu cầu bảo hành
 // =============================================================================
 
@@ -305,6 +374,24 @@ export const evmInventoryAPI = {
 
   // GET /api/parts/inventory/categories - Get unique part categories
   getPartCategories: () => apiService.get("/parts/inventory/categories"),
+
+  // GET /api/spare-parts/evm/count?partId={partId} - Get count by part type
+  getPartCountByType: (partId) => apiService.get(`/spare-parts/evm/count?partId=${partId}`),
+
+  // GET /api/spare-parts/evm/search-by-part-type/{partTypeId} - Search products by part type
+  searchByPartTypeId: (partTypeId) => apiService.get(`/spare-parts/evm/search-by-part-type/${partTypeId}`),
+
+  // POST /api/spare-parts/evm - Thêm phụ tùng mới
+  // Body: { name, vehicleType, condition, partTypeId }
+  createSparePart: (data) => apiService.post("/spare-parts/evm", data),
+
+  // POST /api/spare-parts/evm/transfer/{partEvmId}?officeBranch={branch} - Chuyển phụ tùng từ EVM sang SC
+  transferToSC: (partEvmId, officeBranch) => 
+    apiService.post(`/spare-parts/evm/transfer/${partEvmId}?officeBranch=${officeBranch}`),
+
+  // PUT /api/spare-parts/evm/{id} - Cập nhật thông tin phụ tùng
+  // Body: { name, vehicleType, condition }
+  updateSparePart: (id, data) => apiService.put(`/spare-parts/evm/${id}`, data),
 };
 
 // =============================================================================
@@ -334,6 +421,24 @@ export const scInventoryAPI = {
 
   // GET /api/sc-parts/inventory/categories - Get unique part categories
   getPartCategories: () => apiService.get("/sc-parts/inventory/categories"),
+
+  // GET /api/spare-parts/sc/count/office_branch?branch={branch}&partTypeId={partTypeId} - Get count by part type and office branch
+  getPartCountByType: (partTypeId, officeBranch) => {
+    return apiService.get(`/spare-parts/sc/count/office_branch?branch=${officeBranch}&partTypeId=${partTypeId}`);
+  },
+
+  // GET /api/spare-parts/sc/search?branch={branch}&partTypeId={partTypeId} - Search SC parts by office branch and part type
+  searchByBranchAndPartType: (officeBranch, partTypeId) => {
+    const params = new URLSearchParams();
+    if (officeBranch) params.append('branch', officeBranch);
+    if (partTypeId) params.append('partTypeId', partTypeId);
+    return apiService.get(`/spare-parts/sc/search?${params.toString()}`);
+  },
+
+  // PATCH /api/spare-parts/sc/{id}/vehicles/{vehicleId} - Map spare part to vehicle
+  mapPartToVehicle: (partId, vehicleId) => {
+    return apiService.patch(`/spare-parts/sc/${partId}/vehicles/${vehicleId}`);
+  },
 };
 
 // =============================================================================
@@ -635,6 +740,47 @@ export const recallAPI = {
 
   // GET /api/recalls/{id} - Lấy chi tiết recall
   getRecallById: (id) => apiService.get(`/recalls/${id}`),
+
+  // POST /api/recalls - Tạo recall mới
+  createRecall: (data) => apiService.post('/recalls', data),
+
+  // PUT /api/recalls/{id} - Cập nhật recall
+  updateRecall: (id, data) => apiService.put(`/recalls/${id}`, data),
+
+  // DELETE /api/recalls/{id} - Xóa recall
+  deleteRecall: (id) => apiService.delete(`/recalls/${id}`),
+
+  // PATCH /api/recalls/{id}/status - Cập nhật trạng thái
+  updateRecallStatus: (id, status) => 
+    apiService.patch(`/recalls/${id}/status?statusDTO=${status}`),
+
+  // PATCH /api/recalls/{id}/notification - Cập nhật notification sent
+  updateNotificationSent: (id, notificationSent) =>
+    apiService.patch(`/recalls/${id}/notification?notificationDTO=${notificationSent}`),
+
+  // POST /api/recalls/{id}/vehicles/{vehicleId} - Thêm 1 xe vào recall
+  addVehicleToRecall: (recallId, vehicleId) =>
+    apiService.post(`/recalls/${recallId}/vehicles/${vehicleId}`),
+
+  // GET /api/recalls/{id}/vehicles - Lấy danh sách xe đã được gán
+  getAssignedVehicles: (id) =>
+    apiService.get(`/recalls/${id}/vehicles`),
+
+  // GET /api/recalls/{recallId}/vehicles/{vehicleId} - Lấy chi tiết xe trong recall
+  getRecallVehicleDetail: (recallId, vehicleId) =>
+    apiService.get(`/recalls/${recallId}/vehicles/${vehicleId}`),
+
+  // PATCH /api/recalls/{recallId}/vehicles/{vehicleId}/status - Cập nhật trạng thái xe trong recall
+  updateRecallVehicleStatus: (recallId, vehicleId, statusDTO) =>
+    apiService.patch(`/recalls/${recallId}/vehicles/${vehicleId}/status`, statusDTO),
+
+  // POST /api/recalls/{id}/technicians/{technicianId} - Thêm kỹ thuật viên vào recall
+  addTechnicianToRecall: (recallId, technicianId) =>
+    apiService.post(`/recalls/${recallId}/technicians/${technicianId}`),
+
+  // GET /api/technicians/{technicianId}/recalls - Lấy recalls theo technicianId
+  getRecallsByTechnicianId: (technicianId) =>
+    apiService.get(`/technicians/${technicianId}/recalls`)
 };
 
 export const recallDistrictAPI = {
@@ -662,6 +808,7 @@ export const recallDistrictAPI = {
 export default {
   auth: authAPI,
   user: userAPI,
+  scTechnician: scTechnicianAPI,
   warrantyClaim: warrantyClaimAPI,
   vehicle: vehicleAPI,
   serviceCampaign: serviceCampaignAPI,

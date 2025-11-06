@@ -3,10 +3,15 @@ import { AlertTriangle, FileText, Eye, Edit, Plus } from "lucide-react";
 import "../../styles/RecallList.css";
 import { VEHICLE_TYPES, REGIONS } from "../../constants";
 
-function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
+function RecallList({ recalls, onEdit, onView, userRole, onDelete, userId }) {
   const isEVMAdmin = userRole === "EVM_ADMIN";
   const isEVMStaff = userRole === "EVM_STAFF";
   const isSCAdmin = userRole === "SC_ADMIN";
+  const isSCStaff = userRole === "SC_STAFF";
+  const isSCTechnical = userRole === "SC_TECHNICAL";
+
+  // Không cần filter nữa vì SC_TECHNICAL đã được filter ở backend
+  const filteredRecalls = recalls;
 
   const getStatusBadge = (status) => {
     const statusClasses = {
@@ -278,15 +283,15 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
   // ============================================
   // VIEW FOR SC_ADMIN - Read-only access
   // ============================================
-  if (isSCAdmin) {
-    if (recalls.length === 0) {
+  if (isSCAdmin || isSCStaff || isSCTechnical) {
+    if (filteredRecalls.length === 0) {
       return (
         <div className="no-data-container">
           <div className="no-data-icon">
             <AlertTriangle size={48} />
           </div>
           <h3>Chưa có recall nào</h3>
-          <p>Chưa có recall nào được tạo</p>
+          <p>{isSCTechnical ? "Bạn chưa được gán vào recall nào" : "Chưa có recall nào được tạo"}</p>
         </div>
       );
     }
@@ -307,7 +312,7 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
               </tr>
             </thead>
             <tbody>
-              {recalls.map((recall) => (
+              {filteredRecalls.map((recall) => (
                 <tr key={recall.Recall_ID}>
                   <td>
                     <div className="recall-id">
