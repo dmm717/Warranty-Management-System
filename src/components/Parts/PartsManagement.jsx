@@ -222,8 +222,8 @@ function PartsManagement() {
     }
   };
 
-  const handleAddPart = () => {
-    setEditingRequest(null);
+  const handleAddPart = (prefilledPart = null) => {
+    setEditingRequest(prefilledPart);
     setShowForm(true);
   };
 
@@ -255,6 +255,7 @@ function PartsManagement() {
   const handleSavePart = async (requestData) => {
     try {
       setLoading(true);
+      console.log("Saving parts request:", requestData);
 
       if (editingRequest) {
         // Update existing request
@@ -263,19 +264,37 @@ function PartsManagement() {
           requestData
         );
 
+        console.log("Update response:", response);
+
         if (response.success) {
+          toast.success("Cập nhật yêu cầu thành công!", {
+            position: "top-right",
+            autoClose: 3000,
+          });
           await fetchPartsRequests(); // Reload data
         } else {
-          alert(response.message || "Không thể cập nhật yêu cầu");
+          toast.error(response.message || "Không thể cập nhật yêu cầu", {
+            position: "top-right",
+            autoClose: 5000,
+          });
         }
       } else {
         // Create new parts request
         const response = await partsRequestAPI.createPartsRequest(requestData);
 
+        console.log("Create response:", response);
+
         if (response.success) {
+          toast.success("Tạo yêu cầu phụ tùng thành công!", {
+            position: "top-right",
+            autoClose: 3000,
+          });
           await fetchPartsRequests(); // Reload data
         } else {
-          alert(response.message || "Không thể tạo yêu cầu phụ tùng");
+          toast.error(response.message || "Không thể tạo yêu cầu phụ tùng", {
+            position: "top-right",
+            autoClose: 5000,
+          });
         }
       }
 
@@ -283,7 +302,10 @@ function PartsManagement() {
       setEditingRequest(null);
     } catch (error) {
       console.error("Save error:", error);
-      alert("Đã xảy ra lỗi khi lưu yêu cầu");
+      toast.error("Đã xảy ra lỗi hệ thống. Vui lòng kiểm tra console để biết chi tiết.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     } finally {
       setLoading(false);
     }
@@ -292,6 +314,32 @@ function PartsManagement() {
   const handleCancelForm = () => {
     setShowForm(false);
     setEditingRequest(null);
+  };
+
+  const handleApproveRequest = async (requestId) => {
+    try {
+      setLoading(true);
+      await fetchPartsRequests(); // Reload to get updated data
+      toast.success("Yêu cầu đã được duyệt thành công!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error("Error after approving:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    try {
+      setLoading(true);
+      await fetchPartsRequests(); // Reload to get updated data
+    } catch (error) {
+      console.error("Error after rejecting:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleUpdateStock = async (partTypeId, newStatus) => {
@@ -359,96 +407,68 @@ function PartsManagement() {
       </div>
     );
   }
-
   return (
     <div className="parts-management">
-      {viewMode === "partsByType" && selectedPartType ? (
-        // EVM View Parts by Type
-        <PartsByTypeView
-          partTypeId={selectedPartType.id}
-          partTypeName={selectedPartType.name}
-          onBack={handleBackToList}
-        />
-      ) : scViewMode === "partsByType" && selectedSCPartType ? (
-        // SC View Parts by Type
-        <SCPartsByTypeView
-          partTypeId={selectedSCPartType.id}
-          partTypeName={selectedSCPartType.name}
-          onBack={handleBackToSCList}
-        />
+      <div className="page-header">
+        <h1>Quản lý phụ tùng</h1>
+
+        {/* Create button shown when not in form and user is SC_ADMIN and on requests tab */}
+        {!showForm && user?.role === "SC_ADMIN" && activeTab === "requests" && (
+          <div className="header-actions">
+            <button onClick={() => handleAddPart(null)} className="btn btn-primary">
+              <span>➕</span>
+              Tạo yêu cầu phụ tùng
+            </button>
+          </div>
+        )}
+      </div>
+
+      {showForm ? (
+        <PartsForm part={editingRequest} onSave={handleSavePart} onCancel={handleCancelForm} />
       ) : (
-        // Default List View
         <>
-          <div className="page-header">
-            <h1>Quản lý phụ tùng</h1>
-            {!showForm && (
-              <div className="header-actions">
-                {/* Only SC_ADMIN can create parts request */}
-                {user?.role === "SC_ADMIN" && activeTab === "requests" && (
-                  <button onClick={handleAddPart} className="btn btn-primary">
-                    <span>➕</span>
-                    Tạo yêu cầu phụ tùng
-                  </button>
-                )}
-              </div>
+          <div className="parts-tabs">
+            <button
+              className={`tab-btn ${activeTab === "inventory" ? "active" : ""}`}
+              onClick={() => setActiveTab("inventory")}
+            >
+              Kho phụ tùng
+            </button>
+
+            {/* Show requests tab only for SC_ADMIN and EVM roles */}
+            {(["SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"].includes(user?.role)) && (
+              <button
+                className={`tab-btn ${activeTab === "requests" ? "active" : ""}`}
+                onClick={() => setActiveTab("requests")}
+              >
+                Yêu cầu phụ tùng
+              </button>
             )}
           </div>
 
-          {!showForm ? (
-            <>
-              <div className="parts-tabs">
-                <button
-                  className={`tab-btn ${activeTab === "inventory" ? "active" : ""}`}
-                  onClick={() => setActiveTab("inventory")}
-                >
-                  Kho phụ tùng
-                </button>
-                {/* Chỉ SC_ADMIN và EVM_STAFF/EVM_ADMIN được xem tab yêu cầu phụ tùng */}
-                {user?.role !== "SC_STAFF" && (
-                  <button
-                    className={`tab-btn ${
-                      activeTab === "requests" ? "active" : ""
-                    }`}
-                    onClick={() => setActiveTab("requests")}
-                  >
-                    Yêu cầu phụ tùng
-                  </button>
-                )}
-              </div>
+          <PartsSearch onSearch={handleSearch} availableCategories={availableCategories} />
 
-              <PartsSearch
-                onSearch={handleSearch}
-                availableCategories={availableCategories}
-              />
-
-              {activeTab === "inventory" ? (
-                user?.role === "EVM_STAFF" || user?.role === "EVM_ADMIN" ? (
-                  <PartsInventoryListEVM
-                    inventory={filteredInventory}
-                    onUpdateStock={handleUpdateStock}
-                    onViewPartsByType={handleViewPartsByType}
-                  />
-                ) : (
-                  <PartsInventoryListSC
-                    inventory={filteredInventory}
-                    onViewPartsByType={handleSCViewPartsByType}
-                  />
-                )
+          {activeTab === "inventory" ? (
+            // Inventory view: show EVM or SC inventory (and parts-by-type when selected)
+            (user?.role === "EVM_STAFF" || user?.role === "EVM_ADMIN") ? (
+              viewMode === "partsByType" ? (
+                <PartsByTypeView partType={selectedPartType} onBack={handleBackToList} />
               ) : (
-                <PartsList
-                  parts={filteredPartsRequests}
-                  onEdit={handleEditPart}
-                  onDelete={handleDeletePart}
-                  userRole={user?.role}
+                <PartsInventoryListEVM
+                  inventory={filteredInventory}
+                  onUpdateStock={handleUpdateStock}
+                  onViewPartsByType={handleViewPartsByType}
                 />
-              )}
-            </>
+              )
+            ) : (
+              scViewMode === "partsByType" ? (
+                <SCPartsByTypeView partType={selectedSCPartType} onBack={handleBackToSCList} />
+              ) : (
+                <PartsInventoryListSC inventory={filteredInventory} onViewPartsByType={handleSCViewPartsByType} />
+              )
+            )
           ) : (
-            <PartsForm
-              part={editingRequest}
-              onSave={handleSavePart}
-              onCancel={handleCancelForm}
-            />
+            <PartsList parts={filteredPartsRequests} onEdit={handleEditPart} onDelete={handleDeletePart} userRole={user?.role} />
           )}
         </>
       )}

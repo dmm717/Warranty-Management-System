@@ -1,14 +1,11 @@
 import React, { useState } from "react";
 import { PARTS_INVENTORY_STATUS } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
-import PartsRequestForm from "./PartsRequestForm";
 import "../../styles/PartsManagement.css";
 
 function PartsInventoryList({ inventory, onUpdateStock, onRequestCreated }) {
   const { user } = useAuth();
   const [editingStatus, setEditingStatus] = useState(null);
-  const [requestFormOpen, setRequestFormOpen] = useState(false);
-  const [selectedPart, setSelectedPart] = useState(null);
 
   if (!inventory || inventory.length === 0) {
     return (
@@ -37,14 +34,9 @@ function PartsInventoryList({ inventory, onUpdateStock, onRequestCreated }) {
   };
 
   const openRequestForm = (part) => {
-    setSelectedPart(part);
-    setRequestFormOpen(true);
-  };
-
-  const handleRequestSuccess = () => {
-    setRequestFormOpen(false);
+    // Chuyển sang form tạo yêu cầu thay vì mở modal
     if (onRequestCreated) {
-      onRequestCreated();
+      onRequestCreated(part);
     }
   };
 
@@ -177,15 +169,6 @@ function PartsInventoryList({ inventory, onUpdateStock, onRequestCreated }) {
           })}
         </tbody>
       </table>
-
-      {/* Parts Request Form Modal */}
-      <PartsRequestForm
-        isOpen={requestFormOpen}
-        onClose={() => setRequestFormOpen(false)}
-        onSuccess={handleRequestSuccess}
-        prefilledPart={selectedPart}
-        userInfo={user}
-      />
     </div>
   );
 }
