@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { vehicleAPI, evmInventoryAPI } from "../../services/api";
+import { evmInventoryAPI } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import "../../styles/PartsForm.css";
 
@@ -18,13 +18,11 @@ const PART_TYPES = [
 function PartsForm({ part, onSave, onCancel }) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
-    vehicleId: "",
     partTypeId: "",
     quantity: 1,
   });
 
   const [errors, setErrors] = useState({});
-  const [vehicles, setVehicles] = useState([]);
   const [partTypes, setPartTypes] = useState([]);
   const [filteredPartTypes, setFilteredPartTypes] = useState([]);
   const [partSearchTerm, setPartSearchTerm] = useState("");
@@ -32,34 +30,15 @@ function PartsForm({ part, onSave, onCancel }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchVehicles();
     fetchPartTypes();
 
     if (part) {
       setFormData({
-        vehicleId: part.vehicle?.id || part.vehicleId || "",
         partTypeId: part.partType?.id || part.partTypeId || "",
         quantity: part.quantity || 1,
       });
     }
   }, [part]);
-
-  const fetchVehicles = async () => {
-    try {
-      const response = await vehicleAPI.getAllVehicles({
-        page: 0,
-        size: 100,
-        sortBy: "name",
-        sortDir: "asc",
-      });
-
-      if (response.success && response.data?.content) {
-        setVehicles(response.data.content);
-      }
-    } catch (error) {
-      console.error("Error fetching vehicles:", error);
-    }
-  };
 
   const fetchPartTypes = async () => {
     try {
@@ -154,12 +133,8 @@ function PartsForm({ part, onSave, onCancel }) {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.vehicleId) {
-      newErrors.vehicleId = "VIN xe là bắt buộc";
-    }
-
     if (!formData.partTypeId) {
-      newErrors.partTypeId = "Phụ tùng cần thay thế là bắt buộc";
+      newErrors.partTypeId = "Phụ tùng yêu cầu là bắt buộc";
     }
 
     if (!formData.quantity || formData.quantity < 1) {
@@ -177,7 +152,6 @@ function PartsForm({ part, onSave, onCancel }) {
       const selectedPart = partTypes.find(
         (pt) => pt.id === formData.partTypeId
       );
-      const selectedVehicle = vehicles.find((v) => v.id === formData.vehicleId);
 
       // Transform to match Backend PartsRequestCreateDTO
       const requestData = {
@@ -187,7 +161,7 @@ function PartsForm({ part, onSave, onCancel }) {
         requestDate: new Date().toISOString().split("T")[0],
         deliveryDate: null,
         partTypeId: formData.partTypeId,
-        vin: selectedVehicle?.id || formData.vehicleId, // Send VIN (vehicle ID)
+        vin: null, // No VIN required
         requestedByStaffId: user?.id || "", // Current user ID
         branchOffice: user?.branchOffice || "", // User's branch
       };
@@ -207,35 +181,10 @@ function PartsForm({ part, onSave, onCancel }) {
 
       <form onSubmit={handleSubmit} className="form">
         <div className="form-section">
-          <div className="form-group">
-            <label className="form-label">
-              <span className="label-icon">🚗</span>
-              VIN Xe <span className="required">*</span>
-            </label>
-            <select
-              name="vehicleId"
-              value={formData.vehicleId}
-              onChange={handleChange}
-              className={`form-control ${errors.vehicleId ? "error" : ""}`}
-              disabled={loading}
-            >
-              <option value="">-- Chọn xe cần thay phụ tùng --</option>
-              {vehicles.map((vehicle) => (
-                <option key={vehicle.id} value={vehicle.id}>
-                  VIN: {vehicle.id} - {vehicle.name} - Chủ xe: {vehicle.owner}
-                </option>
-              ))}
-            </select>
-            {errors.vehicleId && (
-              <div className="error-message">⚠️ {errors.vehicleId}</div>
-            )}
-            <small className="form-help">Chọn xe cần thay thế phụ tùng</small>
-          </div>
-
           <div className="form-group" style={{ position: "relative" }}>
             <label className="form-label">
               <span className="label-icon">🔧</span>
-              Phụ tùng cần thay thế <span className="required">*</span>
+              Phụ tùng yêu cầu <span className="required">*</span>
             </label>
             <input
               type="text"
@@ -363,7 +312,7 @@ function PartsForm({ part, onSave, onCancel }) {
             {loading
               ? "⏳ Đang tải..."
               : part
-              ? "✏️ Cập nhật"
+              ? "✅ Yêu cầu"
               : "✅ Tạo yêu cầu"}
           </button>
         </div>

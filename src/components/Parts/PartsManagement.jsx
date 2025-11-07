@@ -215,8 +215,8 @@ function PartsManagement() {
     }
   };
 
-  const handleAddPart = () => {
-    setEditingRequest(null);
+  const handleAddPart = (prefilledPart = null) => {
+    setEditingRequest(prefilledPart);
     setShowForm(true);
   };
 
@@ -248,6 +248,7 @@ function PartsManagement() {
   const handleSavePart = async (requestData) => {
     try {
       setLoading(true);
+      console.log("Saving parts request:", requestData);
 
       if (editingRequest) {
         // Update existing request
@@ -256,19 +257,37 @@ function PartsManagement() {
           requestData
         );
 
+        console.log("Update response:", response);
+
         if (response.success) {
+          toast.success("Cập nhật yêu cầu thành công!", {
+            position: "top-right",
+            autoClose: 3000,
+          });
           await fetchPartsRequests(); // Reload data
         } else {
-          alert(response.message || "Không thể cập nhật yêu cầu");
+          toast.error(response.message || "Không thể cập nhật yêu cầu", {
+            position: "top-right",
+            autoClose: 5000,
+          });
         }
       } else {
         // Create new parts request
         const response = await partsRequestAPI.createPartsRequest(requestData);
 
+        console.log("Create response:", response);
+
         if (response.success) {
+          toast.success("Tạo yêu cầu phụ tùng thành công!", {
+            position: "top-right",
+            autoClose: 3000,
+          });
           await fetchPartsRequests(); // Reload data
         } else {
-          alert(response.message || "Không thể tạo yêu cầu phụ tùng");
+          toast.error(response.message || "Không thể tạo yêu cầu phụ tùng", {
+            position: "top-right",
+            autoClose: 5000,
+          });
         }
       }
 
@@ -276,7 +295,10 @@ function PartsManagement() {
       setEditingRequest(null);
     } catch (error) {
       console.error("Save error:", error);
-      alert("Đã xảy ra lỗi khi lưu yêu cầu");
+      toast.error("Đã xảy ra lỗi hệ thống. Vui lòng kiểm tra console để biết chi tiết.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     } finally {
       setLoading(false);
     }
@@ -285,6 +307,32 @@ function PartsManagement() {
   const handleCancelForm = () => {
     setShowForm(false);
     setEditingRequest(null);
+  };
+
+  const handleApproveRequest = async (requestId) => {
+    try {
+      setLoading(true);
+      await fetchPartsRequests(); // Reload to get updated data
+      toast.success("Yêu cầu đã được duyệt thành công!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error("Error after approving:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    try {
+      setLoading(true);
+      await fetchPartsRequests(); // Reload to get updated data
+    } catch (error) {
+      console.error("Error after rejecting:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleUpdateStock = async (partTypeId, newStatus) => {
@@ -341,7 +389,7 @@ function PartsManagement() {
           <div className="header-actions">
             {/* Only SC_ADMIN can create parts request */}
             {user?.role === "SC_ADMIN" && activeTab === "requests" && (
-              <button onClick={handleAddPart} className="btn btn-primary">
+              <button onClick={() => handleAddPart(null)} className="btn btn-primary">
                 <span>➕</span>
                 Tạo yêu cầu phụ tùng
               </button>
@@ -381,12 +429,15 @@ function PartsManagement() {
             <PartsInventoryList
               inventory={filteredInventory}
               onUpdateStock={handleUpdateStock}
+              onRequestCreated={handleAddPart}
             />
           ) : (
             <PartsList
               parts={filteredPartsRequests}
               onEdit={handleEditPart}
               onDelete={handleDeletePart}
+              onApprove={handleApproveRequest}
+              onReject={handleRejectRequest}
               userRole={user?.role}
             />
           )}
