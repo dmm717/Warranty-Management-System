@@ -452,7 +452,7 @@ function PartsManagement() {
             // Inventory view: show EVM or SC inventory (and parts-by-type when selected)
             (user?.role === "EVM_STAFF" || user?.role === "EVM_ADMIN") ? (
               viewMode === "partsByType" ? (
-                <PartsByTypeView partType={selectedPartType} onBack={handleBackToList} />
+                <PartsByTypeView partTypeId={selectedPartType?.id} partTypeName={selectedPartType?.name} onBack={handleBackToList} />
               ) : (
                 <PartsInventoryListEVM
                   inventory={filteredInventory}
@@ -462,7 +462,7 @@ function PartsManagement() {
               )
             ) : (
               scViewMode === "partsByType" ? (
-                <SCPartsByTypeView partType={selectedSCPartType} onBack={handleBackToSCList} />
+                <SCPartsByTypeView partTypeId={selectedSCPartType?.id} partTypeName={selectedSCPartType?.name} onBack={handleBackToSCList} />
               ) : (
                 <PartsInventoryListSC inventory={filteredInventory} onViewPartsByType={handleSCViewPartsByType} />
               )

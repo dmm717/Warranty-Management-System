@@ -18,7 +18,7 @@ function RecallForm({ recall, onSave, onCancel }) {
     partsRequired: "",
     status: "INACTIVE",
     notificationSent: false,
-    evmApprovalStatus: "Pending",
+    evmApprovalStatus: "WAITING",
     vehicleTypeIds: [],
     technicianIds: [],
     vehicleId: []
@@ -37,7 +37,7 @@ function RecallForm({ recall, onSave, onCancel }) {
         partsRequired: recall.partsRequired || recall.PartsRequired || "",
         status: recall.status || recall.Status || "INACTIVE",
         notificationSent: recall.notificationSent ?? false,
-        evmApprovalStatus: recall.evmApprovalStatus || "Pending",
+        evmApprovalStatus: recall.evmApprovalStatus || "WAITING",
         vehicleTypeIds: recall.vehicleTypeIds || recall.VehicleModels || [],
         technicianIds: recall.technicianIds || [],
         vehicleId: recall.vehicleId || []
@@ -362,7 +362,7 @@ function RecallForm({ recall, onSave, onCancel }) {
                 className="form-control"
                 disabled={loading || !isEVMAdmin}
               >
-                <option value="Pending">Chờ phê duyệt</option>
+                <option value="WAITING">Chờ phê duyệt</option>
                 <option value="Approved">Đã phê duyệt</option>
                 <option value="Disapproved">Không phê duyệt</option>
               </select>
