@@ -58,8 +58,18 @@ class ApiService {
         // Only parse JSON if content-type is JSON and not 204 No Content
         const text = await response.text();
         if (text && text.trim().length > 0) {
-          data = JSON.parse(text);
+          try {
+            data = JSON.parse(text);
+          } catch (parseError) {
+            console.error(`[ApiService] JSON Parse Error for ${url}:`, parseError);
+            console.error(`[ApiService] Response text:`, text);
+          }
         }
+      }
+
+      // Chỉ log lỗi, không log thành công để giảm noise
+      if (!response.ok && response.status >= 500) {
+        console.error(`[ApiService] Server Error ${response.status} for ${url}:`, data?.message || 'Internal Server Error');
       }
 
       // Xử lý response theo format backend
@@ -108,15 +118,31 @@ class ApiService {
           };
         }
 
+        // Xử lý 500 Internal Server Error với message từ backend
+        if (response.status === 500) {
+          return {
+            success: false,
+            status: 500,
+            message: data?.message || "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.",
+            errors: data?.errors || null,
+            data: null,
+          };
+        }
+
         return {
           success: false,
           status: response.status,
           message: data?.message || "An error occurred",
           errors: data?.errors || null,
+          data: null,
         };
       }
     } catch (error) {
-      // Network error hoặc error khác
+      // Network error hoặc error khác - chỉ log khi thực sự cần
+      if (error.name !== "AbortError") {
+        console.error(`[ApiService] Network Error for ${url}:`, error.message);
+      }
+      
       // Kiểm tra loại lỗi để trả về message phù hợp
       let errorMessage = "Không thể kết nối đến server";
 
