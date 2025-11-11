@@ -12,28 +12,94 @@ function PartsInventoryListEVM({ inventory, onUpdateStock, onRequestCreated, onV
   const [requestFormOpen, setRequestFormOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState(null);
   const [partCounts, setPartCounts] = useState({});
+  const [skipFetch, setSkipFetch] = useState(() => {
+    // Kiểm tra sessionStorage để nhớ trạng thái skip fetch
+    return sessionStorage.getItem('skipPartsCountFetch') === 'true';
+  });
 
   // Fetch count cho tất cả parts khi component mount hoặc inventory thay đổi
   useEffect(() => {
     if (inventory && inventory.length > 0) {
-      fetchAllPartCounts();
+      if (skipFetch) {
+        // Nếu skip fetch, sử dụng totalAmountOfProduct từ inventory data
+        const counts = {};
+        inventory.forEach(item => {
+          counts[item.id] = item.totalAmountOfProduct ?? 0;
+        });
+        setPartCounts(counts);
+      } else {
+        // Chỉ fetch nếu inventory data không có totalAmountOfProduct hoặc cần update
+        const needsFetch = inventory.some(item => !item.totalAmountOfProduct || item.totalAmountOfProduct === 0);
+        if (needsFetch) {
+          fetchAllPartCounts();
+        } else {
+          // Nếu đã có data, sử dụng luôn không cần fetch
+          const counts = {};
+          inventory.forEach(item => {
+            counts[item.id] = item.totalAmountOfProduct ?? 0;
+          });
+          setPartCounts(counts);
+        }
+      }
     }
-  }, [inventory]);
+  }, [inventory, skipFetch]);
 
   const fetchAllPartCounts = async () => {
     const counts = {};
+    let errorCount = 0;
+    const MAX_ERRORS = 3; // Nếu có 3 lỗi liên tiếp, skip fetch
     
     // Fetch count cho từng part type - CHỈ đếm những phụ tùng còn hàng (ACTIVE)
-    for (const item of inventory) {
+    for (let i = 0; i < inventory.length; i++) {
+      const item = inventory[i];
+      
+      // Nếu đã có quá nhiều lỗi, skip các requests còn lại
+      if (errorCount >= MAX_ERRORS) {
+        console.warn(`[PartsInventoryListEVM] Too many API errors (${errorCount}). Skipping remaining fetches for this session.`);
+        setSkipFetch(true);
+        // Lưu vào sessionStorage để nhớ trong session này
+        sessionStorage.setItem('skipPartsCountFetch', 'true');
+        // Sử dụng totalAmountOfProduct cho các items còn lại
+        for (let j = i; j < inventory.length; j++) {
+          counts[inventory[j].id] = inventory[j].totalAmountOfProduct ?? 0;
+        }
+        break;
+      }
+
       try {
         const response = await evmInventoryAPI.searchByPartTypeId(item.id);
+        
+        // Check if response is successful
+        if (!response.success) {
+          errorCount++;
+          // Chỉ log lỗi đầu tiên để tránh spam console
+          if (errorCount === 1) {
+            console.warn(`[PartsInventoryListEVM] API error detected. Will skip remaining requests after ${MAX_ERRORS} errors.`);
+          }
+          counts[item.id] = item.totalAmountOfProduct ?? 0; // Fallback to existing data
+          continue;
+        }
+        
+        // Reset error count on success (nếu có success sau lỗi)
+        errorCount = 0;
+        
         // Filter chỉ lấy phụ tùng ACTIVE (không lấy TRANSFERRED)
         const allParts = response.data || [];
         const activeParts = allParts.filter(part => part.condition === "ACTIVE");
         counts[item.id] = activeParts.length;
       } catch (error) {
-        console.error(`Error fetching count for part ${item.id}:`, error);
-        counts[item.id] = 0;
+        errorCount++;
+        // Chỉ log lỗi đầu tiên
+        if (errorCount === 1) {
+          console.error(`[PartsInventoryListEVM] Network error:`, error);
+        }
+        // Fallback to existing data if available
+        counts[item.id] = item.totalAmountOfProduct ?? 0;
+      }
+      
+      // Thêm delay nhỏ giữa các requests để tránh quá tải server
+      if (i < inventory.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
       }
     }
     
