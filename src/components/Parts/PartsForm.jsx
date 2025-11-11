@@ -1,25 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { evmInventoryAPI } from "../../services/api";
+import { toast } from "react-toastify";
+import { evmInventoryAPI, vehicleAPI } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import "../../styles/PartsForm.css";
 
 // Temporary EVM Part Types - TODO: Get from Backend API /api/evm/part-types
-const PART_TYPES = [
-  { id: "EVM-PT001", name: "Pin (Battery)" },
-  { id: "EVM-PT002", name: "Động cơ điện (Electric Motor)" },
-  { id: "EVM-PT003", name: "Bộ sạc (Charger)" },
-  { id: "EVM-PT004", name: "Hệ thống phanh (Brake System)" },
-  { id: "EVM-PT005", name: "Lốp xe (Tires)" },
-  { id: "EVM-PT006", name: "Đèn (Lights)" },
-  { id: "EVM-PT007", name: "Camera (Camera)" },
-  { id: "EVM-PT008", name: "Màn hình điều khiển (Display)" },
-];
 
 function PartsForm({ part, onSave, onCancel }) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     partTypeId: "",
     quantity: 1,
+    vin: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -27,15 +19,18 @@ function PartsForm({ part, onSave, onCancel }) {
   const [filteredPartTypes, setFilteredPartTypes] = useState([]);
   const [partSearchTerm, setPartSearchTerm] = useState("");
   const [showPartDropdown, setShowPartDropdown] = useState(false);
+  const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchPartTypes();
+    fetchVehicles();
 
     if (part) {
       setFormData({
         partTypeId: part.partType?.id || part.partTypeId || "",
         quantity: part.quantity || 1,
+        vin: part.vin || part.vehicleId || "",
       });
     }
   }, [part]);
@@ -54,6 +49,18 @@ function PartsForm({ part, onSave, onCancel }) {
       console.error("Error fetching part types:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchVehicles = async () => {
+    try {
+      const response = await vehicleAPI.getAllVehicles({ page: 0, size: 100 });
+      if (response.success && response.data?.content) {
+        setVehicles(response.data.content);
+      }
+    } catch (error) {
+      console.error("Error fetching vehicles:", error);
+      toast.error("Không thể tải danh sách xe");
     }
   };
 
@@ -141,6 +148,11 @@ function PartsForm({ part, onSave, onCancel }) {
       newErrors.quantity = "Số lượng phải lớn hơn 0";
     }
 
+    // VIN is required according to PartsRequestCreateDTO @NotBlank
+    if (!formData.vin || formData.vin.trim() === "") {
+      newErrors.vin = "VIN xe là bắt buộc";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -148,25 +160,89 @@ function PartsForm({ part, onSave, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // Get selected part info
+      // Get selected part info from API response
       const selectedPart = partTypes.find(
         (pt) => pt.id === formData.partTypeId
       );
 
-      // Transform to match Backend PartsRequestCreateDTO
-      const requestData = {
-        partNumber: selectedPart?.id || formData.partTypeId,
-        partName: selectedPart?.partName || "",
-        quantity: parseInt(formData.quantity),
-        requestDate: new Date().toISOString().split("T")[0],
-        deliveryDate: null,
-        partTypeId: formData.partTypeId,
-        vin: null, // No VIN required
-        requestedByStaffId: user?.id || "", // Current user ID
-        branchOffice: user?.branchOffice || "", // User's branch
+      if (!selectedPart) {
+        toast.error("Vui lòng chọn phụ tùng hợp lệ");
+        return;
+      }
+
+      // Validate user data from API
+      if (!user?.id) {
+        toast.error("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
+        return;
+      }
+
+      // Format date to yyyy-MM-dd
+      const formatDate = (date) => {
+        if (!date) return null;
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
       };
 
-      console.log("Sending parts request:", requestData);
+      const today = formatDate(new Date());
+
+      // Transform to match Backend PartsRequestCreateDTO
+      // All data comes from API responses, not hardcoded
+      const requestData = {
+        partName: selectedPart.partName, // @NotBlank - From API: evmInventoryAPI.getAllPartTypesNoPagination()
+        quantity: parseInt(formData.quantity) || 1, // @NotNull, @Min(1)
+        requestDate: today, // @NotNull LocalDate
+        deliveryDate: today, // Optional LocalDate
+        partTypeId: selectedPart.id, // @NotBlank - From API: selected part type ID
+        vin: formData.vin.trim(), // @NotBlank - Required VIN
+        requestedByStaffId: String(user.id), // @NotBlank String - Must be String, not number
+        branchOffice: user.branchOffice || "", // @NotBlank - From API: AuthContext user.branchOffice from login response
+      };
+
+      // Validate required fields according to PartsRequestCreateDTO
+      if (!requestData.partTypeId) {
+        toast.error("Vui lòng chọn loại phụ tùng");
+        return;
+      }
+
+      if (!requestData.quantity || requestData.quantity < 1) {
+        toast.error("Số lượng phải lớn hơn 0");
+        return;
+      }
+
+      if (!requestData.vin || requestData.vin.trim() === "") {
+        toast.error("Vui lòng chọn VIN xe");
+        return;
+      }
+
+      if (!requestData.branchOffice || requestData.branchOffice.trim() === "") {
+        toast.error("Không tìm thấy thông tin chi nhánh. Vui lòng đăng nhập lại.");
+        return;
+      }
+
+      // Log request data chi tiết để debug
+      console.log("========================================");
+      console.log("[PartsForm] REQUEST BODY sẽ gửi đến Backend:");
+      console.log(JSON.stringify(requestData, null, 2));
+      console.log("----------------------------------------");
+      console.log("[PartsForm] Chi tiết từng field:");
+      console.log("- partName:", requestData.partName, "(type:", typeof requestData.partName + ")");
+      console.log("- quantity:", requestData.quantity, "(type:", typeof requestData.quantity + ")");
+      console.log("- requestDate:", requestData.requestDate, "(type:", typeof requestData.requestDate + ")");
+      console.log("- deliveryDate:", requestData.deliveryDate, "(type:", typeof requestData.deliveryDate + ")");
+      console.log("- partTypeId:", requestData.partTypeId, "(type:", typeof requestData.partTypeId + ")");
+      console.log("- vin:", requestData.vin, "(type:", typeof requestData.vin + ")");
+      console.log("- requestedByStaffId:", requestData.requestedByStaffId, "(type:", typeof requestData.requestedByStaffId + ")");
+      console.log("- branchOffice:", requestData.branchOffice, "(type:", typeof requestData.branchOffice + ")");
+      console.log("----------------------------------------");
+      console.log("[PartsForm] User info từ AuthContext:");
+      console.log("- user.id:", user.id, "(type:", typeof user.id + ")");
+      console.log("- user.branchOffice:", user.branchOffice, "(type:", typeof user.branchOffice + ")");
+      console.log("- user.role:", user?.role);
+      console.log("========================================");
+      
       onSave(requestData);
     }
   };
@@ -295,6 +371,33 @@ function PartsForm({ part, onSave, onCancel }) {
             )}
             <small className="form-help">
               Số lượng phụ tùng cần yêu cầu (tối thiểu: 1)
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              <span className="label-icon">🚗</span>
+              VIN xe <span className="required">*</span>
+            </label>
+            <select
+              name="vin"
+              value={formData.vin}
+              onChange={handleChange}
+              className={`form-control ${errors.vin ? "error" : ""}`}
+              disabled={loading}
+            >
+              <option value="">-- Chọn VIN xe --</option>
+              {vehicles.map((vehicle) => (
+                <option key={vehicle.vehicleId || vehicle.id} value={vehicle.vehicleId || vehicle.id}>
+                  {vehicle.vehicleId || vehicle.id} - {vehicle.name || vehicle.vehicleName || "N/A"}
+                </option>
+              ))}
+            </select>
+            {errors.vin && (
+              <div className="error-message">⚠️ {errors.vin}</div>
+            )}
+            <small className="form-help">
+              Chọn VIN xe cần yêu cầu phụ tùng (bắt buộc)
             </small>
           </div>
         </div>
