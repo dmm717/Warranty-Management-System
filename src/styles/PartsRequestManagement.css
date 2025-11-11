@@ -235,6 +235,17 @@
   background-color: #2563eb;
 }
 
+.btn-shipping {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-shipping:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5568d3 0%, #63408a 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
 .action-buttons button:disabled {
   opacity: 0.6;
   cursor: not-allowed;

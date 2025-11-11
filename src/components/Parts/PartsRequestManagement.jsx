@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { partsRequestAPI } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
@@ -6,6 +7,7 @@ import "../../styles/PartsRequestManagement.css";
 
 const PartsRequestManagement = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -187,6 +189,13 @@ const PartsRequestManagement = () => {
     );
   };
 
+  const handleCreateShippingOrder = (request) => {
+    // Lưu request vào sessionStorage để ShippingManagement có thể sử dụng
+    sessionStorage.setItem('pendingShippingRequest', JSON.stringify(request));
+    // Navigate đến trang giao hàng
+    navigate('/shipping');
+  };
+
   const renderActionButtons = (request) => {
     if (user.role === "EVM_STAFF" && request.deliveryStatus === "PENDING") {
       return (
@@ -202,6 +211,18 @@ const PartsRequestManagement = () => {
             onClick={() => handleEvmReject(request)}
           >
             Từ chối
+          </button>
+        </div>
+      );
+    }
+    if (user.role === "EVM_STAFF" && request.deliveryStatus === "APPROVED") {
+      return (
+        <div className="action-buttons">
+          <button
+            className="btn-shipping"
+            onClick={() => handleCreateShippingOrder(request)}
+          >
+            📦 Tạo đơn giao hàng
           </button>
         </div>
       );
