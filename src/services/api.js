@@ -200,8 +200,9 @@ export const vehicleAPI = {
   // GET /api/ElectricVehicle/{id} - Lấy chi tiết xe
   getVehicleById: (id) => apiService.get(`/ElectricVehicle/${id}`),
 
-  // PUT /api/ElectricVehicle/{id} - Cập nhật thông tin xe
-  updateVehicle: (id, data) => apiService.put(`/ElectricVehicle/${id}`, data),
+  // PUT /api/ElectricVehicle/{id}/return-date - Cập nhật ngày trả xe
+  updateReturnDate: (id, returnDate) => 
+    apiService.put(`/ElectricVehicle/${id}/return-date?returnDate=${returnDate}`),
 
   // DELETE /api/ElectricVehicle/{id} - Xóa xe
   deleteVehicle: (id) => apiService.delete(`/ElectricVehicle/${id}`),
@@ -380,6 +381,9 @@ export const evmInventoryAPI = {
 
   // GET /api/spare-parts/evm/search-by-part-type/{partTypeId} - Search products by part type
   searchByPartTypeId: (partTypeId) => apiService.get(`/spare-parts/evm/search-by-part-type/${partTypeId}`),
+
+  // GET /api/spare-parts/evm/search/type?partTypeId={partTypeId} - Search products by part type (query param)
+  searchByPartTypeQuery: (partTypeId) => apiService.get(`/spare-parts/evm/search/type?partTypeId=${partTypeId}`),
 
   // POST /api/spare-parts/evm - Thêm phụ tùng mới
   // Body: { name, vehicleType, condition, partTypeId }

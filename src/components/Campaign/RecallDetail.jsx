@@ -19,6 +19,20 @@ function RecallDetail({ recallId, onBack }) {
   const [availableTechnicians, setAvailableTechnicians] = useState([]);
   const [showAssignVehicleTypesModal, setShowAssignVehicleTypesModal] = useState(false);
   const [availableVehicleTypes, setAvailableVehicleTypes] = useState([]);
+  const [showDatePickerModal, setShowDatePickerModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [updatingVehicleId, setUpdatingVehicleId] = useState(null);
+  const isEVMAdmin = user?.role === "EVM_ADMIN";
+  const isEVMStaff = user?.role === "EVM_STAFF";
+  const isSCAdmin = user?.role === "SC_ADMIN";
+  const isSCStaff = user?.role === "SC_STAFF";
+  const isSCTechnical = user?.role === "SC_TECHNICAL";
+
+  // Phân quyền cho các chức năng
+  const canAssignTechnicians = isEVMAdmin || isEVMStaff|| isSCAdmin;
+  const canAssignVehicleTypes = isEVMAdmin || isEVMStaff;
+  const canAutoAssignVehicles = isEVMAdmin || isEVMStaff ;
+  const canUpdateVehicleStatus = isSCAdmin || isSCStaff || isSCTechnical || isEVMAdmin || isEVMStaff;
 
   useEffect(() => {
     if (recallId) {
@@ -33,7 +47,7 @@ function RecallDetail({ recallId, onBack }) {
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     // Cleanup khi component unmount
     return () => {
       document.body.style.overflow = 'unset';
@@ -44,19 +58,19 @@ function RecallDetail({ recallId, onBack }) {
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log("🔄 Fetching recall detail for ID:", recallId);
       const response = await recallAPI.getRecallById(recallId);
-      
+
       const recallData = response.data;
       console.log("📋 Raw recall data:", recallData);
       console.log("📋 Vehicle types before processing:", recallData.vehicleTypeInfoDTOS);
-      
+
       // Fetch trạng thái thực của từng xe từ API
       if (recallData.vehicleBasicInfoDTOS && recallData.vehicleBasicInfoDTOS.length > 0) {
         const vehiclesWithStatus = await Promise.all(
           recallData.vehicleBasicInfoDTOS.map(async (vehicle) => {
-              try {
+            try {
               const vehicleId = vehicle.vehicleId || vehicle.vin;
               const detailResponse = await recallAPI.getRecallVehicleDetail(recallId, vehicleId);
               return {
@@ -72,14 +86,14 @@ function RecallDetail({ recallId, onBack }) {
             }
           })
         );
-        
+
         // attach fetched vehicle statuses
         recallData.vehicleBasicInfoDTOS = vehiclesWithStatus;
       }
-      
+
       console.log("✅ Final recall data with vehicle types:", recallData.vehicleTypeInfoDTOS);
       setRecall(recallData);
-      
+
       console.log("✅ Recall detail fetched successfully");
     } catch (err) {
       console.error("❌ Error fetching recall detail:", err);
@@ -92,25 +106,25 @@ function RecallDetail({ recallId, onBack }) {
   const handleAutoAssignVehicles = async () => {
     try {
       setAssigningVehicles(true);
-      
+
       // 1. Lấy danh sách vehicle type IDs từ recall
       const vehicleTypeIds = recall.vehicleTypeInfoDTOS?.map(vt => vt.id) || [];
-      
+
       if (vehicleTypeIds.length === 0) {
         toast.warning("Recall này chưa có vehicle type nào");
         return;
       }
 
       // 2. Lấy tất cả xe từ backend (có thể cần phân trang nếu số lượng lớn)
-      const vehiclesResponse = await vehicleAPI.getAllVehicles({ 
-        page: 0, 
+      const vehiclesResponse = await vehicleAPI.getAllVehicles({
+        page: 0,
         size: 1000 // Lấy tất cả xe
       });
-      
+
       const allVehicles = vehiclesResponse.data?.content || [];
-      
+
       // 3. Filter xe có vehicleType matching
-      const matchingVehicles = allVehicles.filter(vehicle => 
+      const matchingVehicles = allVehicles.filter(vehicle =>
         vehicleTypeIds.includes(vehicle.electricVehicleTypeId || vehicle.vehicleTypeId)
       );
 
@@ -141,7 +155,7 @@ function RecallDetail({ recallId, onBack }) {
         // Refresh recall detail
         await fetchRecallDetail();
       }
-      
+
       if (errorCount > 0) {
         toast.warning(`Có ${errorCount} xe không thể gán (có thể đã được gán trước đó)`);
       }
@@ -167,18 +181,18 @@ function RecallDetail({ recallId, onBack }) {
   const handleOpenAssignTechModal = async () => {
     try {
       // Fetch danh sách technicians từ SC Technician API
-  const response = await scTechnicianAPI.getAllTechnicians({ page: 0, size: 100 });
-      
+      const response = await scTechnicianAPI.getAllTechnicians({ page: 0, size: 100 });
+
       let technicians = response.data?.content || [];
-      
+
       // Lọc chỉ lấy technicians cùng branchOffice với user hiện tại
       if (user?.branchOffice) {
-        technicians = technicians.filter(tech => 
+        technicians = technicians.filter(tech =>
           tech.branchOffice === user.branchOffice
         );
-  // filtered technicians for branch
+        // filtered technicians for branch
       }
-      
+
       setAvailableTechnicians(technicians);
       setShowAssignTechModal(true);
     } catch (err) {
@@ -190,7 +204,7 @@ function RecallDetail({ recallId, onBack }) {
   const handleOpenAssignVehicleTypesModal = async () => {
     try {
       console.log("🔄 Opening assign vehicle types modal...");
-      
+
       // Map VEHICLE_TYPES to the format expected by the modal
       const vehicleTypesFromConstants = VEHICLE_TYPES.map((vt, index) => ({
         id: vt.id, // Use actual vehicle type IDs like "EVT001", "EVT002", etc.
@@ -198,13 +212,13 @@ function RecallDetail({ recallId, onBack }) {
         yearModelYear: "2023", // Default year
         batteryType: "Lithium-ion" // Default battery type
       }));
-      
+
       console.log("📋 Available vehicle types from constants:", vehicleTypesFromConstants);
       console.log("📋 Current recall vehicle types:", recall.vehicleTypeInfoDTOS);
-      
+
       setAvailableVehicleTypes(vehicleTypesFromConstants);
       setShowAssignVehicleTypesModal(true);
-      
+
       console.log("✅ Assign vehicle types modal opened successfully");
     } catch (err) {
       console.error("❌ Error fetching vehicle types:", err);
@@ -214,11 +228,11 @@ function RecallDetail({ recallId, onBack }) {
 
   const handleAssignTechnician = async (technicianId) => {
     try {
-  await recallAPI.addTechnicianToRecall(recallId, technicianId);
-  toast.success("Đã gán kỹ thuật viên");
-  // Refresh data to show updated technician list
-  await fetchRecallDetail();
-      
+      await recallAPI.addTechnicianToRecall(recallId, technicianId);
+      toast.success("Đã gán kỹ thuật viên");
+      // Refresh data to show updated technician list
+      await fetchRecallDetail();
+
       setShowAssignTechModal(false);
     } catch (err) {
       console.error("❌ Error adding technician:", err);
@@ -230,18 +244,18 @@ function RecallDetail({ recallId, onBack }) {
   const handleAssignVehicleType = async (vehicleTypeId) => {
     try {
       console.log("🚗 Assigning vehicle type:", vehicleTypeId, "to recall:", recallId);
-      
+
       // Use the proper API method for single vehicle type assignment
       console.log("🔧 Using recallAPI.addVehicleTypeToRecall method");
       await recallAPI.addVehicleTypeToRecall(recallId, vehicleTypeId);
-      
+
       console.log("✅ Successfully assigned vehicle type:", vehicleTypeId);
       toast.success("Đã gán loại xe");
-      
+
       // Refresh data to show updated vehicle type list
       console.log("🔄 Refreshing recall data after vehicle type assignment...");
       await fetchRecallDetail();
-      
+
       console.log("✅ Recall data refreshed, closing modal");
       setShowAssignVehicleTypesModal(false);
     } catch (err) {
@@ -257,7 +271,7 @@ function RecallDetail({ recallId, onBack }) {
       // Cập nhật state local ngay lập tức
       setRecall(prevRecall => ({
         ...prevRecall,
-        vehicleBasicInfoDTOS: prevRecall.vehicleBasicInfoDTOS.map(vehicle => 
+        vehicleBasicInfoDTOS: prevRecall.vehicleBasicInfoDTOS.map(vehicle =>
           (vehicle.vehicleId === vehicleId || vehicle.vin === vehicleId)
             ? { ...vehicle, status: newStatus }
             : vehicle
@@ -268,14 +282,50 @@ function RecallDetail({ recallId, onBack }) {
       await recallAPI.updateRecallVehicleStatus(recallId, vehicleId, {
         status: newStatus
       });
-      
+
       toast.success("Đã cập nhật trạng thái xe");
     } catch (err) {
       console.error("Error updating vehicle status:", err);
       toast.error("Không thể cập nhật trạng thái xe");
-      
+
       // Rollback nếu API thất bại
       await fetchRecallDetail();
+    }
+  };
+
+  const handleUpdateReturnDate = (vehicleId, currentReturnDate) => {
+    setUpdatingVehicleId(vehicleId);
+    setSelectedDate(currentReturnDate || "");
+    setShowDatePickerModal(true);
+  };
+
+  const handleConfirmDateUpdate = async () => {
+    if (!selectedDate) {
+      toast.error("Vui lòng chọn ngày trả xe");
+      return;
+    }
+
+    try {
+      // Gọi API để cập nhật return date
+      await vehicleAPI.updateReturnDate(updatingVehicleId, selectedDate);
+
+      // Cập nhật state local
+      setRecall(prevRecall => ({
+        ...prevRecall,
+        vehicleBasicInfoDTOS: prevRecall.vehicleBasicInfoDTOS.map(vehicle =>
+          (vehicle.vehicleId === updatingVehicleId || vehicle.vin === updatingVehicleId)
+            ? { ...vehicle, returnDate: selectedDate }
+            : vehicle
+        )
+      }));
+
+      toast.success("Đã cập nhật ngày trả xe");
+      setShowDatePickerModal(false);
+      setSelectedDate("");
+      setUpdatingVehicleId(null);
+    } catch (err) {
+      console.error("Error updating return date:", err);
+      toast.error("Không thể cập nhật ngày trả xe");
     }
   };
 
@@ -360,24 +410,29 @@ function RecallDetail({ recallId, onBack }) {
           <button className="btn btn-outline" onClick={onBack}>
             ← Quay lại
           </button>
-          <button 
+          <button
             className="btn btn-secondary"
             onClick={handleOpenAssignTechModal}
+            disabled={!canAssignTechnicians}
+            title={!canAssignTechnicians ? "Chỉ EVM_ADMIN và EVM_STAFF mới có thể gán kỹ thuật viên" : ""}
           >
             <UserPlus size={16} />
             Gán kỹ thuật viên
           </button>
-          <button 
+          <button
             className="btn btn-secondary"
             onClick={handleOpenAssignVehicleTypesModal}
+            disabled={!canAssignVehicleTypes}
+            title={!canAssignVehicleTypes ? "Chỉ EVM_ADMIN và EVM_STAFF mới có thể gán loại xe" : ""}
           >
             <Car size={16} />
             Gán loại xe
           </button>
-          <button 
+          <button
             className="btn btn-primary"
             onClick={handleAutoAssignVehicles}
-            disabled={assigningVehicles || recall.status === RECALL_STATUS.COMPLETE}
+            disabled={assigningVehicles || recall.status === RECALL_STATUS.COMPLETE || !canAutoAssignVehicles}
+            title={!canAutoAssignVehicles ? "Chỉ EVM_ADMIN, EVM_STAFF và SC_ADMIN mới có thể tự động gán xe" : ""}
           >
             {assigningVehicles ? (
               <>
@@ -436,20 +491,36 @@ function RecallDetail({ recallId, onBack }) {
                 <div className="info-section">
                   <div className="section-title">
                     <Car size={20} />
-                    <h3>Xe bị ảnh hưởng ({recall.vehicleBasicInfoDTOS.length})</h3>
+                    <h3>
+                      Xe bị ảnh hưởng ({recall.vehicleBasicInfoDTOS.length})
+                      {(() => {
+                        const statusCounts = recall.vehicleBasicInfoDTOS.reduce((acc, vehicle) => {
+                          const status = vehicle.status || "PENDING";
+                          acc[status] = (acc[status] || 0) + 1;
+                          return acc;
+                        }, {});
+
+                        const statusParts = [];
+                        if (statusCounts.COMPLETED) statusParts.push(`${statusCounts.COMPLETED} hoàn thành`);
+                        if (statusCounts.IN_PROGRESS) statusParts.push(`${statusCounts.IN_PROGRESS} đang xử lý`);
+                        if (statusCounts.PENDING) statusParts.push(`${statusCounts.PENDING} chờ xử lý`);
+
+                        return statusParts.length > 0 ? ` - ${statusParts.join(", ")}` : "";
+                      })()}
+                    </h3>
                   </div>
                   <div className="vehicles-list">
                     {recall.vehicleBasicInfoDTOS.map((vehicle, index) => (
-                      <div 
-                        key={vehicle.vehicleId || vehicle.vin || index} 
+                      <div
+                        key={vehicle.vehicleId || vehicle.vin || index}
                         className="vehicle-item-with-status"
                       >
-                        <div 
+                        <div
                           className="vehicle-info clickable"
                           onClick={() => handleViewVehicleDetail(vehicle.vehicleId || vehicle.vin)}
                         >
                           {(vehicle.vehicleName || vehicle.modelName) && (
-                            <span className="vehicle-model">🚗 {vehicle.vehicleName || vehicle.modelName}</span>
+                            <span className="vehicle-model"><Car size={20} /> {vehicle.vehicleName || vehicle.modelName}</span>
                           )}
                           <span className="vin-number">📋 VIN: {vehicle.vehicleId || vehicle.vin || vehicle.id || `Xe #${index + 1}`}</span>
                           {vehicle.yearModelYear && (
@@ -460,11 +531,32 @@ function RecallDetail({ recallId, onBack }) {
                           )}
                         </div>
                         <div className="vehicle-status-control" onClick={(e) => e.stopPropagation()}>
+                          {/* Hiển thị return date khi status là SCHEDULED */}
+                          {vehicle.status === "SCHEDULED" && (
+                            <div className="return-date-info">
+                              <div className="return-date-content">
+                                <span className="return-date-text">
+                                  📅 Ngày trả xe: {vehicle.returnDate ? formatDate(vehicle.returnDate) : "Chưa cập nhật"}
+                                </span>
+                                {canUpdateVehicleStatus && (
+                                  <button
+                                    className="update-return-date-btn"
+                                    onClick={() => handleUpdateReturnDate(vehicle.vehicleId || vehicle.vin, vehicle.returnDate)}
+                                  >
+                                    Cập nhật
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
                           <label>Trạng thái:</label>
                           <select
                             className="status-select"
                             value={vehicle.status || "PENDING"}
                             onChange={(e) => handleVehicleStatusChange(vehicle.vehicleId || vehicle.vin, e.target.value)}
+                            disabled={!canUpdateVehicleStatus}
+                            title={!canUpdateVehicleStatus ? "Chỉ SC_ADMIN, SC_STAFF và SC_TECHNICAL mới có thể cập nhật trạng thái xe" : ""}
                           >
                             {RECALL_VEHICLE_STATUS_OPTIONS.map(option => (
                               <option key={option.value} value={option.value}>
@@ -492,6 +584,60 @@ function RecallDetail({ recallId, onBack }) {
                     <AlertTriangle size={32} color="#fb923c" />
                     <p>Chưa có xe nào được gán vào recall này</p>
                     <p className="hint">Nhấn nút "Tự động gán xe" để tự động tìm và gán xe theo loại xe đã chọn</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Vehicle Status Summary */}
+              {recall.vehicleBasicInfoDTOS && recall.vehicleBasicInfoDTOS.length > 0 && (
+                <div className="info-section">
+                  <div className="section-title">
+                    <Clock size={20} />
+                    <h3>Tóm tắt trạng thái xe</h3>
+                  </div>
+                  <div className="status-summary">
+                    {(() => {
+                      const statusCounts = recall.vehicleBasicInfoDTOS.reduce((acc, vehicle) => {
+                        const status = vehicle.status || "PENDING";
+                        acc[status] = (acc[status] || 0) + 1;
+                        return acc;
+                      }, {});
+
+                      const total = recall.vehicleBasicInfoDTOS.length;
+                      const completed = statusCounts.COMPLETED || 0;
+                      const inProgress = statusCounts.IN_PROGRESS || 0;
+                      const pending = statusCounts.PENDING || 0;
+
+                      return (
+                        <div className="status-summary-grid">
+                          <div className="status-summary-item">
+                            <div className="status-count total">{total}</div>
+                            <div className="status-label">Tổng số xe</div>
+                          </div>
+                          <div className="status-summary-item">
+                            <div className="status-count completed">{completed}</div>
+                            <div className="status-label">Hoàn thành</div>
+                            <div className="status-percentage">
+                              {total > 0 ? Math.round((completed / total) * 100) : 0}%
+                            </div>
+                          </div>
+                          <div className="status-summary-item">
+                            <div className="status-count in-progress">{inProgress}</div>
+                            <div className="status-label">Đang xử lý</div>
+                            <div className="status-percentage">
+                              {total > 0 ? Math.round((inProgress / total) * 100) : 0}%
+                            </div>
+                          </div>
+                          <div className="status-summary-item">
+                            <div className="status-count pending">{pending}</div>
+                            <div className="status-label">Chờ xử lý</div>
+                            <div className="status-percentage">
+                              {total > 0 ? Math.round((pending / total) * 100) : 0}%
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
@@ -590,7 +736,7 @@ function RecallDetail({ recallId, onBack }) {
                 ×
               </button>
             </div>
-            
+
             <div className="modal-body">
               <div className="technician-list">
                 {availableTechnicians.length === 0 ? (
@@ -649,7 +795,7 @@ function RecallDetail({ recallId, onBack }) {
                 ×
               </button>
             </div>
-            
+
             <div className="modal-body">
               <div className="technician-list">
                 {availableVehicleTypes.length === 0 ? (
@@ -690,6 +836,46 @@ function RecallDetail({ recallId, onBack }) {
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setShowAssignVehicleTypesModal(false)}>
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Date Picker Modal */}
+      {showDatePickerModal && (
+        <div className="modal-overlay" onClick={() => setShowDatePickerModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📅 Cập nhật ngày trả xe</h3>
+            </div>
+
+            <div className="modal-body">
+              <label>Chọn ngày trả xe:</label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn btn-outline"
+                onClick={() => {
+                  setShowDatePickerModal(false);
+                  setSelectedDate("");
+                  setUpdatingVehicleId(null);
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleConfirmDateUpdate}
+                disabled={!selectedDate}
+              >
+                Cập nhật
               </button>
             </div>
           </div>

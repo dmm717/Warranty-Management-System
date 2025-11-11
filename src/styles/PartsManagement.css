@@ -185,10 +185,7 @@
 .price-cell {
   font-weight: 700;
   font-size: 1rem;
-  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #1e40af;
 }
 
 /* Serial Cell */
@@ -470,12 +467,12 @@
 }
 
 .table-container {
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   overflow-x: auto;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
 }
 
 .table-container .data-table {
@@ -495,7 +492,7 @@
 
 .table-container .data-table th:nth-child(1),
 .table-container .data-table td:nth-child(1) {
-  width: 20%; /* Serial Number */
+  width: 30% !important; /* Serial Number */
 }
 
 .table-container .data-table th:nth-child(2),
@@ -515,7 +512,7 @@
 
 .table-container .data-table th:nth-child(5),
 .table-container .data-table td:nth-child(5) {
-  width: 35%; /* Thông tin Part Type */
+  width: 25%; /* Thông tin Part Type */
 }
 
 .table-container .data-table th:nth-child(6),

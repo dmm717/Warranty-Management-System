@@ -421,25 +421,11 @@ function CampaignManagement() {
           }
         }
       } else {
-        // Recall logic - chỉ update local state vì chưa có API
+        // Recall logic - now uses backend API
         if (selectedItem) {
-          // Edit existing recall
-          const updatedRecall = { ...selectedItem, ...itemData };
-
-          // If EVM_STAFF is completing the recall details, change status
-          if (
-            user?.role === "EVM_STAFF" &&
-            itemData.IssueDescription &&
-            itemData.RequiredAction
-          ) {
-            updatedRecall.Status = "In Progress";
-          }
-
-          setRecalls(
-            recalls.map((r) =>
-              r.Recall_ID === selectedItem.Recall_ID ? updatedRecall : r
-            )
-          );
+          // Edit existing recall - backend API call is handled by RecallForm
+          // Reload data from backend to ensure consistency
+          await fetchData();
           toast.success("Cập nhật Recall thành công!");
         } else {
           // Create new recall
@@ -472,14 +458,8 @@ function CampaignManagement() {
             "Tạo Recall thành công! EVM_STAFF sẽ nhận được thông báo."
           );
 
-          // TODO: When backend is ready, send notification to EVM_STAFF users
-          // await NotificationService.sendNotification({
-          //   RecipientRole: "EVM_STAFF",
-          //   Title: "Recall mới cần xử lý",
-          //   Message: `Recall ${newRecall.RecallName} (${newRecall.Recall_ID}) đã được tạo`,
-          //   RelatedID: newRecall.Recall_ID,
-          //   Type: "Recall"
-          // });
+          // Reload data to ensure consistency
+          await fetchData();
         }
       }
     } catch (error) {

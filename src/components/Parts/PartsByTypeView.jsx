@@ -25,20 +25,13 @@ function PartsByTypeView({ partTypeId, partTypeName, onBack }) {
     setError(null);
     
     try {
-      const response = await evmInventoryAPI.searchByPartTypeId(partTypeId);
-      console.log("🔍 API Response:", response);
-      console.log("📦 Raw data:", response.data);
+      const response = await evmInventoryAPI.searchByPartTypeQuery(partTypeId);
       
-      // Filter chỉ lấy phụ tùng còn hàng (IN_STOCK)
+      // Filter chỉ lấy phụ tùng ACTIVE
       const allParts = response.data || [];
-      console.log("📊 Total parts:", allParts.length);
-      
-      // Filter chỉ lấy phụ tùng ACTIVE (không lấy TRANSFERRED)
       const activeParts = allParts.filter(part => {
-        console.log(`  Part ${part.id}: condition = ${part.condition}`);
         return part.condition === "ACTIVE";
       });
-      console.log("✅ Active parts:", activeParts.length);
       
       setParts(activeParts);
 
@@ -59,7 +52,7 @@ function PartsByTypeView({ partTypeId, partTypeName, onBack }) {
         });
       }
     } catch (err) {
-      console.error("❌ Error fetching parts by type:", err);
+      console.error("Error fetching parts by type:", err);
       setError("Không thể tải danh sách phụ tùng");
       setParts([]);
     } finally {

@@ -108,7 +108,7 @@ function SCPartsByTypeView({ partTypeId, partTypeName, onBack }) {
                 <th style={{ width: "12%" }}>Chi nhánh</th>
                 <th style={{ width: "10%" }}>Loại xe</th>
                 <th style={{ width: "10%" }}>Trạng thái</th>
-                <th style={{ width: "23%" }}>Thông tin Part Type</th>
+                <th style={{ width: "23%" }}>Giá</th>
                 <th style={{ width: "10%" }}>Thao tác</th>
               </tr>
             </thead>
@@ -139,24 +139,12 @@ function SCPartsByTypeView({ partTypeId, partTypeName, onBack }) {
                     </span>
                   </td>
                   <td>
-                    <div className="description-cell">
-                      {part.partTypeInfoDTO ? (
-                        <>
-                          <strong>{part.partTypeInfoDTO.partName || "N/A"}</strong>
-                          {part.partTypeInfoDTO.manufacturer && (
-                            <div className="text-muted">
-                              Nhà SX: {part.partTypeInfoDTO.manufacturer}
-                            </div>
-                          )}
-                          {part.partTypeInfoDTO.price && (
-                            <div className="text-muted">
-                              Giá: {new Intl.NumberFormat("vi-VN", {
-                                style: "currency",
-                                currency: "VND",
-                              }).format(part.partTypeInfoDTO.price)}
-                            </div>
-                          )}
-                        </>
+                    <div className="price">
+                      {part.partTypeId?.price ? (
+                        new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(part.partTypeId?.price)
                       ) : (
                         "—"
                       )}

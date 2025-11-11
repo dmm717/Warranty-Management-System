@@ -178,7 +178,7 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
     if (availableRecalls.length === 0) {
       return (
         <div className="no-data-container">
-          <div className="no-data-icon">📋</div>
+          <div className="no-data-icon"><File size={48} /></div>
           <h3>Chưa có recall nào</h3>
           <p>Đang chờ EVM_ADMIN tạo recall mới</p>
         </div>
@@ -193,14 +193,14 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
               <tr>
                 <th>Mã Recall</th>
                 <th>Tên Recall</th>
-                <th>Vấn đề</th>
-                <th>Ngày bắt đầu</th>
+                <th>Model xe</th>
+                <th>Phạm vi</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {availableRecalls.map((recall) => (
+              {recalls.map((recall) => (
                 <tr key={recall.Recall_ID}>
                   <td>
                     <div className="recall-id">
@@ -208,31 +208,22 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
                     </div>
                   </td>
                   <td>
-                    <div className="recall-name-cell">
-                      <strong>{recall.RecallName}</strong>
-                      {!recall.IssueDescription && (
-                        <span className="badge badge-warning">
-                          Chưa bổ sung
-                        </span>
-                      )}
+                    <div className="recall-name">
+                      <strong>{recall.RecallName || "N/A"}</strong>
                     </div>
                   </td>
                   <td>
-                    <div className="issue-cell">
-                      {recall.IssueDescription ? (
-                        recall.IssueDescription.length > 60 ? (
-                          `${recall.IssueDescription.substring(0, 60)}...`
-                        ) : (
-                          recall.IssueDescription
-                        )
-                      ) : (
-                        <em className="text-muted">Chưa có thông tin</em>
-                      )}
+                    <div className="model-info">
+                      {getModelNames(recall.VehicleModels)}
                     </div>
                   </td>
                   <td>
-                    <div className="date-cell">
-                      {formatDate(recall.StartDate)}
+                    <div className="scope-info">
+                      
+                      <div>
+                        <strong>Quận:</strong> {getRegionNames(recall.Regions)}
+                      </div>
+                      
                     </div>
                   </td>
                   <td>{getStatusBadge(recall.Status)}</td>
@@ -245,25 +236,8 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
                       >
                         <Eye size={16} />
                       </button>
-                      {/* EVM_STAFF chỉ có thể xem, không thể chỉnh sửa */}
-                      {/* EVM_STAFF có quyền xóa recall */}
-                      {onDelete && (
-                        <button
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `Bạn có chắc chắn muốn xóa recall "${recall.RecallName}"?`
-                              )
-                            ) {
-                              onDelete(recall.Recall_ID);
-                            }
-                          }}
-                          className="btn btn-sm btn-danger"
-                          title="Xóa"
-                        >
-                          🗑️
-                        </button>
-                      )}
+                      
+                      
                     </div>
                   </td>
                 </tr>
