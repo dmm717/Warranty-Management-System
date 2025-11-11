@@ -5,13 +5,16 @@
 
 .form-section {
   margin-bottom: 32px;
-  padding: 24px;
-  padding-bottom: 24px;
+  padding: 20px;
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: fit-content !important;
 }
 
 .form-section:last-of-type {
@@ -121,6 +124,25 @@
   margin-bottom: 0;
 }
 
+/* Debug JSON block used temporarily to inspect recall prop when editing */
+.recall-debug {
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px dashed rgba(255,255,255,0.06);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.85);
+  font-size: 12px;
+}
+.recall-debug-pre {
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow: auto;
+  margin-top: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+  font-size: 11px;
+}
+
 /* Info Section for EVM_STAFF */
 .info-section {
   background: #f9fafb;
@@ -172,6 +194,118 @@ textarea.form-control {
   background: #f9fafb;
   border: 1px solid var(--border-color);
   border-radius: 8px;
+}
+
+/* Dropdown wrapper for vehicle types */
+.vehicle-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.vehicle-dropdown-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  /* make the toggle opaque / not transparent */
+  background: rgba(6, 10, 15, 1); /* solid dark background */
+  color: rgba(255,255,255,0.95);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+
+.vehicle-dropdown-toggle .vehicle-dropdown-label {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.caret {
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid rgba(0,0,0,0.6);
+  border-bottom: 2px solid rgba(0,0,0,0.6);
+  transform: rotate(-45deg);
+  display: inline-block;
+  margin-left: 12px;
+  transition: transform 0.18s ease;
+  opacity: 0.7;
+}
+
+.caret.open {
+  transform: rotate(135deg);
+}
+
+.vehicle-dropdown-panel {
+  position: absolute;
+  z-index: 60;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  /* Use the same glass/card look as .card and inputs for visual consistency */
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  color: rgba(255,255,255,0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  padding: 8px; /* reduced padding */
+  /* let the panel size itself to its children by default */
+  max-height: none;
+  overflow: visible;
+}
+
+/* Make vehicle items match the dark glass tone and keep subtle separation */
+.vehicle-dropdown-panel .vehicle-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  color: rgba(255,255,255,0.95);
+  padding: 8px 12px; /* tighter item padding */
+  font-size: 14px;
+}
+
+/* If you want scroll behavior on very tall content, uncomment and tune the rules below.
+.vehicle-dropdown-panel::-webkit-scrollbar {
+  width: 8px;
+}
+.vehicle-dropdown-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.vehicle-dropdown-panel::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+}
+*/
+
+/* Reduce spacing between items inside the panel */
+.vehicle-dropdown-panel .vehicle-types-grid {
+  gap: 8px;
+}
+
+/* Make the toggle itself slightly more compact */
+.vehicle-dropdown-toggle {
+  padding: 8px 12px !important;
+}
+
+/* Responsive: on small screens make dropdown full width and aligned */
+@media (max-width: 768px) {
+  .vehicle-dropdown-panel {
+    width: calc(100% - 16px);
+    left: 8px;
+    right: 8px;
+    max-height: 320px;
+  }
+}
+
+/* When the panel opens, slightly elevate the caret color to primary */
+.vehicle-dropdown-toggle .caret {
+  border-color: rgba(255,255,255,0.6);
+}
+.vehicle-dropdown-toggle .caret.open {
+  border-color: var(--vf-primary-500);
 }
 
 .vehicle-select-section .header-row {
@@ -308,14 +442,17 @@ textarea.form-control {
 }
 
 .form-actions {
-  display: flex;
-  gap: 16px;
-  justify-content: flex-end;
-  padding-top: 32px;
-  border-top: 1px solid var(--border-color);
-  margin-top: 32px;
+  margin-bottom: 32px;
+  padding: 20px; /* slightly reduced padding to make sections less wide visually */
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  max-width: 760px; /* constrain section width so it doesn't span too wide */
+  margin-left: auto;
+  margin-right: auto;
 }
-
 .btn-danger {
   background-color: var(--error-color);
   color: white;
@@ -367,6 +504,13 @@ textarea.form-control {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+
+  /* on small screens let form sections use full width and less padding */
+  .form-section {
+    padding: 12px;
+    margin-left: 8px;
+    margin-right: 8px;
   }
 
   .vehicle-select-section .header-row .btn {

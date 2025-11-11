@@ -1,31 +1,29 @@
 import React from "react";
 import { AlertTriangle, FileText, Eye, Edit, Plus } from "lucide-react";
 import "../../styles/RecallList.css";
-import { VEHICLE_TYPES, REGIONS } from "../../constants";
+import { VEHICLE_TYPES, REGIONS, RECALL_STATUS } from "../../constants";
 
-function RecallList({ recalls, onEdit, onView, userRole, onDelete, userId }) {
+function RecallList({ recalls, onEdit, onView, userRole, onDelete }) {
   const isEVMAdmin = userRole === "EVM_ADMIN";
   const isEVMStaff = userRole === "EVM_STAFF";
   const isSCAdmin = userRole === "SC_ADMIN";
   const isSCStaff = userRole === "SC_STAFF";
   const isSCTechnical = userRole === "SC_TECHNICAL";
-
+  
   // Không cần filter nữa vì SC_TECHNICAL đã được filter ở backend
   const filteredRecalls = recalls;
 
   const getStatusBadge = (status) => {
     const statusClasses = {
-      Pending: "status-pending",
-      "In Progress": "status-active",
-      Completed: "status-completed",
-      Cancelled: "status-cancelled",
+      INACTIVE: "status-pending",
+      ACTIVE: "status-in-progress",
+      COMPLETE: "status-completed",
     };
 
     const statusLabels = {
-      Pending: "Chờ xử lý",
-      "In Progress": "Đang xử lý",
-      Completed: "Hoàn thành",
-      Cancelled: "Đã hủy",
+      INACTIVE: RECALL_STATUS.INACTIVE,
+      ACTIVE: RECALL_STATUS.ACTIVE,
+      COMPLETE: RECALL_STATUS.COMPLETE,
     };
 
     return (
@@ -53,7 +51,7 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete, userId }) {
   };
 
   const getRegionNames = (regionIds) => {
-    if (!Array.isArray(regionIds) || regionIds.length === 0) return "N/A";
+    if (!Array.isArray(regionIds) || regionIds.length === 0) return "HCM";
     return regionIds
       .map((id) => {
         const region = REGIONS.find((r) => r.value === id);
@@ -116,13 +114,11 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete, userId }) {
                   </td>
                   <td>
                     <div className="scope-info">
-                      <div>
-                        <strong>Năm:</strong>{" "}
-                        {recall.ProductionYears?.join(", ") || "N/A"}
-                      </div>
+                      
                       <div>
                         <strong>Quận:</strong> {getRegionNames(recall.Regions)}
                       </div>
+                      
                     </div>
                   </td>
                   <td>{getStatusBadge(recall.Status)}</td>
@@ -133,7 +129,7 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete, userId }) {
                         className="btn btn-sm btn-outline"
                         title="Xem chi tiết"
                       >
-                        👁️
+                        <Eye size={16} />
                       </button>
                       <button
                         onClick={() => onEdit(recall)}
@@ -142,7 +138,6 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete, userId }) {
                       >
                         <Edit size={16} />
                       </button>
-                      {/* EVM_ADMIN có quyền xóa recall */}
                       {onDelete && (
                         <button
                           onClick={() => {
@@ -157,7 +152,7 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete, userId }) {
                           className="btn btn-sm btn-danger"
                           title="Xóa"
                         >
-                          🗑️
+                          <Trash size={16} />
                         </button>
                       )}
                     </div>
@@ -248,7 +243,7 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete, userId }) {
                         className="btn btn-sm btn-outline"
                         title="Xem chi tiết"
                       >
-                        👁️
+                        <Eye size={16} />
                       </button>
                       {/* EVM_STAFF chỉ có thể xem, không thể chỉnh sửa */}
                       {/* EVM_STAFF có quyền xóa recall */}
@@ -355,7 +350,7 @@ function RecallList({ recalls, onEdit, onView, userRole, onDelete, userId }) {
                         className="btn btn-sm btn-outline"
                         title="Xem chi tiết"
                       >
-                        👁️
+                        <Eye size={16} />
                       </button>
                     </div>
                   </td>

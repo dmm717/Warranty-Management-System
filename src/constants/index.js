@@ -268,15 +268,33 @@ export const CAMPAIGN_STATUS = [
 ];
 
 // =============================================================================
+// RECALL STATUS - Enum tương ứng với backend RecallStatus
+// Backend enum: INACTIVE("Inactive"), ACTIVE("Active"), COMPLETE("Complete all electric vehicle")
+// =============================================================================
+export const RECALL_STATUS = {
+  INACTIVE: "INACTIVE",
+  ACTIVE: "ACTIVE",
+  COMPLETE: "COMPLETE",
+};
+
+export const RECALL_STATUS_OPTIONS = [
+  { value: RECALL_STATUS.INACTIVE, label: "Inactive" },
+  { value: RECALL_STATUS.ACTIVE, label: "Active" },
+  { value: RECALL_STATUS.COMPLETE, label: "Complete all electric vehicle" },
+];
+
+// =============================================================================
 // TECHNICIAN SPECIALTIES - Chuyên môn kỹ thuật viên
 // =============================================================================
 
 export const TECHNICIAN_SPECIALTIES = [
-  { value: "SOFTWARE", label: "Phần mềm" },
-  { value: "ELECTRICAL", label: "Điện" },
-  { value: "MECHANICAL", label: "Cơ khí" },
-  { value: "BATTERY", label: "Pin & Năng lượng" },
-  { value: "GENERAL", label: "Tổng hợp" },
+  { value: "ELECTRIC_MOTOR_SYSTEMS", label: "Hệ thống truyền động & inverter" },
+  { value: "BATTERY_SYSTEMS", label: "Hệ thống pin & chẩn đoán BMS" },
+  { value: "ELECTRONICS_AND_ECU", label: "Điện tử & ECU" },
+  { value: "BRAKE_SYSTEMS", label: "Phanh & dịch vụ phanh tái tạo" },
+  { value: "SUSPENSION_AND_STEERING", label: "Hệ thống treo & lái" },
+  { value: "BODY_AND_FRAME", label: "Thân xe & điều chỉnh kết cấu" },
+  { value: "INTERIOR_AND_SAFETY", label: "Nội thất & hệ thống an toàn" },
 ];
 
 // =============================================================================

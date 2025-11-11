@@ -778,9 +778,21 @@ export const recallAPI = {
   addTechnicianToRecall: (recallId, technicianId) =>
     apiService.post(`/recalls/${recallId}/technicians/${technicianId}`),
 
+  // DELETE /api/recalls/{id}/vehicle-types/{vehicleTypeId} - Xóa loại xe khỏi recall
+  removeVehicleType: (recallId, vehicleTypeId) =>
+    apiService.delete(`/recalls/${recallId}/vehicle-types/${vehicleTypeId}`),
+
   // GET /api/technicians/{technicianId}/recalls - Lấy recalls theo technicianId
   getRecallsByTechnicianId: (technicianId) =>
-    apiService.get(`/technicians/${technicianId}/recalls`)
+    apiService.get(`/technicians/${technicianId}/recalls`),
+
+  // PUT /api/recalls/{id}/vehicle-types - Gán danh sách loại xe vào recall
+  assignVehicleTypes: (id, vehicleTypeIds) =>
+    apiService.put(`/recalls/${id}/vehicle-types`, { vehicleTypeIds }),
+
+  // POST /api/recalls/{id}/vehicle-types/{vehicleTypeId} - Thêm 1 loại xe vào recall
+  addVehicleTypeToRecall: (id, vehicleTypeId) =>
+    apiService.post(`/recalls/${id}/vehicle-types/${vehicleTypeId}`)
 };
 
 export const recallDistrictAPI = {

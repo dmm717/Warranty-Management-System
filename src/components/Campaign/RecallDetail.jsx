@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, AlertTriangle, Users, Car, FileText, Clock, RefreshCw, UserPlus } from "lucide-react";
-import { recallAPI, recallDistrictAPI, vehicleAPI, scTechnicianAPI } from "../../services/api";
-import { RECALL_VEHICLE_STATUS_OPTIONS } from "../../constants";
+import { recallAPI, vehicleAPI, scTechnicianAPI } from "../../services/api";
+import { RECALL_VEHICLE_STATUS_OPTIONS, VEHICLE_TYPES, RECALL_STATUS } from "../../constants";
 import { toast } from "react-toastify";
 import { useAuth } from "../../contexts/AuthContext";
 import VehicleDetail from "../Vehicle/VehicleDetail";
@@ -17,6 +17,8 @@ function RecallDetail({ recallId, onBack }) {
   const [showVehicleDetail, setShowVehicleDetail] = useState(false);
   const [showAssignTechModal, setShowAssignTechModal] = useState(false);
   const [availableTechnicians, setAvailableTechnicians] = useState([]);
+  const [showAssignVehicleTypesModal, setShowAssignVehicleTypesModal] = useState(false);
+  const [availableVehicleTypes, setAvailableVehicleTypes] = useState([]);
 
   useEffect(() => {
     if (recallId) {
@@ -26,7 +28,7 @@ function RecallDetail({ recallId, onBack }) {
 
   // Chặn scroll của body khi modal mở
   useEffect(() => {
-    if (showAssignTechModal) {
+    if (showAssignTechModal || showAssignVehicleTypesModal) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -36,27 +38,27 @@ function RecallDetail({ recallId, onBack }) {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [showAssignTechModal]);
+  }, [showAssignTechModal, showAssignVehicleTypesModal]);
 
   const fetchRecallDetail = async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log("🔄 Fetching recall detail for ID:", recallId);
       const response = await recallAPI.getRecallById(recallId);
-      console.log("🔍 Recall data:", response.data);
-      console.log("🚗 Vehicles:", response.data?.vehicleBasicInfoDTOS);
-      console.log("👨‍🔧 Technicians:", response.data?.technicianBasicDTOS);
       
       const recallData = response.data;
+      console.log("📋 Raw recall data:", recallData);
+      console.log("📋 Vehicle types before processing:", recallData.vehicleTypeInfoDTOS);
       
       // Fetch trạng thái thực của từng xe từ API
       if (recallData.vehicleBasicInfoDTOS && recallData.vehicleBasicInfoDTOS.length > 0) {
         const vehiclesWithStatus = await Promise.all(
           recallData.vehicleBasicInfoDTOS.map(async (vehicle) => {
-            try {
+              try {
               const vehicleId = vehicle.vehicleId || vehicle.vin;
               const detailResponse = await recallAPI.getRecallVehicleDetail(recallId, vehicleId);
-              console.log(`📊 Status for vehicle ${vehicleId}:`, detailResponse.data);
               return {
                 ...vehicle,
                 status: detailResponse.data?.recallVehicleStatus || "PENDING"
@@ -71,13 +73,16 @@ function RecallDetail({ recallId, onBack }) {
           })
         );
         
-        console.log("✅ Vehicles with status:", vehiclesWithStatus);
+        // attach fetched vehicle statuses
         recallData.vehicleBasicInfoDTOS = vehiclesWithStatus;
       }
       
+      console.log("✅ Final recall data with vehicle types:", recallData.vehicleTypeInfoDTOS);
       setRecall(recallData);
+      
+      console.log("✅ Recall detail fetched successfully");
     } catch (err) {
-      console.error("Error fetching recall detail:", err);
+      console.error("❌ Error fetching recall detail:", err);
       setError("Không thể tải thông tin recall. Vui lòng thử lại.");
     } finally {
       setLoading(false);
@@ -162,8 +167,7 @@ function RecallDetail({ recallId, onBack }) {
   const handleOpenAssignTechModal = async () => {
     try {
       // Fetch danh sách technicians từ SC Technician API
-      const response = await scTechnicianAPI.getAllTechnicians({ page: 0, size: 100 });
-      console.log("👨‍🔧 Available technicians:", response.data);
+  const response = await scTechnicianAPI.getAllTechnicians({ page: 0, size: 100 });
       
       let technicians = response.data?.content || [];
       
@@ -172,7 +176,7 @@ function RecallDetail({ recallId, onBack }) {
         technicians = technicians.filter(tech => 
           tech.branchOffice === user.branchOffice
         );
-        console.log(`✅ Filtered technicians for branch "${user.branchOffice}":`, technicians);
+  // filtered technicians for branch
       }
       
       setAvailableTechnicians(technicians);
@@ -183,25 +187,68 @@ function RecallDetail({ recallId, onBack }) {
     }
   };
 
+  const handleOpenAssignVehicleTypesModal = async () => {
+    try {
+      console.log("🔄 Opening assign vehicle types modal...");
+      
+      // Map VEHICLE_TYPES to the format expected by the modal
+      const vehicleTypesFromConstants = VEHICLE_TYPES.map((vt, index) => ({
+        id: vt.id, // Use actual vehicle type IDs like "EVT001", "EVT002", etc.
+        modelName: vt.name,
+        yearModelYear: "2023", // Default year
+        batteryType: "Lithium-ion" // Default battery type
+      }));
+      
+      console.log("📋 Available vehicle types from constants:", vehicleTypesFromConstants);
+      console.log("📋 Current recall vehicle types:", recall.vehicleTypeInfoDTOS);
+      
+      setAvailableVehicleTypes(vehicleTypesFromConstants);
+      setShowAssignVehicleTypesModal(true);
+      
+      console.log("✅ Assign vehicle types modal opened successfully");
+    } catch (err) {
+      console.error("❌ Error fetching vehicle types:", err);
+      toast.error("Không thể tải danh sách loại xe");
+    }
+  };
+
   const handleAssignTechnician = async (technicianId) => {
     try {
-      console.log("🔄 Adding technician:", technicianId, "to recall:", recallId);
-      
-      const response = await recallAPI.addTechnicianToRecall(recallId, technicianId);
-      console.log("✅ Add technician response:", response);
-      
-      toast.success("Đã gán kỹ thuật viên");
-      
-      // Refresh data to show updated technician list
-      console.log("🔄 Refreshing recall data...");
-      await fetchRecallDetail();
-      console.log("✅ Recall data refreshed");
+  await recallAPI.addTechnicianToRecall(recallId, technicianId);
+  toast.success("Đã gán kỹ thuật viên");
+  // Refresh data to show updated technician list
+  await fetchRecallDetail();
       
       setShowAssignTechModal(false);
     } catch (err) {
       console.error("❌ Error adding technician:", err);
       console.error("❌ Error response:", err.response?.data);
       toast.error(err.response?.data?.message || "Không thể gán kỹ thuật viên");
+    }
+  };
+
+  const handleAssignVehicleType = async (vehicleTypeId) => {
+    try {
+      console.log("🚗 Assigning vehicle type:", vehicleTypeId, "to recall:", recallId);
+      
+      // Use the proper API method for single vehicle type assignment
+      console.log("🔧 Using recallAPI.addVehicleTypeToRecall method");
+      await recallAPI.addVehicleTypeToRecall(recallId, vehicleTypeId);
+      
+      console.log("✅ Successfully assigned vehicle type:", vehicleTypeId);
+      toast.success("Đã gán loại xe");
+      
+      // Refresh data to show updated vehicle type list
+      console.log("🔄 Refreshing recall data after vehicle type assignment...");
+      await fetchRecallDetail();
+      
+      console.log("✅ Recall data refreshed, closing modal");
+      setShowAssignVehicleTypesModal(false);
+    } catch (err) {
+      console.error("❌ Error adding vehicle type:", err);
+      console.error("❌ Error response:", err.response?.data);
+      console.error("❌ Error status:", err.response?.status);
+      toast.error(err.response?.data?.message || err.message || "Không thể gán loại xe");
     }
   };
 
@@ -239,16 +286,16 @@ function RecallDetail({ recallId, onBack }) {
 
   const getStatusBadge = (status) => {
     const statusClasses = {
-      ACTIVE: "status-active",
-      INACTIVE: "status-inactive",
-      COMPLETED: "status-completed",
+      [RECALL_STATUS.ACTIVE]: "status-active",
+      [RECALL_STATUS.INACTIVE]: "status-inactive",
+      [RECALL_STATUS.COMPLETE]: "status-completed",
       CANCELLED: "status-cancelled",
     };
 
     const statusLabels = {
-      ACTIVE: "Đang hoạt động",
-      INACTIVE: "Chưa kích hoạt",
-      COMPLETED: "Hoàn thành",
+      [RECALL_STATUS.ACTIVE]: "Đang hoạt động",
+      [RECALL_STATUS.INACTIVE]: "Chưa kích hoạt",
+      [RECALL_STATUS.COMPLETE]: "Hoàn thành",
       CANCELLED: "Đã hủy",
     };
 
@@ -321,9 +368,16 @@ function RecallDetail({ recallId, onBack }) {
             Gán kỹ thuật viên
           </button>
           <button 
+            className="btn btn-secondary"
+            onClick={handleOpenAssignVehicleTypesModal}
+          >
+            <Car size={16} />
+            Gán loại xe
+          </button>
+          <button 
             className="btn btn-primary"
             onClick={handleAutoAssignVehicles}
-            disabled={assigningVehicles || recall.status === 'COMPLETED'}
+            disabled={assigningVehicles || recall.status === RECALL_STATUS.COMPLETE}
           >
             {assigningVehicles ? (
               <>
@@ -449,6 +503,7 @@ function RecallDetail({ recallId, onBack }) {
                     <Car size={20} />
                     <h3>Loại xe bị ảnh hưởng ({recall.vehicleTypeInfoDTOS.length})</h3>
                   </div>
+                  {console.log("🎯 Rendering vehicle types section:", recall.vehicleTypeInfoDTOS)}
                   <div className="vehicle-types-list">
                     {recall.vehicleTypeInfoDTOS.map((type) => (
                       <div key={type.id} className="vehicle-type-chip">
@@ -575,6 +630,65 @@ function RecallDetail({ recallId, onBack }) {
 
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setShowAssignTechModal(false)}>
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAssignVehicleTypesModal && (
+        <div className="modal-overlay" onClick={() => setShowAssignVehicleTypesModal(false)}>
+          <div className="modal-content assign-tech-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <Car size={24} />
+                Gán loại xe
+              </h2>
+              <button className="modal-close" onClick={() => setShowAssignVehicleTypesModal(false)}>
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="technician-list">
+                {availableVehicleTypes.length === 0 ? (
+                  <div className="empty-state">
+                    <p>Không có loại xe nào</p>
+                  </div>
+                ) : (
+                  availableVehicleTypes.map(vehicleType => {
+                    const isAssigned = recall.vehicleTypeInfoDTOS?.some(vt => vt.id === vehicleType.id);
+                    console.log(`🔍 Checking vehicle type ${vehicleType.id} (${vehicleType.modelName}): isAssigned =`, isAssigned);
+                    return (
+                      <div key={vehicleType.id} className="technician-card">
+                        <div className="tech-info">
+                          <div className="tech-avatar">
+                            {vehicleType.modelName?.charAt(0).toUpperCase() || "V"}
+                          </div>
+                          <div className="tech-details">
+                            <div className="tech-name">{vehicleType.modelName || "N/A"}</div>
+                            <div className="tech-email">
+                              {vehicleType.yearModelYear} - {vehicleType.batteryType}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          className={`btn ${isAssigned ? "btn-success" : "btn-primary"}`}
+                          onClick={() => handleAssignVehicleType(vehicleType.id)}
+                          disabled={isAssigned}
+                        >
+                          {isAssigned ? "✓ Đã gán" : "Gán"}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowAssignVehicleTypesModal(false)}>
                 Đóng
               </button>
             </div>

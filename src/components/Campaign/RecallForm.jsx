@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import "../../styles/RecallForm.css";
-import { VEHICLE_TYPES } from "../../constants";
+import { VEHICLE_TYPES, RECALL_STATUS_OPTIONS } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
-import { recallAPI } from "../../services/api";
+import { recallAPI, vehicleAPI, scTechnicianAPI } from "../../services/api";
 import { toast } from "react-toastify";
 
 function RecallForm({ recall, onSave, onCancel }) {
   const { user } = useAuth();
   const isEVMAdmin = user?.role === "EVM_ADMIN";
-  const isEVMStaff = user?.role === "EVM_STAFF";
 
   const [formData, setFormData] = useState({
     name: "",
@@ -21,11 +21,56 @@ function RecallForm({ recall, onSave, onCancel }) {
     evmApprovalStatus: "WAITING",
     vehicleTypeIds: [],
     technicianIds: [],
-    vehicleId: []
+    vehicleId: [],
+    electricVehicleId: "",
+    scTechnicianId: ""
   });
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [vehicles, setVehicles] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
+
+  // Filter vehicles based on selected vehicle types
+  const filteredVehicles = React.useMemo(() => {
+    if (!formData.vehicleTypeIds || formData.vehicleTypeIds.length === 0) {
+      return vehicles;
+    }
+    
+    // Filter vehicles that match the selected vehicle types
+    return vehicles.filter(vehicle => {
+      const vehicleTypeId = vehicle.vehicleTypeId || vehicle.typeId || vehicle.modelId;
+      return formData.vehicleTypeIds.includes(String(vehicleTypeId));
+    });
+  }, [vehicles, formData.vehicleTypeIds]);
+
+  // Show electric vehicle combobox when vehicle types are selected
+  const showElectricVehicleCombobox = formData.vehicleTypeIds && formData.vehicleTypeIds.length > 0;
+
+  // Fetch vehicles and technicians on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch vehicles
+        const vehiclesRes = await vehicleAPI.getAllVehicles({ page: 0, size: 1000 });
+        if (vehiclesRes && vehiclesRes.success && vehiclesRes.data) {
+          const vehicleList = vehiclesRes.data.content || vehiclesRes.data;
+          setVehicles(Array.isArray(vehicleList) ? vehicleList : []);
+        }
+
+        // Fetch technicians
+        const techniciansRes = await scTechnicianAPI.getAllTechnicians({ page: 0, size: 1000 });
+        if (techniciansRes && techniciansRes.success && techniciansRes.data) {
+          const technicianList = techniciansRes.data.content || techniciansRes.data;
+          setTechnicians(Array.isArray(technicianList) ? technicianList : []);
+        }
+      } catch (error) {
+        console.error("Error fetching vehicles/technicians:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (recall) {
@@ -38,30 +83,24 @@ function RecallForm({ recall, onSave, onCancel }) {
         status: recall.status || recall.Status || "INACTIVE",
         notificationSent: recall.notificationSent ?? false,
         evmApprovalStatus: recall.evmApprovalStatus || "WAITING",
-        vehicleTypeIds: recall.vehicleTypeIds || recall.VehicleModels || [],
+        // derive vehicle type ids from available shapes: prefer detailed DTOs, then id arrays, then fallback to names
+        vehicleTypeIds: (() => {
+          const fromDto = recall.vehicleTypeInfoDTOS && Array.isArray(recall.vehicleTypeInfoDTOS)
+            ? recall.vehicleTypeInfoDTOS.map((v) => v.id)
+            : null;
+          const fromIds = recall.vehicleTypeIds || recall.VehicleModelIds || null;
+          const fromNames = recall.VehicleModels || null; // names are not ideal but keep as fallback
+
+          const source = fromDto || fromIds || fromNames || [];
+          return Array.isArray(source) ? source.map(String) : [];
+        })(),
         technicianIds: recall.technicianIds || [],
-        vehicleId: recall.vehicleId || []
+        vehicleId: recall.vehicleId || [],
+        electricVehicleId: recall.electricVehicleId || "",
+        scTechnicianId: recall.scTechnicianId || "",
       });
     }
   }, [recall]);
-
-  const handleArrayToggle = (fieldName, value) => {
-    setFormData((prev) => {
-      const currentArray = prev[fieldName];
-      const isSelected = currentArray.includes(value);
-
-      return {
-        ...prev,
-        [fieldName]: isSelected
-          ? currentArray.filter((item) => item !== value)
-          : [...currentArray, value],
-      };
-    });
-
-    if (errors[fieldName]) {
-      setErrors((prev) => ({ ...prev, [fieldName]: "" }));
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -82,7 +121,8 @@ function RecallForm({ recall, onSave, onCancel }) {
       newErrors.name = "Tên recall là bắt buộc";
     }
     
-    if (formData.vehicleTypeIds.length === 0) {
+    // Chỉ validate vehicleTypeIds khi tạo mới, không validate khi edit
+    if (!recall && formData.vehicleTypeIds.length === 0) {
       newErrors.vehicleTypeIds = "Phải chọn ít nhất một model xe";
     }
     
@@ -111,46 +151,143 @@ function RecallForm({ recall, onSave, onCancel }) {
       setErrors(newErrors);
       return;
     }
-
     setLoading(true);
-    try {
-      const requestData = {
-        name: formData.name,
-        issueDescription: formData.issueDescription,
-        startDate: formData.startDate,
-        requiredAction: formData.requiredAction,
-        partsRequired: formData.partsRequired,
-        status: formData.status,
-        notificationSent: formData.notificationSent,
-        evmApprovalStatus: formData.evmApprovalStatus,
-        vehicleTypeIds: formData.vehicleTypeIds,
-        technicianIds: formData.technicianIds,
-        vehicleId: formData.vehicleId
-      };
 
+    const requestData = {
+      name: formData.name,
+      issueDescription: formData.issueDescription,
+      startDate: formData.startDate,
+      requiredAction: formData.requiredAction,
+      partsRequired: formData.partsRequired,
+      status: formData.status,
+      notificationSent: formData.notificationSent,
+      evmApprovalStatus: formData.evmApprovalStatus,
+      // Chỉ gửi vehicleTypeIds khi tạo mới, không gửi khi edit để tránh lỗi backend
+      ...(recall ? {} : { vehicleTypeIds: formData.vehicleTypeIds }),
+      technicianIds: formData.technicianIds,
+      vehicleId: formData.vehicleId,
+      // Add new fields
+      electricVehicleId: formData.electricVehicleId || null,
+      scTechnicianId: formData.scTechnicianId || null,
+    };
+
+    try {
       if (recall) {
-        const recallId = recall.id || recall.Recall_ID;
-        const response = await recallAPI.updateRecall(recallId, requestData);
-        
-        if (response.success) {
-          toast.success("Cập nhật Recall thành công!");
-          onSave(response.data);
-        } else {
-          toast.error(response.message || "Không thể cập nhật Recall");
+        // If editing: detect vehicle types that were removed (unselected) and delete them via API
+        try {
+          const recallId = recall.id || recall.Recall_ID;
+          const originalIds = (
+            (recall.vehicleTypeInfoDTOS && Array.isArray(recall.vehicleTypeInfoDTOS)
+              ? recall.vehicleTypeInfoDTOS.map((v) => String(v.id))
+              : null) ||
+            (recall.vehicleTypeIds && Array.isArray(recall.vehicleTypeIds)
+              ? recall.vehicleTypeIds.map(String)
+              : null) ||
+            (recall.VehicleModelIds && Array.isArray(recall.VehicleModelIds)
+              ? recall.VehicleModelIds.map(String)
+              : [])
+          );
+
+          const currentIds = (requestData.vehicleTypeIds || []).map(String);
+          const removed = originalIds.filter((id) => !currentIds.includes(id));
+          if (removed.length > 0) {
+            // delete removed types sequentially to avoid rate issues
+            for (const vtId of removed) {
+              try {
+                console.debug('RecallForm: removing vehicle type', recallId, vtId);
+                await recallAPI.removeVehicleType(recallId, vtId);
+              } catch (err) {
+                console.warn('Failed to remove vehicle type', vtId, err);
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('Error while removing unselected vehicle types', err);
+        }
+        // Try updating via API first. If API not available or fails, fallback to local save.
+        try {
+          const recallId = recall.id || recall.Recall_ID;
+
+          const response = await recallAPI.updateRecall(recallId, requestData);
+
+          if (response && response.success) {
+            toast.success("Cập nhật Recall thành công!");
+            onSave && onSave(response.data);
+          } else {
+            // Detailed logging for diagnosis
+            try {
+              console.error("Update recall API failed", {
+                recallId,
+                requestData,
+                responseStatus: response?.status,
+                responseMessage: response?.message,
+                responseErrors: response?.errors,
+                rawResponse: response,
+              });
+            } catch (logErr) {
+              console.error("Update recall API failed (unable to stringify response)", logErr);
+            }
+
+            // Do NOT save locally when backend returns an error. Inform the user and keep the form open for retry.
+            toast.error("Lưu thất bại: " + (response?.message || "Không thể tạo Recall. Vui lòng thử lại."));
+            // do not call onSave — user must retry or cancel
+            return;
+          }
+        } catch (err) {
+          // Unexpected exception - log full error + request data
+          try {
+            console.error("Update recall API threw exception", {
+              error: err,
+              requestData,
+              recallId: recall?.id || recall?.Recall_ID,
+            });
+          } catch (logErr) {
+            console.error("Error while logging exception", logErr);
+          }
+
+          // Do NOT save locally on exception. Inform user and keep form open for retry.
+          toast.error("Lưu thất bại: Không thể kết nối đến server. Vui lòng thử lại.");
+          return;
         }
       } else {
-        const response = await recallAPI.createRecall(requestData);
-        
-        if (response.success) {
-          toast.success("Tạo Recall thành công!");
-          onSave(response.data);
-        } else {
-          toast.error(response.message || "Không thể tạo Recall");
+        // Create
+        try {
+          const response = await recallAPI.createRecall(requestData);
+          if (response && response.success) {
+            toast.success("Tạo Recall thành công!");
+            onSave && onSave(response.data);
+          } else {
+            try {
+              console.error("Create recall API failed", {
+                requestData,
+                responseStatus: response?.status,
+                responseMessage: response?.message,
+                responseErrors: response?.errors,
+                rawResponse: response,
+              });
+            } catch (logErr) {
+              console.error("Create recall API failed (unable to stringify response)", logErr);
+            }
+
+            // Do NOT save locally when create fails. Inform the user and keep the form open for retry.
+            toast.error("Lưu thất bại: " + (response?.message || "Không thể tạo Recall. Vui lòng thử lại."));
+            return;
+          }
+        } catch (err) {
+          try {
+            console.error("Create recall API threw exception", { error: err, requestData });
+          } catch (logErr) {
+            console.error("Error while logging create exception", logErr);
+          }
+
+          // Do NOT save locally on exception. Inform user and keep the form open for retry.
+          toast.error("Lưu thất bại: Không thể kết nối đến server. Vui lòng thử lại.");
+          return;
         }
       }
     } catch (error) {
-      console.error("Error submitting recall:", error);
-      toast.error(error.message || "Có lỗi xảy ra khi lưu Recall");
+      console.error("Unexpected error submitting recall:", error);
+      toast.error(error?.message || "Có lỗi xảy ra khi lưu Recall");
     } finally {
       setLoading(false);
     }
@@ -166,8 +303,9 @@ function RecallForm({ recall, onSave, onCancel }) {
           Thông tin recall và danh sách xe bị ảnh hưởng
         </p>
       </div>
+      {/* debug block removed - form now renders without printing raw recall prop */}
       <form onSubmit={handleSubmit} className="form">
-        {/* Tên Recall */}
+        {/* Tên Recall - ALWAYS FIRST */}
         <div className="form-section">
           <div className="form-group">
             <label className="form-label">Tên Recall *</label>
@@ -186,78 +324,122 @@ function RecallForm({ recall, onSave, onCancel }) {
           </div>
         </div>
 
-        {/* List Vehicle Models */}
+        {/* ===== COMBOBOX SECTIONS ===== */}
+        
+        {/* List Vehicle Models - chỉ hiển thị khi tạo mới, ẩn khi edit */}
+        {!recall && (
+          <div className="form-section">
+            <div className="form-group">
+              <label className="form-label">Loại xe bị ảnh hưởng *</label>
+
+              {/* Dropdown toggle that expands a panel containing the checkbox grid */}
+              <div className="vehicle-dropdown">
+                {/* We'll create a stable ref to handle outside clicks below */}
+              </div>
+
+              <VehicleTypeDropdown
+                vehicleTypes={VEHICLE_TYPES}
+                selectedIds={formData.vehicleTypeIds}
+                // toggle behavior for multi-select: add if missing, remove if present
+                onSelect={(id) => {
+                  if (!id) return;
+                  setFormData(prev => {
+                    const current = new Set((prev.vehicleTypeIds || []).map(String));
+                    const sid = String(id);
+                    if (current.has(sid)) {
+                      current.delete(sid);
+                    } else {
+                      current.add(sid);
+                    }
+                    const next = Array.from(current);
+                    return { ...prev, vehicleTypeIds: next };
+                  });
+                  if (errors.vehicleTypeIds) {
+                    setErrors(prev => ({ ...prev, vehicleTypeIds: "" }));
+                  }
+                }}
+                singleSelect={false}
+                error={errors.vehicleTypeIds}
+                disabled={loading}
+              />
+
+              {errors.vehicleTypeIds && (
+                <div className="error-message">{errors.vehicleTypeIds}</div>
+              )}
+              <small className="form-help">
+                Chọn một hoặc nhiều model xe từ danh sách. Chạm hoặc click để chọn.
+              </small>
+            </div>
+          </div>
+        )}
+
+        {/* Status và EVM Approval */}
+        <div className="form-section">
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Trạng thái</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="form-control"
+                disabled={loading}
+              >
+                {RECALL_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+                
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Phê duyệt EVM</label>
+              <select
+                name="evmApprovalStatus"
+                value={formData.evmApprovalStatus}
+                onChange={handleChange}
+                className="form-control"
+                disabled={loading || !isEVMAdmin}
+              >
+                <option value="WAITING">Chờ phê duyệt</option>
+                <option value="Approved">Đã phê duyệt</option>
+                <option value="Disapproved">Không phê duyệt</option>
+              </select>
+              {!isEVMAdmin && (
+                <small className="form-help">
+                  Chỉ EVM Admin có thể thay đổi trạng thái phê duyệt
+                </small>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* SC Technician 
         <div className="form-section">
           <div className="form-group">
-            <label className="form-label">Loại xe bị ảnh hưởng *</label>
-            <textarea
-              name="vehicleTypeIds"
-              value={formData.vehicleTypeIds.join("\n")}
-              onChange={(e) => {
-                const ids = e.target.value.split("\n").filter(id => id.trim());
-                setFormData(prev => ({ ...prev, vehicleTypeIds: ids }));
-                if (errors.vehicleTypeIds) {
-                  setErrors(prev => ({ ...prev, vehicleTypeIds: "" }));
-                }
-              }}
-              className={`form-control ${errors.vehicleTypeIds ? "error" : ""}`}
-              rows="4"
-              placeholder="Nhập mỗi ID loại xe trên một dòng&#10;VD:&#10;VF8&#10;VF9"
+            <label className="form-label">Kỹ thuật viên SC (SC Technician)</label>
+            <select
+              name="scTechnicianId"
+              value={formData.scTechnicianId}
+              onChange={handleChange}
+              className="form-control"
               disabled={loading}
-            />
-            {errors.vehicleTypeIds && (
-              <div className="error-message">{errors.vehicleTypeIds}</div>
+            >
+              <option value="">-- Chọn kỹ thuật viên (tùy chọn) --</option>
+              {technicians.map((tech) => (
+                <option key={tech.id} value={tech.id}>
+                  {tech.name} - {tech.specialty || 'Chưa có chuyên môn'}
+                </option>
+              ))}
+            </select>
+            {errors.scTechnicianId && (
+              <div className="error-message">{errors.scTechnicianId}</div>
             )}
-            <small className="form-help">
-              Nhập mỗi ID loại xe trên một dòng. VD: VF5, VF6, VF7, VF8, VF9, VF e34
-            </small>
           </div>
         </div>
-
-        {/* VINs cụ thể */}
-        <div className="form-section">
-          <div className="form-group">
-            <label className="form-label">VIN cụ thể (tùy chọn)</label>
-            <textarea
-              name="vehicleId"
-              value={formData.vehicleId.join("\n")}
-              onChange={(e) => {
-                const vins = e.target.value.split("\n").filter(v => v.trim());
-                setFormData(prev => ({ ...prev, vehicleId: vins }));
-              }}
-              className="form-control"
-              rows="4"
-              placeholder="Nhập mỗi VIN trên một dòng&#10;VD:&#10;VF8ABCDE12345678&#10;VF9FGHIJ87654321"
-              disabled={loading}
-            />
-            <small className="form-help">
-              Để trống nếu áp dụng cho tất cả xe thuộc loại đã chọn. Nhập mỗi VIN trên một dòng.
-            </small>
-          </div>
-        </div>
-
-        {/* Technician IDs */}
-        <div className="form-section">
-          <div className="form-group">
-            <label className="form-label">ID Kỹ thuật viên (tùy chọn)</label>
-            <textarea
-              name="technicianIds"
-              value={formData.technicianIds.join("\n")}
-              onChange={(e) => {
-                const ids = e.target.value.split("\n").filter(id => id.trim());
-                setFormData(prev => ({ ...prev, technicianIds: ids }));
-              }}
-              className="form-control"
-              rows="3"
-              placeholder="Nhập mỗi ID kỹ thuật viên trên một dòng&#10;VD:&#10;TECH001&#10;TECH002"
-              disabled={loading}
-            />
-            <small className="form-help">
-              Để trống nếu chưa phân công. Nhập mỗi ID trên một dòng.
-            </small>
-          </div>
-        </div>
-
+      */}
+        {/* ===== TEXT INPUT / TEXTAREA SECTIONS (BOTTOM) ===== */}
+        
         {/* Ngày bắt đầu */}
         <div className="form-section">
           <div className="form-group">
@@ -334,47 +516,6 @@ function RecallForm({ recall, onSave, onCancel }) {
           </div>
         </div>
 
-        {/* Status và EVM Approval */}
-        <div className="form-section">
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Trạng thái</label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="form-control"
-                disabled={loading}
-              >
-                <option value="INACTIVE">Chưa kích hoạt</option>
-                <option value="ACTIVE">Đang hoạt động</option>
-                <option value="COMPLETED">Hoàn thành</option>
-                <option value="CANCELLED">Đã hủy</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Phê duyệt EVM</label>
-              <select
-                name="evmApprovalStatus"
-                value={formData.evmApprovalStatus}
-                onChange={handleChange}
-                className="form-control"
-                disabled={loading || !isEVMAdmin}
-              >
-                <option value="WAITING">Chờ phê duyệt</option>
-                <option value="Approved">Đã phê duyệt</option>
-                <option value="Disapproved">Không phê duyệt</option>
-              </select>
-              {!isEVMAdmin && (
-                <small className="form-help">
-                  Chỉ EVM Admin có thể thay đổi trạng thái phê duyệt
-                </small>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* Notification Sent */}
         <div className="form-section">
           <div className="form-group">
@@ -435,3 +576,120 @@ function RecallForm({ recall, onSave, onCancel }) {
 }
 
 export default RecallForm;
+
+/* -------------------------------------------------------------------------
+  VehicleTypeDropdown - small local component that renders a toggle button
+  and an expandable panel containing the checkbox grid. Implemented here to
+  avoid adding new files. Handles outside click to close.
+------------------------------------------------------------------------- */
+function VehicleTypeDropdown({ vehicleTypes, selectedIds, onSelect, singleSelect = false, disabled }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const toggleRef = useRef(null);
+  const panelRef = useRef(null);
+  const [panelStyle, setPanelStyle] = useState({});
+
+  useEffect(() => {
+    const handleOutside = (e) => {
+      // Click inside the original dropdown wrapper should keep open
+      if (dropdownRef.current && dropdownRef.current.contains(e.target)) return;
+      // Click inside the portal panel should also keep open
+      if (panelRef.current && panelRef.current.contains(e.target)) return;
+      // Otherwise close
+      setOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  // adjust panel width to match toggle width when opened
+  useEffect(() => {
+    if (!open) return;
+
+    const adjust = () => {
+      const toggleEl = toggleRef.current;
+      if (!toggleEl) return;
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const rect = toggleEl.getBoundingClientRect();
+      // prefer matching toggle width, but clamp to viewport and a sensible max
+      const maxAllowed = Math.min(760, viewportWidth - 32);
+      const width = Math.min(rect.width || toggleEl.offsetWidth, maxAllowed);
+
+      // compute fixed position to avoid clipping by parent overflow/staking contexts
+      if (viewportWidth <= 768) {
+        setPanelStyle({ position: 'fixed', width: 'calc(100% - 16px)', left: 8, top: rect.bottom + 8 });
+      } else {
+        setPanelStyle({ position: 'fixed', width: width + 'px', left: rect.left + 'px', top: rect.bottom + 8 + 'px' });
+      }
+    };
+
+    adjust();
+    window.addEventListener('resize', adjust);
+    window.addEventListener('scroll', adjust, true);
+    return () => {
+      window.removeEventListener('resize', adjust);
+      window.removeEventListener('scroll', adjust, true);
+    };
+  }, [open]);
+
+  // normalize selected ids to strings to avoid type-mismatch (number vs string)
+  const normalizedSelectedIds = new Set((selectedIds || []).map(String));
+  const selectedLabels = vehicleTypes
+    .filter((vt) => normalizedSelectedIds.has(String(vt.id)))
+    .map((vt) => vt.name + " (" + vt.id + ")");
+
+  return (
+    <div className="vehicle-dropdown" ref={dropdownRef}>
+      <button
+        type="button"
+        className={`form-control vehicle-dropdown-toggle ${selectedIds.length ? 'has-value' : ''}`}
+        ref={toggleRef}
+        onClick={() => !disabled && setOpen((s) => !s)}
+        aria-expanded={open}
+        disabled={disabled}
+      >
+        <span className="vehicle-dropdown-label">
+          {selectedLabels.length > 0 ? selectedLabels.join(', ') : 'Chọn model xe...'}
+        </span>
+        <span className={`caret ${open ? 'open' : ''}`}></span>
+      </button>
+
+      {open && createPortal(
+  <div ref={panelRef} className="vehicle-dropdown-panel" style={{ ...panelStyle, zIndex: 9999 }}>
+          <div className="vehicle-types-grid">
+            {vehicleTypes.map((vt) => (
+              <div className="vehicle-item" key={vt.id}>
+                <label
+                  className="vehicle-checkbox"
+                    onClick={(e) => {
+                    e.preventDefault();
+                    // debug: log which id was clicked and current selection
+                    // notify click to toggle selection
+                    if (singleSelect) {
+                      onSelect && onSelect(vt.id);
+                      setOpen(false);
+                    } else {
+                      // For multi-select always notify caller with the id; caller will toggle
+                      onSelect && onSelect(vt.id);
+                    }
+                  }}
+                >
+                  <input
+                    type={singleSelect ? 'radio' : 'checkbox'}
+                    name={singleSelect ? 'vehicle-type-radio' : undefined}
+                    checked={normalizedSelectedIds.has(String(vt.id))}
+                    readOnly
+                    disabled={disabled}
+                  />
+                  <span>{vt.name} ({vt.id})</span>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}

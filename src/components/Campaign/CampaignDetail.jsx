@@ -5,7 +5,6 @@ import vehicleDistributionService from "../../services/VehicleDistributionServic
 import appointmentSchedulingService from "../../services/AppointmentSchedulingService";
 import workAssignmentService from "../../services/WorkAssignmentService";
 import campaignResultTrackingService from "../../services/CampaignResultTrackingService";
-import reportConfirmationService from "../../services/ReportConfirmationService";
 import rolePermissionService from "../../services/RolePermissionService";
 import { useAuth } from "../../contexts/AuthContext";
 import { Wrench } from "lucide-react";
@@ -14,12 +13,7 @@ function CampaignDetail({ item, type, onEdit, onUpdateStatus, userRole }) {
   const { user } = useAuth();
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState("");
-  const [workflowData, setWorkflowData] = useState({
-    distribution: null,
-    schedule: null,
-    assignment: null,
-    tracking: null,
-  });
+  
   const [isProcessing, setIsProcessing] = useState(false);
   const [processLog, setProcessLog] = useState([]);
 
@@ -405,13 +399,7 @@ function CampaignDetail({ item, type, onEdit, onUpdateStatus, userRole }) {
         `✅ Đã khởi tạo theo dõi cho ${trackingResult.centerResults.length} trung tâm`,
       ]);
 
-      // Update workflow data
-      setWorkflowData({
-        distribution: distributionResult,
-        schedule: scheduleResult,
-        assignment: assignmentResult,
-        tracking: trackingResult,
-      });
+      // workflow data updated (internal)
 
       setProcessLog((prev) => [
         ...prev,

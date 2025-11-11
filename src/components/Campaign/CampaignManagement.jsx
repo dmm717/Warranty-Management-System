@@ -31,7 +31,7 @@ function CampaignManagement() {
     { CampaignsID: "SC001", SC_TechnicianID: "T002" },
   ]);
   const [vehicles, setVehicles] = useState([]);
-  const [recallVehicleMap, setRecallVehicleMap] = useState([]);
+  
 
   useEffect(() => {
     fetchData();
@@ -85,13 +85,9 @@ function CampaignManagement() {
 
       // Nếu là SC_TECHNICAL, chỉ lấy recalls được assign cho technician này
       if (user?.role === "SC_TECHNICAL" && user?.id) {
-        console.log("🔍 SC_TECHNICAL detected, fetching assigned recalls...");
-        console.log("👤 User ID:", user.id);
-        
         try {
           // Bước 1: Lấy technician info từ userId bằng API mới
           const techResponse = await scTechnicianAPI.getTechnicianByUserId(user.id);
-          console.log("🎯 Current technician:", techResponse.data);
           
           if (techResponse.success && techResponse.data?.id) {
             const technicianId = techResponse.data.id;
@@ -99,18 +95,15 @@ function CampaignManagement() {
             // Bước 2: Thử lấy recalls của technician từ API mới
             try {
               const recallsRes = await recallAPI.getRecallsByTechnicianId(technicianId);
-              console.log("📋 Recalls for technician (từ API):", recallsRes.data);
-              console.log("📋 API success status:", recallsRes.success);
               
               if (recallsRes.success && recallsRes.data) {
                 recallsData = Array.isArray(recallsRes.data) ? recallsRes.data : [];
-                console.log("✅ Sử dụng data từ API mới");
               } else {
                 // API không success hoặc data rỗng -> fallback
                 throw new Error("API returned no data");
               }
             } catch (apiError) {
-              console.warn("⚠️ API /technicians/{id}/recalls lỗi, fallback về filter...", apiError);
+                console.warn("⚠️ API /technicians/{id}/recalls lỗi, fallback về filter...", apiError);
               
               // Fallback: Lấy tất cả recalls rồi filter
               const allRecallsRes = await recallAPI.getAllRecalls({
@@ -133,12 +126,10 @@ function CampaignManagement() {
                     }
                   })
                 );
-                
                 // Filter recalls có technicianId
                 recallsData = recallsWithDetails.filter(recall => 
                   recall.technicianBasicDTOS?.some(tech => tech.id === technicianId)
                 );
-                console.log("📋 Filtered recalls:", recallsData);
               }
             }
           } else {
@@ -163,30 +154,72 @@ function CampaignManagement() {
 
       // Transform data
       if (recallsData.length > 0) {
-        const transformedRecalls = recallsData.map((recall) => ({
-          // Map backend fields to frontend format
-          Recall_ID: recall.id,
-          id: recall.id,
-          RecallName: recall.name,
-          name: recall.name,
-          Description: recall.description,
-          description: recall.description,
-          IssueDescription: recall.description,
-          StartDate: recall.startDate,
-          startDate: recall.startDate,
-          EndDate: recall.endDate,
-          endDate: recall.endDate,
-          Status: recall.status,
-          status: recall.status,
-          NotificationSent: recall.notificationSent,
-          notificationSent: recall.notificationSent,
-          VehicleModels: recall.vehicleTypes?.map(vt => vt.id) || [],
-          vehicleTypes: recall.vehicleTypes || [],
-          vehicles: recall.vehicles || [],
-          technicians: recall.technicians || [],
-          reports: recall.reports || [],
-          technicianBasicDTOS: recall.technicianBasicDTOS || [],
-        }));
+        const transformedRecalls = recallsData.map((recall) => {
+          // Prefer detailed DTOs if backend returns them (matches swagger example)
+          const vehicleTypeInfo = recall.vehicleTypeInfoDTOS || recall.vehicleTypes || [];
+          const vehicleBasicInfo = recall.vehicleBasicInfoDTOS || recall.vehicles || [];
+          const technicianBasic = recall.technicianBasicDTOS || recall.technicians || [];
+
+          // Prepare display-friendly arrays (names instead of raw foreign keys)
+          let VehicleModels = [];
+          let VehicleModelIds = [];
+
+          if (Array.isArray(vehicleTypeInfo) && vehicleTypeInfo.length) {
+            VehicleModels = vehicleTypeInfo.map((vt) => vt.modelName || vt.name || vt.id);
+            VehicleModelIds = vehicleTypeInfo.map((vt) => vt.id).filter(Boolean);
+          } else if (typeof recall.vehicleTypeCount === "number" && recall.vehicleTypeCount > 0) {
+            // Backend list may only return a count of vehicle types — show a friendly label
+            VehicleModels = [`${recall.vehicleTypeCount} loại`];
+          } else if (Array.isArray(recall.VehicleModels) && recall.VehicleModels.length) {
+            VehicleModels = recall.VehicleModels;
+          }
+
+          const VehicleNames = Array.isArray(vehicleBasicInfo)
+            ? vehicleBasicInfo.map((v) => v.vehicleName || v.vehicleId || v.model)
+            : [];
+
+          const TechnicianNames = Array.isArray(technicianBasic)
+            ? technicianBasic.map((t) => t.name || t.id)
+            : [];
+
+          // Additional fields for scope display (may be absent in list response)
+          const ProductionYears = recall.productionYears || recall.ProductionYears || [];
+          const Regions = recall.regions || recall.Regions || [];
+          const VehicleCount = recall.vehicleCount || recall.VehicleCount || recall.vehicleCount || 0;
+          const TechnicianCount = recall.technicianCount || recall.TechnicianCount || 0;
+
+          return {
+            Recall_ID: recall.id,
+            id: recall.id,
+            RecallName: recall.name,
+            name: recall.name,
+            Description: recall.description,
+            description: recall.description,
+            IssueDescription: recall.description,
+            StartDate: recall.startDate,
+            startDate: recall.startDate,
+            EndDate: recall.endDate,
+            endDate: recall.endDate,
+            Status: recall.status,
+            status: recall.status,
+            NotificationSent: recall.notificationSent,
+            notificationSent: recall.notificationSent,
+            // keep raw DTOs available for detail views
+            vehicleTypeInfoDTOS: vehicleTypeInfo,
+            vehicleBasicInfoDTOS: vehicleBasicInfo,
+            technicianBasicDTOS: technicianBasic,
+            // UI-friendly fields
+            VehicleModels,
+            VehicleModelIds,
+            VehicleNames,
+            TechnicianNames,
+            ProductionYears,
+            Regions,
+            VehicleCount,
+            TechnicianCount,
+            reports: recall.reports || [],
+          };
+        });
 
         setRecalls(transformedRecalls);
       } else {
@@ -264,8 +297,69 @@ function CampaignManagement() {
     setShowDetail(false);
   };
 
-  const handleEdit = (item, type) => {
-    setSelectedItem(item);
+  const handleEdit = async (item, type) => {
+    // Normalize recall object shape before opening edit form so fields populate
+    if (type === "recall" && item) {
+      // Always fetch full recall detail to ensure Edit form is fully prefilling
+      // (this guarantees fields like `specialty` are available).
+      let full = item;
+      try {
+        setLoading(true);
+        const recallId = item.id || item.Recall_ID;
+        if (recallId) {
+          const detailRes = await recallAPI.getRecallById(recallId);
+          if (detailRes && detailRes.success && detailRes.data) {
+            full = detailRes.data;
+          } else {
+            console.warn("handleEdit: recall detail API returned no data or error", detailRes);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch recall detail, using summary item", err);
+      } finally {
+        setLoading(false);
+      }
+
+      const normalized = {
+        ...full,
+        id: item.id || item.Recall_ID || item.id || null,
+        Recall_ID: item.Recall_ID || item.id || item.Recall_ID || null,
+        name: full.name || full.RecallName || full.name || "",
+        RecallName: full.RecallName || full.name || full.RecallName || "",
+        issueDescription: full.issueDescription || full.IssueDescription || full.description || "",
+        IssueDescription: full.IssueDescription || full.issueDescription || full.description || "",
+        startDate: full.startDate || full.StartDate || full.startDate || "",
+        StartDate: full.StartDate || full.startDate || full.StartDate || "",
+        requiredAction: full.requiredAction || full.RequiredAction || "",
+        partsRequired: full.partsRequired || full.PartsRequired || "",
+        status: full.status || full.Status || "",
+        notificationSent: full.notificationSent ?? full.NotificationSent ?? false,
+        evmApprovalStatus: full.evmApprovalStatus || full.EvmApprovalStatus || "WAITING",
+        // vehicleTypeIds should be an array of ids (for form selection). Backend may supply:
+        // - vehicleTypeIds (ids)
+        // - VehicleModelIds (we created during transform)
+        // - vehicleTypes (array of objects)
+        // - VehicleModels (might be names) -> not usable for ids
+        vehicleTypeIds:
+          full.vehicleTypeIds ||
+          full.VehicleModelIds ||
+          (full.vehicleTypeInfoDTOS ? full.vehicleTypeInfoDTOS.map((v) => v.id) : null) ||
+          (full.vehicleTypes ? full.vehicleTypes.map((v) => v.id) : []) ||
+          [],
+        // Keep VehicleModels as display names if available (used by lists)
+        VehicleModels: full.VehicleModels || (full.vehicleTypeInfoDTOS ? full.vehicleTypeInfoDTOS.map(v => v.modelName || v.name || v.id) : []),
+        // technicianIds prefer ids from technicianBasicDTOS or technicians
+        technicianIds: full.technicianIds || (full.technicianBasicDTOS ? full.technicianBasicDTOS.map(t => t.id) : full.technicians || []),
+        // vehicleId: prefer vehicleBasicInfoDTOS vehicleId values if present
+        vehicleId: full.vehicleId || (full.vehicleBasicInfoDTOS ? full.vehicleBasicInfoDTOS.map(v => v.vehicleId || v.VIN) : full.VIN ? [full.VIN] : []),
+      };
+
+  // normalized object prepared for edit form
+
+      setSelectedItem(normalized);
+    } else {
+      setSelectedItem(item);
+    }
     setFormType(type);
     setShowForm(true);
     setShowDetail(false);
@@ -350,17 +444,30 @@ function CampaignManagement() {
         } else {
           // Create new recall
           const newRecall = {
+            // keep raw item data
             ...itemData,
-            Recall_ID: `RC${String(recalls.length + 1).padStart(3, "0")}`,
+            // ensure a stable id/code
+            Recall_ID: `RC${String((recalls || []).length + 1).padStart(3, "0")}`,
+            id: itemData.id || null,
+            // normalized fields used by RecallList
+            RecallName: itemData.name || itemData.RecallName || "",
+            name: itemData.name || itemData.RecallName || "",
+            IssueDescription: itemData.issueDescription || itemData.IssueDescription || "",
+            StartDate: itemData.startDate || itemData.StartDate || new Date().toISOString(),
+            startDate: itemData.startDate || itemData.StartDate || new Date().toISOString(),
             Status: "Pending", // EVM_ADMIN creates with Pending status
-            NotificationSent: 0,
+            NotificationSent: itemData.notificationSent ?? 0,
             CompletedVehicles: 0,
             AffectedVehicles: 0,
             CreatedDate: new Date().toISOString(),
             CreatedBy: user?.role || "EVM_ADMIN",
+            // VehicleModels is what RecallList expects (array of ids)
+            VehicleModels: itemData.vehicleTypeIds || itemData.VehicleModels || [],
+            vehicleTypes: itemData.vehicleTypes || [],
           };
 
-          setRecalls([...recalls, newRecall]);
+          // Prepend the new recall but ensure it's in the same shape as fetched recalls
+          setRecalls((prev) => [newRecall, ...(prev || [])]);
           toast.success(
             "Tạo Recall thành công! EVM_STAFF sẽ nhận được thông báo."
           );
@@ -529,7 +636,11 @@ function CampaignManagement() {
           </button>
         )}
       </div>
-
+      {error && (
+        <div className="alert alert-danger" style={{ margin: '12px 0' }}>
+          {error}
+        </div>
+      )}
       {!showForm && !showDetail ? (
         <>
           <div className="campaign-tabs">
