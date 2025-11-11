@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { LayoutDashboard, Car, Wrench, Package, Users, FileText, Megaphone, UserCircle } from "lucide-react";
+import { LayoutDashboard, Car, Wrench, Package, Users, FileText, Megaphone, UserCircle, Truck } from "lucide-react";
 import "../../styles/Sidebar.css";
 
 function Sidebar() {
@@ -52,6 +52,12 @@ function Sidebar() {
       name: "Báo cáo",
       icon: <FileText size={20} />,
       roles: ["SC_STAFF", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
+    },
+    {
+      path: "/shipping",
+      name: "Giao hàng GHN",
+      icon: <Truck size={20} />,
+      roles: ["EVM_STAFF"],
     },
     {
       path: "/users",
