@@ -5,7 +5,7 @@ import StatsCard from "./StatsCard";
 import ChartComponent from "./ChartComponent";
 import RecentActivity from "./RecentActivity";
 import EVMStaffDashboard from "./EVMStaffDashboard";
-import { Check, X, FileClock, Bike, Wrench, Clock } from 'lucide-react';
+import { Check, X, FileClock, Bike, Wrench, Clock } from "lucide-react";
 import "../../styles/Dashboard.css";
 
 function Dashboard() {
@@ -33,6 +33,9 @@ function Dashboard() {
     // Skip loading for EVM_STAFF as they have dedicated dashboard
     if (user?.role !== "EVM_STAFF") {
       loadDashboard();
+    } else {
+      // EVM_STAFF không cần load data ở đây, set loading = false ngay
+      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role]);
@@ -162,6 +165,11 @@ function Dashboard() {
     return "Dashboard";
   };
 
+  // Render dashboard đặc biệt cho EVM_STAFF
+  if (user?.role === "EVM_STAFF") {
+    return <EVMStaffDashboard />;
+  }
+
   return (
     <div className="dashboard">
       <div className="dashboard-header">
@@ -184,22 +192,19 @@ function Dashboard() {
         </div>
       )}
 
-      
-
       <div className="dashboard-row">
-          <div className="dashboard-col-8">
-            
-            <div className="stats-grid">
-              {statsData.map((stat, index) => (
-                <StatsCard key={index} {...stat} />
-              ))}
-            </div>
-            <ChartComponent userRole={user?.role} />
+        <div className="dashboard-col-8">
+          <div className="stats-grid">
+            {statsData.map((stat, index) => (
+              <StatsCard key={index} {...stat} />
+            ))}
           </div>
-          <div className="dashboard-col-4">
-            <RecentActivity userRole={user?.role} />
-          </div>
+          <ChartComponent userRole={user?.role} />
         </div>
+        <div className="dashboard-col-4">
+          <RecentActivity userRole={user?.role} />
+        </div>
+      </div>
     </div>
   );
 }

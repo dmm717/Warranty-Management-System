@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { Check, Wrench, Package, AlertTriangle, Megaphone, Bell } from 'lucide-react';
+import {
+  Check,
+  Wrench,
+  Package,
+  AlertTriangle,
+  Megaphone,
+  Bell,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { notificationAPI } from "../../services/api";
 import "./NotificationBell.css";
@@ -32,7 +39,7 @@ function NotificationBell() {
   };
 
   useEffect(() => {
-    if (user && user.role !== "SC_TECHNICAL") {
+    if (user) {
       fetchUnreadNotifications();
       // Poll every 30 seconds
       const interval = setInterval(fetchUnreadNotifications, 30000);
@@ -53,8 +60,8 @@ function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Don't show notification bell for SC_TECHNICAL
-  if (!user || user.role === "SC_TECHNICAL") {
+  // Show notification bell for all users
+  if (!user) {
     return null;
   }
 
@@ -99,6 +106,7 @@ function NotificationBell() {
       WARRANTY_CLAIM: "🔧",
       WARRANTY_CLAIM_APPROVED: "✅",
       WARRANTY_CLAIM_REJECTED: "❌",
+      CLAIM_ASSIGNED: "👤",
       PARTS_REQUEST: "📦",
       PARTS_REQUEST_APPROVED: "✅",
       PARTS_REQUEST_REJECTED: "❌",
@@ -117,7 +125,8 @@ function NotificationBell() {
       if (
         notification.type === "WARRANTY_CLAIM" ||
         notification.type === "WARRANTY_CLAIM_APPROVED" ||
-        notification.type === "WARRANTY_CLAIM_REJECTED"
+        notification.type === "WARRANTY_CLAIM_REJECTED" ||
+        notification.type === "CLAIM_ASSIGNED"
       ) {
         // Navigate đến trang warranty claims với claimId
         navigate("/warranty-claims", {

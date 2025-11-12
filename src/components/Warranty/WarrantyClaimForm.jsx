@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { vehicleAPI } from "../../services/api";
+import WarrantyPolicyChecker from "./WarrantyPolicyChecker";
 import "../../styles/WarrantyClaimForm.css";
 
 function WarrantyClaimForm({ claim, onSave, onCancel }) {
@@ -15,7 +16,15 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
 
   const [errors, setErrors] = useState({});
   const [vehicles, setVehicles] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(false);
+  const [showPolicyChecker, setShowPolicyChecker] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState(null); // Changed to store VIN for comprehensive warranty check
+
+  // State for warranty policy validation
+  const [policyChecked, setPolicyChecked] = useState(false);
+  const [policyEligible, setPolicyEligible] = useState(false);
+  const [policyCheckResult, setPolicyCheckResult] = useState(null);
 
   useEffect(() => {
     fetchVehicles();
@@ -51,6 +60,7 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
           owner: vehicle.owner,
           phoneNumber: vehicle.phoneNumber,
           email: vehicle.email,
+          vehicleTypeId: vehicle.vehicleTypeId, // Thêm vehicleTypeId để check warranty policy
         }));
 
         setVehicles(transformedVehicles);
@@ -90,6 +100,13 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
         customerPhone: selectedVehicle.phoneNumber,
         email: selectedVehicle.email,
       }));
+      // Lưu vehicleId (VIN) để kiểm tra warranty policy toàn diện
+      setSelectedVehicleId(vehicleId);
+
+      // Reset policy check when vehicle changes
+      setPolicyChecked(false);
+      setPolicyEligible(false);
+      setPolicyCheckResult(null);
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -98,7 +115,26 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
         customerPhone: "",
         email: "",
       }));
+      setSelectedVehicleId(null);
+      setPolicyChecked(false);
+      setPolicyEligible(false);
+      setPolicyCheckResult(null);
     }
+  };
+
+  const handleCheckWarrantyPolicy = () => {
+    if (!formData.vehicleId) {
+      alert("Vui lòng chọn xe trước khi kiểm tra chính sách bảo hành!");
+      return;
+    }
+    setShowPolicyChecker(true);
+  };
+
+  const handlePolicyCheckComplete = (checkResult) => {
+    setPolicyChecked(true);
+    setPolicyEligible(checkResult.isEligible);
+    setPolicyCheckResult(checkResult);
+    setShowPolicyChecker(false);
   };
 
   const validateForm = () => {
@@ -155,7 +191,8 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
         issueDescription: formData.issueDescription,
         requiredPart: formData.requiredPart || null,
         claimDate: formatDateForBackend(formData.claimDate), // Convert yyyy-MM-dd to dd-MM-yyyy
-      };      onSave(requestData);
+      };
+      onSave(requestData);
     }
   };
 
@@ -191,6 +228,120 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
               )}
             </div>
           </div>
+          {formData.vehicleId && (
+            <div className="form-row">
+              <div className="form-group">
+                <div
+                  className={`policy-check-section ${
+                    policyChecked
+                      ? policyEligible
+                        ? "checked-eligible"
+                        : "checked-ineligible"
+                      : ""
+                  }`}
+                >
+                  <label
+                    className="form-label"
+                    style={{ marginBottom: "12px", display: "block" }}
+                  >
+                    🛡️ Kiểm tra chính sách bảo hành *
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={handleCheckWarrantyPolicy}
+                    className={`btn btn-outline btn-check-policy ${
+                      policyChecked ? "checked" : ""
+                    }`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      width: "100%",
+                      justifyContent: "center",
+                      backgroundColor: policyChecked
+                        ? policyEligible
+                          ? "#d4edda"
+                          : "#f8d7da"
+                        : "",
+                      borderColor: policyChecked
+                        ? policyEligible
+                          ? "#28a745"
+                          : "#dc3545"
+                        : "#6c757d",
+                      color: policyChecked
+                        ? policyEligible
+                          ? "#155724"
+                          : "#721c24"
+                        : "#495057",
+                    }}
+                  >
+                    <span style={{ fontSize: "20px" }}>
+                      {policyChecked ? (policyEligible ? "✅" : "❌") : "🛡️"}
+                    </span>
+                    <span>
+                      {policyChecked
+                        ? policyEligible
+                          ? "Xe đủ điều kiện bảo hành"
+                          : "Xe KHÔNG đủ điều kiện"
+                        : "Click để kiểm tra chính sách bảo hành"}
+                    </span>
+                  </button>
+
+                  {/* Help text */}
+                  {!policyChecked && (
+                    <div
+                      className="policy-warning"
+                      style={{ marginTop: "12px" }}
+                    >
+                      <span>⚠️</span>
+                      <span>
+                        Bắt buộc: Vui lòng kiểm tra chính sách bảo hành trước
+                        khi tạo claim
+                      </span>
+                    </div>
+                  )}
+
+                  {policyChecked && policyEligible && (
+                    <div
+                      className="policy-success"
+                      style={{ marginTop: "12px" }}
+                    >
+                      <span>✅</span>
+                      <span>
+                        Tuyệt vời! Xe này đủ điều kiện bảo hành. Bạn có thể tiếp
+                        tục tạo claim.
+                      </span>
+                    </div>
+                  )}
+
+                  {policyChecked && !policyEligible && (
+                    <div
+                      className="policy-warning error"
+                      style={{ marginTop: "12px" }}
+                    >
+                      <span>❌</span>
+                      <span>
+                        Xe này không đủ điều kiện bảo hành.
+                        {policyCheckResult?.reasons &&
+                          policyCheckResult.reasons.length > 0 && (
+                            <span
+                              style={{
+                                display: "block",
+                                marginTop: "8px",
+                                fontSize: "12px",
+                              }}
+                            >
+                              Lý do: {policyCheckResult.reasons.join(", ")}
+                            </span>
+                          )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="form-section">
@@ -288,11 +439,52 @@ function WarrantyClaimForm({ claim, onSave, onCancel }) {
           <button type="button" onClick={onCancel} className="btn btn-outline">
             Hủy
           </button>
-          <button type="submit" className="btn btn-primary">
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={formData.vehicleId && (!policyChecked || !policyEligible)}
+            title={
+              !policyChecked
+                ? "Vui lòng kiểm tra chính sách bảo hành trước"
+                : !policyEligible
+                ? "Xe không đủ điều kiện bảo hành"
+                : ""
+            }
+          >
             {claim ? "Cập nhật" : "Tạo yêu cầu"}
           </button>
         </div>
+
+        {/* Warning message when button is disabled */}
+        {formData.vehicleId && (!policyChecked || !policyEligible) && (
+          <div
+            style={{
+              marginTop: "16px",
+              padding: "12px",
+              backgroundColor: "#fff3cd",
+              border: "1px solid #ffc107",
+              borderRadius: "4px",
+              textAlign: "center",
+              color: "#856404",
+            }}
+          >
+            {!policyChecked &&
+              "⚠️ Vui lòng kiểm tra chính sách bảo hành trước khi tạo yêu cầu"}
+            {policyChecked &&
+              !policyEligible &&
+              "❌ Xe không đủ điều kiện bảo hành. Không thể tạo claim."}
+          </div>
+        )}
       </form>
+
+      {/* Warranty Policy Checker Modal */}
+      {showPolicyChecker && selectedVehicleId && (
+        <WarrantyPolicyChecker
+          vehicleId={selectedVehicleId}
+          onClose={() => setShowPolicyChecker(false)}
+          onCheckComplete={handlePolicyCheckComplete}
+        />
+      )}
     </div>
   );
 }

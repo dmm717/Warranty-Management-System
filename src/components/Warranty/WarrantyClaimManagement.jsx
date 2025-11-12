@@ -59,15 +59,12 @@ function WarrantyClaimManagement() {
       });
 
       if (response.success && response.data?.content) {
-        // Debug: Xem data thực tế từ Backend
         // Transform data từ BE sang format FE - match với Backend DTOs
         const transformedClaims = response.data.content.map((claim) => ({
           claimId: claim.claimId,
           customerName: claim.customerName,
           customerPhone: claim.customerPhone,
-          // claimDate: Backend trả LocalDate "yyyy-MM-dd", có thể null
           claimDate: claim.claimDate || new Date().toISOString().split("T")[0],
-          // status: Backend có thể trả enum string hoặc null
           status: claim.status || "PENDING",
           vehicleName: claim.vehicleName || "N/A",
         }));
@@ -206,6 +203,40 @@ function WarrantyClaimManagement() {
     }
   };
 
+  const handleDeleteClaim = async (claimId) => {
+    try {
+      setLoading(true);
+      const response = await warrantyClaimAPI.deleteClaim(claimId);
+
+      if (response.success || response.status === 200) {
+        await fetchClaims();
+        toast.success("Đã xóa yêu cầu bảo hành thành công", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+
+        // Nếu đang xem detail của claim bị xóa, quay về list
+        if (showDetail && selectedClaim?.claimId === claimId) {
+          setShowDetail(false);
+          setSelectedClaim(null);
+        }
+      } else {
+        toast.error("Không thể xóa yêu cầu bảo hành", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting claim:", error);
+      toast.error("Đã xảy ra lỗi khi xóa yêu cầu bảo hành", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUpdateStatus = async (
     claimId,
     newStatus,
@@ -323,6 +354,7 @@ function WarrantyClaimManagement() {
             onEdit={handleEditClaim}
             onView={handleViewDetail}
             onUpdateStatus={handleUpdateStatus}
+            onDelete={handleDeleteClaim}
             userRole={user?.role}
           />
         </>

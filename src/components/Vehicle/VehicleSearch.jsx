@@ -17,12 +17,6 @@ function VehicleSearch({ onSearch }) {
     onSearch(searchTerm, value);
   };
 
-  const clearSearch = () => {
-    setSearchTerm("");
-    setFilterType("all");
-    onSearch("", "all");
-  };
-
   return (
     <div className="vehicle-search card">
       <div className="search-row">
@@ -50,16 +44,7 @@ function VehicleSearch({ onSearch }) {
             <option value="all">Tất cả</option>
             <option value="Đang sử dụng">Đang sử dụng</option>
             <option value="Trong bảo hành">Trong bảo hành</option>
-            <option value="Ngừng hoạt động">Ngừng hoạt động</option>
-            <option value="Đã triệu hồi">Đã triệu hồi</option>
-            <option value="Đã thanh lý">Đã thanh lý</option>
           </select>
-        </div>
-
-        <div className="search-actions">
-          <button onClick={clearSearch} className="btn btn-outline">
-            Xóa bộ lọc
-          </button>
         </div>
       </div>
     </div>

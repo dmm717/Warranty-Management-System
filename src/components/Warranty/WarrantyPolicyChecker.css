@@ -1,0 +1,544 @@
+/* =============================================================================
+   WARRANTY POLICY CHECKER - Modal kiểm tra chính sách bảo hành
+   ============================================================================= */
+
+.warranty-checker-modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 700px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.checker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid #e0e0e0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.checker-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+}
+
+.checker-header .close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 28px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.checker-header .close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+/* Body */
+.checker-body {
+  padding: 24px;
+  min-height: 200px;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state p {
+  color: #666;
+  font-size: 15px;
+}
+
+/* Error Message */
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.error-icon {
+  font-size: 24px;
+}
+
+.error-message p {
+  margin: 0;
+  color: #856404;
+  font-weight: 500;
+}
+
+/* Check Result */
+.check-result {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Eligibility Status */
+.eligibility-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.eligibility-status.eligible {
+  background: #e8f5e9;
+  border: 2px solid #4caf50;
+}
+
+.eligibility-status.not-eligible {
+  background: #fff3e0;
+  border: 2px solid #ff9800;
+}
+
+.eligibility-status .status-icon {
+  font-size: 48px;
+  flex-shrink: 0;
+}
+
+.status-content h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+}
+
+.status-content p {
+  margin: 0;
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Vehicle Info */
+.vehicle-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  margin-bottom: 24px;
+}
+
+.vehicle-info label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #555;
+}
+
+.vehicle-info span {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* Policies Section */
+.policies-section {
+  margin-bottom: 24px;
+}
+
+.policies-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+}
+
+.policies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.policy-card {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+  transition: all 0.3s;
+}
+
+.policy-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  transform: translateX(4px);
+}
+
+.policy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.policy-header h5 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+}
+
+.coverage-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.coverage-badge.full {
+  background: #4caf50;
+  color: white;
+}
+
+.coverage-badge.partial {
+  background: #ff9800;
+  color: white;
+}
+
+.coverage-badge.battery_only {
+  background: #2196f3;
+  color: white;
+}
+
+.coverage-badge {
+  background: #9e9e9e;
+  color: white;
+}
+
+.policy-description {
+  margin: 0 0 12px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.policy-details {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.detail-item {
+  display: flex;
+  gap: 8px;
+}
+
+.detail-item .label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+}
+
+.detail-item .value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* Additional Info Section */
+.additional-info-section {
+  background: #e3f2fd;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #2196f3;
+  margin-bottom: 24px;
+}
+
+.additional-info-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1565c0;
+}
+
+.info-list {
+  margin: 0;
+  padding-left: 20px;
+  list-style: none;
+}
+
+.info-list li {
+  color: #424242;
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.info-list li::before {
+  content: "•";
+  position: absolute;
+  left: -15px;
+  color: #2196f3;
+  font-weight: bold;
+}
+
+/* Policy Reasons (per-policy) */
+.policy-reasons {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+}
+
+.policy-reasons strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #555;
+  font-size: 13px;
+}
+
+.policy-reasons ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style: none;
+}
+
+.policy-reasons li {
+  color: #666;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.policy-reasons li::before {
+  content: "→";
+  position: absolute;
+  left: -15px;
+  color: #ff9800;
+  font-weight: bold;
+}
+
+/* Policy Badges Container */
+.policy-badges {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Not Applicable Badge */
+.not-applicable-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #f44336;
+  color: white;
+}
+
+/* Applicable Badge */
+.applicable-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #4caf50;
+  color: white;
+}
+
+/* Usage Type Badge */
+.usage-type-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #2196f3;
+  color: white;
+}
+
+/* Not Applicable Policy Card */
+.policy-card.not-applicable {
+  opacity: 0.7;
+  border-color: #ff9800;
+  background: #fff8f0;
+}
+
+.policy-card.not-applicable:hover {
+  opacity: 1;
+  border-color: #f57c00;
+}
+
+/* Reasons Section (global) */
+.reasons-section {
+  background: #ffebee;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #f44336;
+}
+
+.reasons-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #c62828;
+}
+
+.reasons-section ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style: none;
+}
+
+.reasons-section li {
+  color: #424242;
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 8px;
+  position: relative;
+  font-weight: 500;
+}
+
+.reasons-section li::before {
+  content: "✗";
+  position: absolute;
+  left: -20px;
+  color: #f44336;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* No Data */
+.no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.no-data p {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* Footer */
+.checker-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 2px solid #e0e0e0;
+  background: #f8f9fa;
+}
+
+.checker-footer button {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-secondary {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background: #d0d0d0;
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .warranty-checker-modal {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .eligibility-status {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .policy-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .checker-footer {
+    flex-direction: column;
+  }
+
+  .checker-footer button {
+    width: 100%;
+  }
+}

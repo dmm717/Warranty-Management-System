@@ -178,6 +178,59 @@ export const warrantyClaimAPI = {
       `/WarrantyClaim/${claimId}/assign-tech?scTechId=${scTechId}`,
       { method: "PATCH" }
     ),
+
+  // POST /api/WarrantyClaim/{claimId}/start-work - SC Technical bắt đầu công việc
+  // Chuyển status từ APPROVED → IN_PROGRESS, lưu thời gian bắt đầu
+  startWork: (claimId, technicianUsername) =>
+    apiService.post(
+      `/WarrantyClaim/${claimId}/start-work?technicianUsername=${encodeURIComponent(
+        technicianUsername
+      )}`
+    ),
+
+  // DELETE /api/WarrantyClaim/{claimId} - SC_ADMIN xóa yêu cầu bảo hành
+  deleteClaim: (claimId) => apiService.delete(`/WarrantyClaim/${claimId}`),
+};
+
+// =============================================================================
+// SC TECHNICIAN APIs - Quản lý kỹ thuật viên
+// =============================================================================
+
+export const scTechnicianAPI = {
+  // GET /api/sc-technicians - Lấy danh sách kỹ thuật viên (có phân trang)
+  getAllTechnicians: (params = {}) => {
+    const { page = 0, size = 100, sortBy = "name", sortDir = "asc" } = params;
+    return apiService.get(
+      `/sc-technicians?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
+    );
+  },
+
+  // GET /api/sc-technicians/{id} - Lấy chi tiết kỹ thuật viên
+  getTechnicianById: (id) => apiService.get(`/sc-technicians/${id}`),
+
+  // GET /api/sc-technicians/branch/{branchOffice} - Lấy kỹ thuật viên theo chi nhánh
+  getTechniciansByBranch: (branchOffice, params = {}) => {
+    const { page = 0, size = 100 } = params;
+    return apiService.get(
+      `/sc-technicians/branch/${branchOffice}?page=${page}&size=${size}`
+    );
+  },
+
+  // GET /api/sc-technicians/specialty/{specialty} - Lấy kỹ thuật viên theo chuyên môn
+  getTechniciansBySpecialty: (specialty, params = {}) => {
+    const { page = 0, size = 100 } = params;
+    return apiService.get(
+      `/sc-technicians/specialty/${specialty}?page=${page}&size=${size}`
+    );
+  },
+
+  // GET /api/sc-technicians/search - Tìm kiếm kỹ thuật viên
+  searchTechnicians: (keyword, params = {}) => {
+    const { page = 0, size = 100, sortBy = "name", sortDir = "asc" } = params;
+    return apiService.get(
+      `/sc-technicians/search?keyword=${keyword}&page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
+    );
+  },
 };
 
 // =============================================================================
@@ -188,21 +241,82 @@ export const vehicleAPI = {
   // POST /api/ElectricVehicle - Thêm xe mới
   createVehicle: (data) => apiService.post("/ElectricVehicle", data),
 
+  // POST /api/ElectricVehicle - Thêm xe mới với hình ảnh (multipart/form-data)
+  createVehicleWithImage: (vehicleData, imageFile) => {
+    const formData = new FormData();
+
+    // Append vehicle data fields
+    formData.append("vehicleId", vehicleData.vehicleId);
+    formData.append("vehicleName", vehicleData.vehicleName);
+    formData.append("totalKm", vehicleData.totalKm);
+    formData.append("owner", vehicleData.owner);
+    formData.append("email", vehicleData.email);
+    formData.append("phoneNumber", vehicleData.phoneNumber);
+    formData.append("purchaseDate", vehicleData.purchaseDate);
+    formData.append("status", vehicleData.status);
+    formData.append("usageType", vehicleData.usageType); // ✅ ADD USAGE TYPE
+    formData.append("electricVehicleTypeId", vehicleData.electricVehicleTypeId);
+
+    // Append image if provided
+    if (imageFile) {
+      formData.append("urlPicture", imageFile);
+    }
+
+    // Gửi FormData trực tiếp, KHÔNG stringify
+    return apiService.request("/ElectricVehicle", {
+      method: "POST",
+      body: formData,
+      headers: {}, // Xóa Content-Type để browser tự set với boundary
+    });
+  },
+
   // GET /api/ElectricVehicle - Lấy danh sách xe (có phân trang)
   // Params: page=0, size=10, sortBy=name, sortDir=asc
-  getAllVehicles: (params = {}) => {
+  getAllVehicles: async (params = {}) => {
     const { page = 0, size = 10, sortBy = "name", sortDir = "asc" } = params;
-    return apiService.get(
+    const response = await apiService.get(
       `/ElectricVehicle?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
     );
+    return response;
   },
 
   // GET /api/ElectricVehicle/{id} - Lấy chi tiết xe
-  getVehicleById: (id) => apiService.get(`/ElectricVehicle/${id}`),
+  getVehicleById: async (id) => {
+    const response = await apiService.get(`/ElectricVehicle/${id}`);
+    return response;
+  },
 
   // PUT /api/ElectricVehicle/{id}/return-date - Cập nhật ngày trả xe
   updateReturnDate: (id, returnDate) => 
     apiService.put(`/ElectricVehicle/${id}/return-date?returnDate=${returnDate}`),
+
+  // PUT /api/ElectricVehicle/{id} - Cập nhật thông tin xe với hình ảnh (multipart/form-data)
+  updateVehicleWithImage: (id, vehicleData, imageFile) => {
+    const formData = new FormData();
+
+    // Append vehicle data fields
+    formData.append("name", vehicleData.name);
+    formData.append("totalKm", vehicleData.totalKm);
+    formData.append("owner", vehicleData.owner);
+    formData.append("email", vehicleData.email);
+    formData.append("phoneNumber", vehicleData.phoneNumber);
+    formData.append("productionDate", vehicleData.productionDate);
+    formData.append("status", vehicleData.status);
+    formData.append("usageType", vehicleData.usageType); // ✅ ADD USAGE TYPE
+    formData.append("vehicleTypeId", vehicleData.vehicleTypeId);
+
+    // Append image if provided
+    if (imageFile) {
+      formData.append("urlPicture", imageFile);
+    }
+
+    // Gửi FormData trực tiếp, KHÔNG stringify
+    return apiService.request(`/ElectricVehicle/${id}`, {
+      method: "PUT",
+      body: formData,
+      headers: {}, // Xóa Content-Type để browser tự set với boundary
+    });
+  },
 
   // DELETE /api/ElectricVehicle/{id} - Xóa xe
   deleteVehicle: (id) => apiService.delete(`/ElectricVehicle/${id}`),
@@ -526,6 +640,7 @@ export const transformVehicleToBackend = (vehicle, isUpdate = false) => {
       phoneNumber: vehicle.Phone_Number || vehicle.phoneNumber,
       productionDate: vehicle.Purchase_Date || vehicle.purchaseDate, // Backend uses productionDate for update
       status: vehicle.Status || vehicle.status || "ACTIVE",
+      usageType: vehicle.Usage_Type || vehicle.usageType || "PERSONAL", // Add usage type
       vehicleTypeId:
         vehicle.ID_Electric_Vehicle_Type ||
         vehicle.Vehicle_Type_ID ||
@@ -534,7 +649,7 @@ export const transformVehicleToBackend = (vehicle, isUpdate = false) => {
   }
 
   // Transform for CREATE - matches VehicleCreateDTO
-  return {
+  const createData = {
     vehicleId: vehicle.VIN || vehicle.vehicleId,
     vehicleName: vehicle.Vehicle_Name || vehicleTypeName || vehicle.name,
     totalKm: parseFloat(vehicle.Total_KM || vehicle.totalKm || 0),
@@ -544,11 +659,14 @@ export const transformVehicleToBackend = (vehicle, isUpdate = false) => {
     phoneNumber: vehicle.Phone_Number || vehicle.phoneNumber,
     purchaseDate: vehicle.Purchase_Date || vehicle.purchaseDate,
     status: vehicle.Status || vehicle.status || "ACTIVE",
+    usageType: vehicle.Usage_Type || vehicle.usageType || "PERSONAL", // Add usage type
     electricVehicleTypeId:
       vehicle.ID_Electric_Vehicle_Type ||
       vehicle.Vehicle_Type_ID ||
       vehicle.vehicleType?.id,
   };
+
+  return createData;
 };
 
 /**
@@ -687,12 +805,13 @@ export const reportAPI = {
     apiService.put(`/reports/${reportId}`, data),
 
   // DELETE /api/reports/{id} - Delete report
-  deleteReport: (reportId) =>
-    apiService.delete(`/reports/${reportId}`),
+  deleteReport: (reportId) => apiService.delete(`/reports/${reportId}`),
 
   // POST /api/reports/{reportId}/service-campaigns/{serviceCampaignId} - Assign Service Campaign
   assignServiceCampaign: (reportId, serviceCampaignId) =>
-    apiService.post(`/reports/${reportId}/service-campaigns/${serviceCampaignId}`),
+    apiService.post(
+      `/reports/${reportId}/service-campaigns/${serviceCampaignId}`
+    ),
 
   // POST /api/reports/{reportId}/recalls/{recallId} - Assign Recall
   assignRecall: (reportId, recallId) =>
@@ -820,12 +939,113 @@ export const recallDistrictAPI = {
     apiService.get(`/recalls/${recallId}/progress`),
 };
 
+// =============================================================================
+// PARTS INVENTORY APIs - Kiểm tra tồn kho phụ tùng
+// =============================================================================
+
+export const partsInventoryAPI = {
+  // GET /api/parts/check?claimId=xxx - Kiểm tra parts availability cho claim
+  checkPartsAvailability: (claimId) =>
+    apiService.get(`/parts/check?claimId=${claimId}`),
+
+  // GET /api/parts/check-types?partTypeIds=x,y&branch=z - Kiểm tra nhiều loại parts
+  checkPartTypeAvailability: (partTypeIds, branch) => {
+    const idsParam = Array.isArray(partTypeIds)
+      ? partTypeIds.join(",")
+      : partTypeIds;
+    return apiService.get(
+      `/parts/check-types?partTypeIds=${idsParam}&branch=${branch}`
+    );
+  },
+
+  // GET /api/parts/quantity?partTypeId=x&branch=y - Lấy số lượng available
+  getAvailableQuantity: (partTypeId, branch) =>
+    apiService.get(`/parts/quantity?partTypeId=${partTypeId}&branch=${branch}`),
+};
+
+// =============================================================================
+// SERIAL NUMBER MAPPING APIs - Quản lý serial number mapping
+// =============================================================================
+
+export const serialNumberAPI = {
+  // POST /api/serial-numbers/map - Tạo mapping serial number
+  createMapping: (data) => apiService.post("/serial-numbers/map", data),
+
+  // GET /api/serial-numbers/vehicle/{vin} - Lấy tất cả serial numbers của xe
+  getMappingsByVIN: (vin) => apiService.get(`/serial-numbers/vehicle/${vin}`),
+
+  // GET /api/serial-numbers/claim/{claimId} - Lấy serial numbers theo claim
+  getMappingsByClaim: (claimId) =>
+    apiService.get(`/serial-numbers/claim/${claimId}`),
+
+  // GET /api/serial-numbers/{serialNumber} - Lấy chi tiết mapping
+  getMappingBySerial: (serialNumber) =>
+    apiService.get(`/serial-numbers/${serialNumber}`),
+
+  // GET /api/serial-numbers/check/{serialNumber} - Kiểm tra serial đã được dùng chưa
+  checkSerialUsed: (serialNumber) =>
+    apiService.get(`/serial-numbers/check/${serialNumber}`),
+
+  // PATCH /api/serial-numbers/{serialNumber}/durability?durabilityPercentage=85
+  updateDurability: (serialNumber, durabilityPercentage) =>
+    apiService.request(
+      `/serial-numbers/${serialNumber}/durability?durabilityPercentage=${durabilityPercentage}`,
+      { method: "PATCH" }
+    ),
+
+  // DELETE /api/serial-numbers/{serialNumber} - Xóa mapping
+  deleteMapping: (serialNumber) =>
+    apiService.delete(`/serial-numbers/${serialNumber}`),
+};
+
+// =============================================================================
+// WORK RESULT APIs - Quản lý kết quả công việc bảo hành
+// =============================================================================
+
+export const workResultAPI = {
+  // POST /api/work-results/complete - Hoàn thành công việc
+  completeWork: (data) => apiService.post("/work-results/complete", data),
+
+  // GET /api/work-results/claim/{claimId} - Lấy work result theo claim
+  getWorkResultByClaimId: (claimId) =>
+    apiService.get(`/work-results/claim/${claimId}`),
+
+  // GET /api/work-results/technician/{technicianId} - Lấy work results của technician
+  getWorkResultsByTechnician: (technicianId) =>
+    apiService.get(`/work-results/technician/${technicianId}`),
+
+  // PATCH /api/work-results/{claimId}/rating?rating=5 - Đánh giá công việc
+  updateCustomerRating: (claimId, rating) =>
+    apiService.request(`/work-results/${claimId}/rating?rating=${rating}`, {
+      method: "PATCH",
+    }),
+
+  // GET /api/work-results/technician/{technicianId}/stats - Thống kê công việc
+  getTechnicianStats: (technicianId) =>
+    apiService.get(`/work-results/technician/${technicianId}/stats`),
+};
+
+// =============================================================================
+// WARRANTY POLICY APIs - Kiểm tra chính sách bảo hành
+// =============================================================================
+
+export const warrantyPolicyAPI = {
+  // GET /api/warranty-policies/check?vehicleTypeId=xxx
+  checkWarrantyByVehicleType: (vehicleTypeId) =>
+    apiService.get(`/warranty-policies/check?vehicleTypeId=${vehicleTypeId}`),
+
+  // GET /api/warranty-policies/check-vin/{vehicleVIN}
+  checkWarrantyByVIN: (vehicleVIN) =>
+    apiService.get(`/warranty-policies/check-vin/${vehicleVIN}`),
+};
+
 // Export default object với tất cả APIs
 export default {
   auth: authAPI,
   user: userAPI,
   scTechnician: scTechnicianAPI,
   warrantyClaim: warrantyClaimAPI,
+  scTechnician: scTechnicianAPI,
   vehicle: vehicleAPI,
   serviceCampaign: serviceCampaignAPI,
   partsRequest: partsRequestAPI,
@@ -837,4 +1057,8 @@ export default {
   report: reportAPI,
   campaignDistrict: campaignDistrictAPI,
   recallDistrict: recallDistrictAPI,
+  partsInventory: partsInventoryAPI,
+  serialNumber: serialNumberAPI,
+  workResult: workResultAPI,
+  warrantyPolicy: warrantyPolicyAPI,
 };
