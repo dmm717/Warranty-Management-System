@@ -242,6 +242,167 @@
   line-height: 1.6;
 }
 
+/* Vehicle Image Cell Styles */
+.vehicle-image-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  min-width: 80px;
+}
+
+.vehicle-thumbnail {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.vehicle-thumbnail:hover {
+  transform: scale(1.1);
+  border-color: rgba(96, 165, 250, 0.6);
+  box-shadow: 0 6px 20px rgba(96, 165, 250, 0.3);
+}
+
+.vehicle-placeholder {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Image Modal Styles */
+.image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.image-modal-content {
+  position: relative;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 90vw;
+  max-height: 90vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.image-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(239, 68, 68, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  transition: all 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  font-weight: bold;
+  animation: pulse 2s ease infinite;
+}
+
+.image-modal-close:hover {
+  background: rgba(239, 68, 68, 1);
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 6px 25px rgba(239, 68, 68, 0.6);
+  animation: none;
+}
+
+.image-modal-header {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.image-modal-header h3 {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+}
+
+.image-modal-header p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.image-modal-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: calc(90vh - 120px);
+  overflow: hidden;
+}
+
+.image-modal-img {
+  max-width: 100%;
+  max-height: calc(90vh - 120px);
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
 @media (max-width: 768px) {
   .table th,
   .table td {
@@ -256,5 +417,37 @@
   
   .contact-cell {
     min-width: 120px;
+  }
+  
+  .vehicle-thumbnail {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .vehicle-placeholder {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .image-modal-content {
+    padding: 15px;
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .image-modal-header h3 {
+    font-size: 16px;
+  }
+  
+  .image-modal-header p {
+    font-size: 12px;
+  }
+  
+  .image-modal-body {
+    max-height: calc(95vh - 100px);
+  }
+  
+  .image-modal-img {
+    max-height: calc(95vh - 100px);
   }
 }

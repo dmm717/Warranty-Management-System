@@ -63,9 +63,10 @@ export const VEHICLE_STATUS = {
 export const VEHICLE_STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Đang sử dụng" },
   { value: "IN_WARRANTY", label: "Trong bảo hành" },
-  { value: "INACTIVE", label: "Ngừng hoạt động" },
-  { value: "RECALLED", label: "Đã triệu hồi" },
-  { value: "RETIRED", label: "Đã thanh lý" },
+  // Các trạng thái sau chỉ dùng cho hiển thị, không dùng khi đăng ký xe mới
+  // { value: "INACTIVE", label: "Ngừng hoạt động" },
+  // { value: "RECALLED", label: "Đã triệu hồi" },
+  // { value: "RETIRED", label: "Đã thanh lý" },
 ];
 
 // =============================================================================
@@ -73,12 +74,17 @@ export const VEHICLE_STATUS_OPTIONS = [
 // =============================================================================
 
 export const VEHICLE_TYPES = [
-  { id: "EVT001", name: "VinFast VF5 Plus" },
-  { id: "EVT002", name: "VinFast VF6" },
-  { id: "EVT003", name: "VinFast VF7" },
-  { id: "EVT004", name: "VinFast VF8" },
-  { id: "EVT005", name: "VinFast VF9" },
-  { id: "EVT006", name: "VinFast VF e34" },
+  { id: "EVT001", name: "VF 3" },
+  { id: "EVT002", name: "VF 5" },
+  { id: "EVT003", name: "VF 6" },
+  { id: "EVT004", name: "VF 7" },
+  { id: "EVT005", name: "VF 8" },
+  { id: "EVT006", name: "VF 9" },
+  { id: "EVT007", name: "VF e34" },
+  { id: "EVT008", name: "Limo Green" },
+  { id: "EVT009", name: "Minio Green" },
+  { id: "EVT010", name: "Herio Green" },
+  { id: "EVT011", name: "Nerio Green" },
 ];
 
 // =============================================================================

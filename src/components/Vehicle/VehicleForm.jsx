@@ -15,9 +15,59 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
     Purchase_Date: "",
     ID_Electric_Vehicle_Type: "",
     Picture: "",
+    Usage_Type: "PERSONAL", // New field for usage type
   });
 
+  const [imageFile, setImageFile] = useState(null); // Store actual file
+  const [imagePreview, setImagePreview] = useState(""); // Store preview URL
   const [errors, setErrors] = useState({});
+
+  // Generate sample VIN based on selected vehicle type (ISO 3779 format - 17 chars)
+  const generateSampleVIN = () => {
+    const typeId = formData.ID_Electric_Vehicle_Type;
+    if (!typeId) {
+      toast.warning("Vui lòng chọn loại xe trước!");
+      return;
+    }
+
+    // Map vehicle type ID to model code
+    const modelMap = {
+      EVT001: "VF3",
+      EVT002: "VF5",
+      EVT003: "VF6",
+      EVT004: "VF7",
+      EVT005: "VF8",
+      EVT006: "VF9",
+      EVT007: "E34",
+      EVT008: "LMG", // Limo Green
+      EVT009: "MNG", // Minio Green
+      EVT010: "HRG", // Herio Green
+      EVT011: "NRG", // Nerio Green
+    };
+
+    const model = modelMap[typeId] || "VF8";
+
+    // WMI (3 chars): VNA (VinFast Vietnam - Assembly line A)
+    const wmi = "VNA";
+
+    // VDS (6 chars): Model(3) + Variant(1) + Motor(1) + Check(1)
+    const variant = "S"; // S=Standard, P=Plus, L=Lux, E=Eco
+    const motor = "E"; // E=Electric
+    const vds = `${model.padEnd(3, "0")}${variant}${motor}0`;
+
+    // VIS (8 chars): Year(1) + Plant(1) + Serial(6)
+    const yearChar = "S"; // S=2025, R=2024, P=2023...
+    const plant = "H"; // H=Hai Phong, T=Test facility
+    const serial = Math.floor(Math.random() * 1000000)
+      .toString()
+      .padStart(6, "0");
+    const vis = `${yearChar}${plant}${serial}`;
+
+    const sampleVIN = wmi + vds + vis;
+
+    setFormData((prev) => ({ ...prev, VIN: sampleVIN }));
+    toast.success(`VIN mẫu đã tạo: ${sampleVIN}`);
+  };
 
   // Reverse mapping: Vietnamese label -> enum key
   const getStatusKey = (statusValue) => {
@@ -59,7 +109,24 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
         Purchase_Date: vehicle.Purchase_Date || "",
         ID_Electric_Vehicle_Type: vehicleTypeId,
         Picture: vehicle.Picture || "",
-      };      setFormData(newFormData);
+        Usage_Type: vehicle.usageType || vehicle.Usage_Type || "PERSONAL", // Backend returns 'usageType' (camelCase)
+      };
+      setFormData(newFormData);
+
+      // Load existing image preview from database
+      if (
+        vehicle.Picture &&
+        vehicle.Picture !== "default-vehicle.jpg" &&
+        vehicle.Picture !== ""
+      ) {
+        // Backend returns full Cloudinary URL, use it directly
+        setImagePreview(vehicle.Picture);
+      } else {
+        setImagePreview(""); // Clear preview if no image
+      }
+
+      // Clear file input when editing (since we only have URL, not the file)
+      setImageFile(null);
     }
   }, [vehicle]);
 
@@ -85,11 +152,14 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
   const validateForm = () => {
     const newErrors = {};
 
-    // VIN validation
+    // VIN validation - ISO 3779 format (17 characters)
     if (!formData.VIN.trim()) {
       newErrors.VIN = "VIN là bắt buộc";
-    } else if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(formData.VIN)) {
-      newErrors.VIN = "VIN phải có đúng 17 ký tự (không chứa I, O, Q)";
+    } else if (formData.VIN.length !== 17) {
+      newErrors.VIN = "VIN phải có đúng 17 ký tự";
+    } else if (!/^VN[A-Z][0-9A-Z]{6}[0-9A-Z]{8}$/.test(formData.VIN)) {
+      newErrors.VIN =
+        "VIN không đúng định dạng. Format: WMI(3) + VDS(6) + VIS(8). Ví dụ: VNAVF8SE0SH049834";
     }
 
     // Owner validation
@@ -146,6 +216,13 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
       newErrors.Status = "Trạng thái là bắt buộc";
     }
 
+    // Usage Type validation
+    if (!formData.Usage_Type) {
+      newErrors.Usage_Type = "Loại sử dụng là bắt buộc";
+    } else if (!["PERSONAL", "COMMERCIAL"].includes(formData.Usage_Type)) {
+      newErrors.Usage_Type = "Loại sử dụng không hợp lệ";
+    }
+
     setErrors(newErrors);
 
     // Show toast for first error
@@ -160,16 +237,13 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // Add default picture if not provided
-      const dataToSave = {
-        ...formData,
-        Picture: formData.Picture || "default-vehicle.jpg",
-      };
+      // Pass both form data and image file to parent
+      const isUpdate = !!vehicle;
 
-      // Transform data sang format backend
-      const isUpdate = !!vehicle; // true if editing existing vehicle
-      const backendData = transformVehicleToBackend(dataToSave, isUpdate);
-      onSave(backendData);
+      const backendData = transformVehicleToBackend(formData, isUpdate);
+
+      // Send both data and image file
+      onSave(backendData, imageFile);
     }
   };
 
@@ -210,18 +284,36 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
 
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">VIN (Số khung) *</label>
+            <label
+              className="form-label"
+              style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            >
+              <span>VIN (Số khung) *</span>
+              <button
+                type="button"
+                onClick={generateSampleVIN}
+                className="btn btn-outline"
+                style={{
+                  fontSize: "12px",
+                  padding: "4px 8px",
+                  marginLeft: "auto",
+                }}
+                title="Tạo VIN mẫu dựa trên loại xe đã chọn"
+              >
+                🎲 Tạo VIN mẫu
+              </button>
+            </label>
             <input
               type="text"
               name="VIN"
               value={formData.VIN}
               onChange={handleChange}
               className={`form-control ${errors.VIN ? "error" : ""}`}
-              placeholder="VF8ABC12345678901"
-              maxLength="17"
+              placeholder="VFVF81234H1234567"
+              maxLength="18"
+              style={{ textTransform: "uppercase" }}
             />
             {errors.VIN && <div className="error-message">{errors.VIN}</div>}
-            <small className="form-help">VIN phải có đúng 17 ký tự</small>
           </div>
 
           <div className="form-group">
@@ -236,6 +328,25 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
             {errors.Purchase_Date && (
               <div className="error-message">{errors.Purchase_Date}</div>
             )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Loại sử dụng *</label>
+            <select
+              name="Usage_Type"
+              value={formData.Usage_Type}
+              onChange={handleChange}
+              className={`form-control ${errors.Usage_Type ? "error" : ""}`}
+            >
+              <option value="PERSONAL">Cá nhân</option>
+              <option value="COMMERCIAL">Thương mại</option>
+            </select>
+            {errors.Usage_Type && (
+              <div className="error-message">{errors.Usage_Type}</div>
+            )}
+            <small className="field-hint">
+              Chọn loại sử dụng xe (cá nhân hoặc thương mại)
+            </small>
           </div>
         </div>
 
@@ -323,18 +434,71 @@ function VehicleForm({ vehicle, onSave, onCancel }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Hình ảnh (URL)</label>
+            <label className="form-label">Hình ảnh</label>
             <input
-              type="text"
+              type="file"
               name="Picture"
-              value={formData.Picture}
-              onChange={handleChange}
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  // Check file size (max 5MB)
+                  if (file.size > 5 * 1024 * 1024) {
+                    toast.error("Kích thước ảnh không được vượt quá 5MB");
+                    e.target.value = null;
+                    return;
+                  }
+
+                  // Store file for upload
+                  setImageFile(file);
+
+                  // Create preview URL
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setImagePreview(reader.result);
+                    toast.success("Đã chọn ảnh thành công!");
+                  };
+                  reader.onerror = () => {
+                    toast.error("Lỗi khi đọc file ảnh");
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
               className="form-control"
-              placeholder="https://example.com/vehicle.jpg hoặc để trống"
             />
             <small className="form-help">
-              Để trống sẽ sử dụng ảnh mặc định
+              Chọn hình ảnh từ thiết bị (tối đa 5MB)
             </small>
+            {imagePreview && (
+              <div
+                style={{
+                  marginTop: "10px",
+                  border: "1px solid #ddd",
+                  padding: "10px",
+                  borderRadius: "8px",
+                }}
+              >
+                <p
+                  style={{
+                    marginBottom: "5px",
+                    fontSize: "14px",
+                    color: "#666",
+                  }}
+                >
+                  Xem trước:
+                </p>
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "200px",
+                    objectFit: "contain",
+                    borderRadius: "4px",
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
 

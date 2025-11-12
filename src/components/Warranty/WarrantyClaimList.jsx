@@ -1,6 +1,5 @@
-
-import { Check, Wrench, X, Play, Eye, Edit } from 'lucide-react';
-import React, { useState } from "react";
+import { Check, Wrench, X, Play, Eye, Edit, Trash2 } from "lucide-react";
+import React from "react";
 import Swal from "sweetalert2";
 import "../../styles/WarrantyClaimList.css";
 
@@ -9,6 +8,7 @@ function WarrantyClaimList({
   onEdit,
   onView,
   onUpdateStatus,
+  onDelete,
   userRole,
 }) {
   const getStatusBadge = (status) => {
@@ -56,19 +56,20 @@ function WarrantyClaimList({
     if (userRole === "SC_ADMIN") {
       return ["PENDING"].includes(status);
     }
-    // SC_STAFF và SC_TECHNICAL: Xử lý yêu cầu đã duyệt
-    if (userRole === "SC_STAFF" || userRole === "SC_TECHNICAL") {
-      return ["APPROVED", "IN_PROGRESS"].includes(status);
-    }
-    // EVM_ADMIN và EVM_STAFF: Không có quyền duyệt, chỉ xem
+    // SC_STAFF và SC_TECHNICAL: KHÔNG hiển thị button ở list
+    // Vì các action này sẽ làm trong WarrantyClaimDetail
+    // APPROVED → có button "Bắt Đầu Công Việc" trong detail (SC_TECHNICAL)
+    // IN_PROGRESS → có button "Tiếp Tục Công Việc" trong detail (SC_TECHNICAL)
+    // COMPLETED → không có button nào nữa
     return false;
   };
 
   const getNextStatus = (currentStatus) => {
     const statusFlow = {
-      PENDING: ["APPROVED", "REJECTED"],
-      APPROVED: ["IN_PROGRESS"],
-      IN_PROGRESS: ["COMPLETED"],
+      PENDING: ["APPROVED", "REJECTED"], // Chỉ SC_ADMIN mới duyệt/từ chối
+      // APPROVED → không có button ở list (phải vào detail để assign technician và start work)
+      // IN_PROGRESS → không có button ở list (phải vào detail để làm workflow)
+      // COMPLETED → không có button
     };
     return statusFlow[currentStatus] || [];
   };
@@ -126,118 +127,151 @@ function WarrantyClaimList({
             </tr>
           </thead>
           <tbody>
-            {claims.map((claim) => (
-              <tr key={claim.claimId}>
-                <td>
-                  <div className="claim-id">
-                    <strong>{claim.claimId}</strong>
-                  </div>
-                </td>
-                <td>
-                  <div className="customer-info">
-                    <strong>{claim.customerName}</strong>
-                    <small>{claim.customerPhone}</small>
-                  </div>
-                </td>
-                <td>
-                  <div className="vehicle-info">
-                    <strong>{claim.vehicleName || "N/A"}</strong>
-                  </div>
-                </td>
-                <td>{formatDate(claim.claimDate)}</td>
-                <td>
-                  <div className="status-container">
-                    {getStatusBadge(claim.status)}
-                    {canUpdateStatus(claim.status) && (
-                      <div className="status-actions">
-                        {getNextStatus(claim.status).map((nextStatus) => {
-                          const config = getStatusButtonConfig(nextStatus);
-                          return (
-                            <button
-                              key={nextStatus}
-                              onClick={async () => {
-                                // Nếu là REJECT, yêu cầu nhập lý do
-                                if (nextStatus === "REJECTED") {
-                                  const result = await Swal.fire({
-                                    title: "Từ chối yêu cầu bảo hành",
-                                    input: "textarea",
-                                    inputLabel: "Lý do từ chối",
-                                    inputPlaceholder:
-                                      "Nhập lý do từ chối yêu cầu bảo hành...",
-                                    inputValidator: (value) => {
-                                      if (!value || value.trim() === "") {
-                                        return "Bạn cần nhập lý do từ chối!";
-                                      }
-                                    },
-                                    showCancelButton: true,
-                                    confirmButtonText: "Từ chối",
-                                    cancelButtonText: "Hủy",
-                                    confirmButtonColor: "#d33",
-                                  });
+            {claims.map((claim) => {
+              return (
+                <tr key={claim.claimId}>
+                  <td>
+                    <div className="claim-id">
+                      <strong>{claim.claimId}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="customer-info">
+                      <strong>{claim.customerName}</strong>
+                      <small>{claim.customerPhone}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div
+                      className="vehicle-info"
+                      style={{ background: "transparent" }}
+                    >
+                      <strong style={{ background: "transparent" }}>
+                        {claim.vehicleName || "N/A"}
+                      </strong>
+                    </div>
+                  </td>
+                  <td>{formatDate(claim.claimDate)}</td>
+                  <td>
+                    <div className="status-container">
+                      {getStatusBadge(claim.status)}
+                      {canUpdateStatus(claim.status) && (
+                        <div className="status-actions">
+                          {getNextStatus(claim.status).map((nextStatus) => {
+                            const config = getStatusButtonConfig(nextStatus);
+                            return (
+                              <button
+                                key={nextStatus}
+                                onClick={async () => {
+                                  // Nếu là REJECT, yêu cầu nhập lý do
+                                  if (nextStatus === "REJECTED") {
+                                    const result = await Swal.fire({
+                                      title: "Từ chối yêu cầu bảo hành",
+                                      input: "textarea",
+                                      inputLabel: "Lý do từ chối",
+                                      inputPlaceholder:
+                                        "Nhập lý do từ chối yêu cầu bảo hành...",
+                                      inputValidator: (value) => {
+                                        if (!value || value.trim() === "") {
+                                          return "Bạn cần nhập lý do từ chối!";
+                                        }
+                                      },
+                                      showCancelButton: true,
+                                      confirmButtonText: "Từ chối",
+                                      cancelButtonText: "Hủy",
+                                      confirmButtonColor: "#d33",
+                                    });
 
-                                  if (result.isConfirmed) {
-                                    onUpdateStatus(
-                                      claim.claimId,
-                                      nextStatus,
-                                      result.value
-                                    );
-                                  }
-                                } else if (nextStatus === "APPROVED") {
-                                  // Confirm approve
-                                  const result = await Swal.fire({
-                                    title: "Duyệt yêu cầu bảo hành",
-                                    text: `Bạn có chắc muốn duyệt yêu cầu ${claim.claimId}?`,
-                                    icon: "question",
-                                    showCancelButton: true,
-                                    confirmButtonText: "Duyệt",
-                                    cancelButtonText: "Hủy",
-                                    confirmButtonColor: "#28a745",
-                                  });
+                                    if (result.isConfirmed) {
+                                      onUpdateStatus(
+                                        claim.claimId,
+                                        nextStatus,
+                                        result.value
+                                      );
+                                    }
+                                  } else if (nextStatus === "APPROVED") {
+                                    // Confirm approve
+                                    const result = await Swal.fire({
+                                      title: "Duyệt yêu cầu bảo hành",
+                                      text: `Bạn có chắc muốn duyệt yêu cầu ${claim.claimId}?`,
+                                      icon: "question",
+                                      showCancelButton: true,
+                                      confirmButtonText: "Duyệt",
+                                      cancelButtonText: "Hủy",
+                                      confirmButtonColor: "#28a745",
+                                    });
 
-                                  if (result.isConfirmed) {
+                                    if (result.isConfirmed) {
+                                      onUpdateStatus(claim.claimId, nextStatus);
+                                    }
+                                  } else {
+                                    // Các status khác
                                     onUpdateStatus(claim.claimId, nextStatus);
                                   }
-                                } else {
-                                  // Các status khác
-                                  onUpdateStatus(claim.claimId, nextStatus);
-                                }
-                              }}
-                              className={`btn btn-sm status-action-btn ${config.className}`}
-                              title={config.label}
-                            >
-                              <span className="btn-icon">{config.icon}</span>
-                              <span className="btn-text">{config.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td>
-                  <div className="action-buttons">
-                    <button
-                      onClick={() => onView(claim)}
-                      className="btn btn-sm btn-outline"
-                      title="Xem chi tiết"
-                    >
-                      <Eye size={16} />
-                    </button>
-                    {/* Chỉ SC_STAFF và SC_TECHNICAL có quyền chỉnh sửa */}
-                    {(userRole === "SC_STAFF" ||
-                      userRole === "SC_TECHNICAL") && (
+                                }}
+                                className={`btn btn-sm status-action-btn ${config.className}`}
+                                title={config.label}
+                              >
+                                <span className="btn-icon">{config.icon}</span>
+                                <span className="btn-text">{config.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="action-buttons">
                       <button
-                        onClick={() => onEdit(claim)}
+                        onClick={() => onView(claim)}
                         className="btn btn-sm btn-outline"
-                        title="Chỉnh sửa"
+                        title="Xem chi tiết"
                       >
-                        <Edit size={16} />
+                        <Eye size={16} />
                       </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      {/* Chỉ hiển thị nút chỉnh sửa khi claim bị REJECTED - để SC_STAFF sửa lại và gửi lại */}
+                      {(userRole === "SC_STAFF" ||
+                        userRole === "SC_TECHNICAL") &&
+                        claim.status === "REJECTED" && (
+                          <button
+                            onClick={() => onEdit(claim)}
+                            className="btn btn-sm btn-outline"
+                            title="Chỉnh sửa và gửi lại"
+                          >
+                            <Edit size={16} />
+                          </button>
+                        )}
+                      {/* EVM_STAFF có quyền xóa yêu cầu bảo hành */}
+                      {userRole === "EVM_STAFF" && onDelete && (
+                        <button
+                          onClick={async () => {
+                            const result = await Swal.fire({
+                              title: "Xác nhận xóa",
+                              text: `Bạn có chắc muốn xóa yêu cầu bảo hành ${claim.claimId}?`,
+                              icon: "warning",
+                              showCancelButton: true,
+                              confirmButtonColor: "#d33",
+                              cancelButtonColor: "#3085d6",
+                              confirmButtonText: "Xóa",
+                              cancelButtonText: "Hủy",
+                            });
+
+                            if (result.isConfirmed) {
+                              onDelete(claim.claimId);
+                            }
+                          }}
+                          className="btn btn-sm btn-danger"
+                          title="Xóa yêu cầu bảo hành"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

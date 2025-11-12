@@ -2,7 +2,14 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { warrantyClaimAPI } from "../../services/api";
 import StatsCard from "./StatsCard";
-import { Wrench, FileText, Check, X, BarChart3, AlertTriangle } from "lucide-react";
+import {
+  Wrench,
+  FileText,
+  Check,
+  X,
+  BarChart3,
+  AlertTriangle,
+} from "lucide-react";
 import "../../styles/Dashboard.css";
 import "../../styles/EVMStaffDashboard.css";
 
@@ -61,25 +68,25 @@ function EVMStaffDashboard() {
 
       approvedToday: claims.filter((c) => {
         if (c.status !== "APPROVED") return false;
-        const updatedDate = new Date(c.lastModifiedDate || c.createdDate);
+        const updatedDate = new Date(c.claimDate);
         return updatedDate >= today;
       }).length,
 
       rejectedToday: claims.filter((c) => {
         if (c.status !== "REJECTED") return false;
-        const updatedDate = new Date(c.lastModifiedDate || c.createdDate);
+        const updatedDate = new Date(c.claimDate);
         return updatedDate >= today;
       }).length,
 
       overdueApproval: claims.filter((c) => {
         if (c.status !== "PENDING" && c.status !== "PENDING_APPROVAL")
           return false;
-        const createdDate = new Date(c.createdDate);
+        const createdDate = new Date(c.claimDate);
         return createdDate < overdueCutoff;
       }).length,
 
       totalThisMonth: claims.filter((c) => {
-        const createdDate = new Date(c.createdDate);
+        const createdDate = new Date(c.claimDate);
         return createdDate >= monthStart;
       }).length,
     };
@@ -90,27 +97,29 @@ function EVMStaffDashboard() {
   const preparePendingClaims = (claims) => {
     const pending = claims
       .filter((c) => c.status === "PENDING" || c.status === "PENDING_APPROVAL")
-      .sort((a, b) => new Date(a.createdDate) - new Date(b.createdDate))
+      .sort((a, b) => new Date(a.claimDate) - new Date(b.claimDate))
       .slice(0, 10); // Top 10 oldest pending
 
     setPendingClaims(pending);
   };
 
   const prepareChartData = (claims) => {
-    // Group by issue type
+    // Group by issue type (sử dụng issueDescription)
     const typeCount = {};
     claims.forEach((c) => {
-      const type = c.issueType || c.defectType || "Khác";
+      const type = c.issueDescription
+        ? c.issueDescription.substring(0, 30)
+        : "Khác";
       typeCount[type] = (typeCount[type] || 0) + 1;
     });
     setClaimsByType(
       Object.entries(typeCount).map(([name, value]) => ({ name, value }))
     );
 
-    // Group by Service Center
+    // Group by Service Center (sử dụng officeBranch)
     const scCount = {};
     claims.forEach((c) => {
-      const sc = c.serviceCenterName || c.branchOffice || "N/A";
+      const sc = c.officeBranch || "N/A";
       scCount[sc] = (scCount[sc] || 0) + 1;
     });
     setClaimsBySC(
@@ -124,19 +133,15 @@ function EVMStaffDashboard() {
   const prepareRecentActivities = (claims) => {
     const recent = claims
       .filter((c) => c.status === "APPROVED" || c.status === "REJECTED")
-      .sort(
-        (a, b) =>
-          new Date(b.lastModifiedDate || b.createdDate) -
-          new Date(a.lastModifiedDate || a.createdDate)
-      )
+      .sort((a, b) => new Date(b.claimDate) - new Date(a.claimDate))
       .slice(0, 5);
 
     setRecentActivities(recent);
   };
 
-  const getWaitingTime = (createdDate) => {
+  const getWaitingTime = (claimDate) => {
     const now = new Date();
-    const created = new Date(createdDate);
+    const created = new Date(claimDate);
     const hours = Math.floor((now - created) / (1000 * 60 * 60));
 
     if (hours < 1) return "< 1h";
@@ -145,9 +150,9 @@ function EVMStaffDashboard() {
     return `${days}d ${hours % 24}h`;
   };
 
-  const isOverdue = (createdDate) => {
+  const isOverdue = (claimDate) => {
     const now = new Date();
-    const created = new Date(createdDate);
+    const created = new Date(claimDate);
     const hours = (now - created) / (1000 * 60 * 60);
     return hours > 48;
   };
@@ -214,7 +219,10 @@ function EVMStaffDashboard() {
       <div className="dashboard-section">
         <div className="section-header">
           <h2>
-            <FileText size={20} style={{ display: 'inline', marginRight: '8px' }} />
+            <FileText
+              size={20}
+              style={{ display: "inline", marginRight: "8px" }}
+            />
             Danh sách yêu cầu cần xử lý
           </h2>
           <button
@@ -245,33 +253,34 @@ function EVMStaffDashboard() {
               <tbody>
                 {pendingClaims.map((claim) => (
                   <tr
-                    key={claim.id}
-                    className={
-                      isOverdue(claim.createdDate) ? "overdue-row" : ""
-                    }
+                    key={claim.claimId}
+                    className={isOverdue(claim.claimDate) ? "overdue-row" : ""}
                   >
                     <td>
-                      <strong>#{claim.id}</strong>
+                      <strong>{claim.claimId}</strong>
                     </td>
-                    <td>{claim.vin || "N/A"}</td>
-                    <td>
-                      {claim.serviceCenterName || claim.branchOffice || "N/A"}
-                    </td>
-                    <td>{claim.issueType || claim.defectType || "N/A"}</td>
+                    <td>{claim.vehicleVIN || claim.vehicleName || "N/A"}</td>
+                    <td>{claim.officeBranch || "N/A"}</td>
+                    <td>{claim.issueDescription || "N/A"}</td>
                     <td>
                       <span
                         className={
-                          isOverdue(claim.createdDate) ? "overdue-badge" : ""
+                          isOverdue(claim.claimDate) ? "overdue-badge" : ""
                         }
                       >
-                        {getWaitingTime(claim.createdDate)}
-                        {isOverdue(claim.createdDate) && <AlertTriangle size={14} style={{ display: 'inline', marginLeft: '4px' }} />}
+                        {getWaitingTime(claim.claimDate)}
+                        {isOverdue(claim.claimDate) && (
+                          <AlertTriangle
+                            size={14}
+                            style={{ display: "inline", marginLeft: "4px" }}
+                          />
+                        )}
                       </span>
                     </td>
                     <td>
                       <button
                         className="btn btn-sm btn-primary"
-                        onClick={() => handleReviewClaim(claim.id)}
+                        onClick={() => handleReviewClaim(claim.claimId)}
                       >
                         Xét duyệt
                       </button>
@@ -288,7 +297,13 @@ function EVMStaffDashboard() {
       <div className="charts-grid">
         {/* Claims by Type */}
         <div className="dashboard-card">
-          <h3><Wrench size={20} style={{ display: 'inline', marginRight: '8px' }} /> Loại lỗi thường gặp</h3>
+          <h3>
+            <Wrench
+              size={20}
+              style={{ display: "inline", marginRight: "8px" }}
+            />{" "}
+            Loại lỗi thường gặp
+          </h3>
           <div className="chart-container">
             {claimsByType.length === 0 ? (
               <p className="empty-chart">Chưa có dữ liệu</p>
@@ -362,17 +377,22 @@ function EVMStaffDashboard() {
           ) : (
             <ul>
               {recentActivities.map((claim) => (
-                <li key={claim.id} className="activity-item">
+                <li key={claim.claimId} className="activity-item">
                   <span
                     className={`activity-icon ${
                       claim.status === "APPROVED" ? "approved" : "rejected"
                     }`}
                   >
-                    {claim.status === "APPROVED" ? <Check size={16} /> : <X size={16} />}
+                    {claim.status === "APPROVED" ? (
+                      <Check size={16} />
+                    ) : (
+                      <X size={16} />
+                    )}
                   </span>
                   <div className="activity-content">
                     <p>
-                      <strong>Claim #{claim.id}</strong> - {claim.vin}
+                      <strong>{claim.claimId}</strong> -{" "}
+                      {claim.vehicleName || claim.vehicleVIN || "N/A"}
                       <span
                         className={`status-badge ${claim.status.toLowerCase()}`}
                       >
@@ -382,9 +402,7 @@ function EVMStaffDashboard() {
                       </span>
                     </p>
                     <small>
-                      {new Date(
-                        claim.lastModifiedDate || claim.createdDate
-                      ).toLocaleString("vi-VN")}
+                      {new Date(claim.claimDate).toLocaleString("vi-VN")}
                     </small>
                   </div>
                 </li>

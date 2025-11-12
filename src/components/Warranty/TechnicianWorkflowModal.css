@@ -1,0 +1,697 @@
+/* =============================================================================
+   TECHNICIAN WORKFLOW MODAL - Modal cho quy trình làm việc của kỹ thuật viên
+   ============================================================================= */
+
+.technician-workflow-modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.technician-workflow-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid #e0e0e0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.technician-workflow-modal .modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+}
+
+.technician-workflow-modal .close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 28px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.technician-workflow-modal .close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+/* =============================================================================
+   WORKFLOW STEPPER
+   ============================================================================= */
+
+.workflow-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.workflow-stepper .step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.workflow-stepper .step-number {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  color: #757575;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  transition: all 0.3s;
+  border: 3px solid transparent;
+}
+
+.workflow-stepper .step-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #757575;
+  text-align: center;
+  max-width: 120px;
+  transition: all 0.3s;
+}
+
+.workflow-stepper .step.active .step-number {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.workflow-stepper .step.active .step-label {
+  color: #667eea;
+  font-weight: 700;
+}
+
+.workflow-stepper .step.completed .step-number {
+  background: #4caf50;
+  color: white;
+}
+
+.workflow-stepper .step.completed .step-label {
+  color: #4caf50;
+}
+
+.workflow-stepper .step-line {
+  width: 100px;
+  height: 3px;
+  background: #e0e0e0;
+  margin: 0 12px;
+}
+
+/* =============================================================================
+   MODAL BODY
+   ============================================================================= */
+
+.technician-workflow-modal .modal-body {
+  padding: 24px;
+}
+
+/* Claim Info Section */
+.claim-info-section {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  border-left: 4px solid #667eea;
+}
+
+.claim-info-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+}
+
+.claim-info-section .info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.claim-info-section .info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.claim-info-section .info-item .label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.claim-info-section .info-item .value {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* Workflow Step Content */
+.workflow-step-content {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.workflow-step-content h3 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* =============================================================================
+   PARTS AVAILABILITY
+   ============================================================================= */
+
+.parts-availability-result {
+  margin-top: 16px;
+}
+
+.overall-status {
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.overall-status.available {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 2px solid #4caf50;
+}
+
+.overall-status.unavailable {
+  background: #fff3e0;
+  color: #e65100;
+  border: 2px solid #ff9800;
+}
+
+.overall-status .icon {
+  font-size: 24px;
+}
+
+.parts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.part-item {
+  padding: 16px;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+  transition: all 0.3s;
+}
+
+.part-item.available {
+  border-color: #4caf50;
+  background: #f1f8f4;
+}
+
+.part-item.unavailable {
+  border-color: #ff9800;
+  background: #fff8f0;
+}
+
+.part-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.part-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.part-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: #333;
+}
+
+.part-id {
+  font-size: 13px;
+  color: #666;
+}
+
+.part-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.part-status .quantity {
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+}
+
+.part-status .status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.part-status .status-badge.success {
+  background: #4caf50;
+  color: white;
+}
+
+.part-status .status-badge.error {
+  background: #ff9800;
+  color: white;
+}
+
+.loading-state,
+.error-state,
+.no-parts {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 15px;
+}
+
+/* =============================================================================
+   SERIAL MAPPING FORM
+   ============================================================================= */
+
+.serial-mapping-form {
+  background: #f8f9fa;
+  padding: 24px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.3s;
+  font-family: inherit;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-control::placeholder {
+  color: #999;
+}
+
+/* Durability Slider */
+.durability-slider-container {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.durability-slider {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #f44336 0%, #ff9800 50%, #4caf50 100%);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.durability-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: 3px solid #667eea;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s;
+}
+
+.durability-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.durability-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  border: 3px solid #667eea;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s;
+}
+
+.durability-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #666;
+  font-weight: 600;
+}
+
+.durability-indicator {
+  height: 6px;
+  border-radius: 3px;
+  margin-top: 8px;
+  transition: all 0.3s;
+}
+
+.btn-add-serial {
+  width: 100%;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 8px;
+}
+
+.btn-add-serial:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-add-serial:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Serial Mappings List */
+.serial-mappings-list {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 2px solid #e0e0e0;
+}
+
+.serial-mappings-list h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+}
+
+.serial-mapping-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: white;
+  border: 2px solid #4caf50;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: all 0.3s;
+}
+
+.serial-mapping-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateX(4px);
+}
+
+.mapping-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mapping-info .serial-number {
+  font-weight: 700;
+  font-size: 15px;
+  color: #333;
+}
+
+.mapping-info .part-id,
+.mapping-info .durability {
+  font-size: 13px;
+  color: #666;
+  padding: 4px 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.btn-remove {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.btn-remove:hover:not(:disabled) {
+  background: #d32f2f;
+  transform: scale(1.05);
+}
+
+.btn-remove:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =============================================================================
+   COMPLETION FORM
+   ============================================================================= */
+
+.completion-form {
+  background: #f8f9fa;
+  padding: 24px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.work-summary {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #667eea;
+  margin-top: 20px;
+}
+
+.work-summary h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.summary-item:last-child {
+  border-bottom: none;
+}
+
+.summary-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #555;
+}
+
+.summary-value {
+  font-weight: 700;
+  font-size: 16px;
+  color: #333;
+  padding: 4px 12px;
+  background: #667eea15;
+  border-radius: 4px;
+}
+
+.parts-used {
+  font-size: 13px;
+  color: #666;
+  text-align: right;
+  max-width: 400px;
+}
+
+/* =============================================================================
+   STEP ACTIONS
+   ============================================================================= */
+
+.step-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px solid #e0e0e0;
+}
+
+.step-actions button {
+  padding: 12px 32px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-width: 140px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background: #d0d0d0;
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.step-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* =============================================================================
+   RESPONSIVE
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .technician-workflow-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .workflow-stepper {
+    padding: 20px 12px;
+  }
+
+  .workflow-stepper .step-line {
+    width: 60px;
+    margin: 0 8px;
+  }
+
+  .workflow-stepper .step-label {
+    font-size: 11px;
+    max-width: 80px;
+  }
+
+  .claim-info-section .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .step-actions {
+    flex-direction: column;
+  }
+
+  .step-actions button {
+    width: 100%;
+  }
+
+  .mapping-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

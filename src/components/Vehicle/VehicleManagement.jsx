@@ -13,6 +13,11 @@ function VehicleManagement() {
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    show: false,
+    vehicleId: null,
+    vehicleName: "",
+  });
 
   // Fetch vehicles từ API
   useEffect(() => {
@@ -36,7 +41,8 @@ function VehicleManagement() {
         Array.isArray(response.data.content)
       ) {
         // Transform data từ BE sang format FE
-        const transformedVehicles = response.data.content.map((vehicle) => {          const transformed = {
+        const transformedVehicles = response.data.content.map((vehicle) => {
+          const transformed = {
             vehicleId: vehicle.id, // VIN
             VIN: vehicle.id,
             Vehicle_Name: vehicle.name,
@@ -47,10 +53,12 @@ function VehicleManagement() {
             Total_KM: vehicle.totalKm,
             Purchase_Date: vehicle.purchaseDate,
             Picture: vehicle.picture,
+            Usage_Type: vehicle.usageType || "PERSONAL", // ✅ ADD USAGE TYPE from backend
             // Vehicle Type info - using flat fields from ListResponseDTO
             Vehicle_Type: vehicle.modelName || "N/A",
             Vehicle_Type_ID: vehicle.vehicleTypeId || null,
-          };          return transformed;
+          };
+          return transformed;
         });
 
         setVehicles(transformedVehicles);
@@ -59,8 +67,7 @@ function VehicleManagement() {
         const errorMsg = response.message || "Không thể tải danh sách xe";
         toast.error(errorMsg);
       }
-    } catch (error) {
-      console.error("Error fetching vehicles:", error);
+    } catch {
       toast.error("Đã xảy ra lỗi khi tải dữ liệu");
     } finally {
       setLoading(false);
@@ -97,29 +104,45 @@ function VehicleManagement() {
     setShowForm(true);
   };
 
-  const handleDeleteVehicle = async (vehicleId) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa xe này?")) {
-      try {
-        setLoading(true);
-        const response = await vehicleAPI.deleteVehicle(vehicleId);
+  const handleDeleteVehicle = (vehicleId) => {
+    // Find vehicle name for confirmation message
+    const vehicle = vehicles.find((v) => v.vehicleId === vehicleId);
+    const vehicleName = vehicle
+      ? `${vehicle.vehicleType?.modelName || ""} (${vehicleId})`
+      : vehicleId;
 
-        if (response.success) {
-          // Reload vehicles
-          await fetchVehicles();
-          toast.success("Xóa xe thành công!");
-        } else {
-          toast.error(response.message || "Không thể xóa xe");
-        }
-      } catch (error) {
-        console.error("Delete error:", error);
-        toast.error("Đã xảy ra lỗi khi xóa xe");
-      } finally {
-        setLoading(false);
+    // Show confirmation dialog
+    setDeleteConfirm({
+      show: true,
+      vehicleId: vehicleId,
+      vehicleName: vehicleName,
+    });
+  };
+
+  const confirmDeleteVehicle = async () => {
+    try {
+      setLoading(true);
+      const response = await vehicleAPI.deleteVehicle(deleteConfirm.vehicleId);
+
+      if (response.success) {
+        await fetchVehicles();
+        toast.success("Xóa xe thành công!");
+      } else {
+        toast.error(response.message || "Không thể xóa xe");
       }
+    } catch {
+      toast.error("Đã xảy ra lỗi khi xóa xe");
+    } finally {
+      setLoading(false);
+      setDeleteConfirm({ show: false, vehicleId: null, vehicleName: "" });
     }
   };
 
-  const handleSaveVehicle = async (vehicleData) => {
+  const cancelDeleteVehicle = () => {
+    setDeleteConfirm({ show: false, vehicleId: null, vehicleName: "" });
+  };
+
+  const handleSaveVehicle = async (vehicleData, imageFile) => {
     try {
       setLoading(true);
 
@@ -135,9 +158,11 @@ function VehicleManagement() {
           toast.error("Số điện thoại đã được sử dụng bởi xe khác!");
           setLoading(false);
           return;
-        }        const response = await vehicleAPI.updateVehicle(
+        }
+        const response = await vehicleAPI.updateVehicleWithImage(
           editingVehicle.VIN,
-          vehicleData
+          vehicleData,
+          imageFile
         );
         if (response.success) {
           await fetchVehicles();
@@ -165,7 +190,11 @@ function VehicleManagement() {
           toast.error("Số điện thoại đã được sử dụng bởi xe khác!");
           setLoading(false);
           return;
-        }        const response = await vehicleAPI.createVehicle(vehicleData);
+        }
+        const response = await vehicleAPI.createVehicleWithImage(
+          vehicleData,
+          imageFile
+        );
         if (response.success) {
           await fetchVehicles();
           setShowForm(false);
@@ -175,8 +204,7 @@ function VehicleManagement() {
           toast.error(response.message || "Không thể thêm xe mới");
         }
       }
-    } catch (error) {
-      console.error("Save error:", error);
+    } catch {
       toast.error("Đã xảy ra lỗi khi lưu thông tin xe");
     } finally {
       setLoading(false);
@@ -222,6 +250,37 @@ function VehicleManagement() {
           onSave={handleSaveVehicle}
           onCancel={handleCancelForm}
         />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm.show && (
+        <div className="delete-overlay" onClick={cancelDeleteVehicle}>
+          <div className="delete-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-icon">⚠️</div>
+            <h3 className="delete-title">Xóa xe này?</h3>
+            <p className="delete-message">
+              Xe{" "}
+              <span className="delete-vehicle-name">
+                {deleteConfirm.vehicleName}
+              </span>{" "}
+              sẽ bị xóa vĩnh viễn khỏi hệ thống.
+            </p>
+            <div className="delete-actions">
+              <button
+                className="delete-btn-cancel"
+                onClick={cancelDeleteVehicle}
+              >
+                Không, giữ lại
+              </button>
+              <button
+                className="delete-btn-confirm"
+                onClick={confirmDeleteVehicle}
+              >
+                Có, xóa ngay
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

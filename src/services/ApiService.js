@@ -19,10 +19,18 @@ class ApiService {
     const url = `${this.baseURL}${this.apiPrefix}${endpoint}`;
 
     // Default headers
-    const headers = {
-      "Content-Type": "application/json",
-      ...options.headers,
-    };
+    const headers = {};
+
+    // KHÔNG set Content-Type nếu body là FormData (browser tự set với boundary)
+    const isFormData = options.body instanceof FormData;
+    if (!isFormData) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    // Merge với options.headers (nếu có)
+    if (options.headers) {
+      Object.assign(headers, options.headers);
+    }
 
     // CRITICAL: Skip Authorization header cho public endpoints
     const publicEndpoints = ["/auth/login", "/permissions/roles"];

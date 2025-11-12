@@ -77,6 +77,111 @@
   100% { transform: rotate(360deg); }
 }
 
+/* Delete Confirmation Dialog */
+.delete-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.delete-dialog {
+  background: white;
+  border-radius: 8px;
+  padding: 28px 32px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0); 
+  }
+}
+
+.delete-icon {
+  font-size: 48px;
+  text-align: center;
+  margin-bottom: 16px;
+  line-height: 1;
+}
+
+.delete-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+.delete-message {
+  font-size: 15px;
+  color: #555;
+  line-height: 1.5;
+  margin: 0 0 24px 0;
+  text-align: center;
+}
+
+.delete-vehicle-name {
+  font-weight: 600;
+  color: #d32f2f;
+}
+
+.delete-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.delete-btn-cancel,
+.delete-btn-confirm {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 120px;
+}
+
+.delete-btn-cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.delete-btn-cancel:hover {
+  background: #e0e0e0;
+}
+
+.delete-btn-confirm {
+  background: #d32f2f;
+  color: white;
+}
+
+.delete-btn-confirm:hover {
+  background: #b71c1c;
+}
+
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;
@@ -86,5 +191,18 @@
   
   .page-header h1 {
     text-align: center;
+  }
+
+  .delete-dialog {
+    padding: 24px;
+  }
+
+  .delete-actions {
+    flex-direction: column;
+  }
+
+  .delete-btn-cancel,
+  .delete-btn-confirm {
+    width: 100%;
   }
 }

@@ -10,28 +10,52 @@
   overflow-x: auto;
 }
 
+.table {
+  width: 100%;
+}
+
+.table thead th {
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.table tbody td {
+  padding: 16px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
 .claim-id strong {
   font-family: 'Courier New', monospace;
   color: var(--vf-primary-400);
   font-size: 13px;
+  font-weight: 600;
 }
 
 .customer-info,
 .vehicle-info {
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
 
 .customer-info strong,
 .vehicle-info strong {
   color: rgba(255,255,255,0.95);
   font-size: 14px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
 }
 
 .customer-info small,
 .vehicle-info small {
   color: rgba(255,255,255,0.6);
   font-size: 12px;
+  display: block;
 }
 
 .issue-description {
@@ -80,8 +104,6 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: center;
-  min-width: 150px;
 }
 
 .status-actions {
