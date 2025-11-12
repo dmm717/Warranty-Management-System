@@ -227,28 +227,7 @@ function CampaignForm({ campaign, onSave, onCancel }) {
             </div>
           </div>
 
-          <div className="form-row">
-            {/* ✅ Thêm ô nhập số xe hoàn thành */}
-            <div className="form-group">
-              <label className="form-label">Số xe hoàn thành</label>
-              <input
-                type="number"
-                name="CompletedVehicles"
-                value={formData.CompletedVehicles}
-                onChange={handleChange}
-                min="0"
-                className={`form-control ${
-                  errors.CompletedVehicles ? "error" : ""
-                }`}
-                placeholder="Nhập số xe đã hoàn thành"
-                disabled
-                readOnly
-              />
-              <small className="form-help">
-                Tự động cập nhật từ báo cáo của kỹ thuật viên
-              </small>
-            </div>
-          </div>
+          
 
           <div className="form-row">
             <div className="form-group">

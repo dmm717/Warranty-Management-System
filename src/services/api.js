@@ -196,42 +196,42 @@ export const warrantyClaimAPI = {
 // SC TECHNICIAN APIs - Quản lý kỹ thuật viên
 // =============================================================================
 
-export const scTechnicianAPI = {
-  // GET /api/sc-technicians - Lấy danh sách kỹ thuật viên (có phân trang)
-  getAllTechnicians: (params = {}) => {
-    const { page = 0, size = 100, sortBy = "name", sortDir = "asc" } = params;
-    return apiService.get(
-      `/sc-technicians?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
-    );
-  },
+// export const scTechnicianAPI = {
+//   // GET /api/sc-technicians - Lấy danh sách kỹ thuật viên (có phân trang)
+//   getAllTechnicians: (params = {}) => {
+//     const { page = 0, size = 100, sortBy = "name", sortDir = "asc" } = params;
+//     return apiService.get(
+//       `/sc-technicians?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
+//     );
+//   },
 
-  // GET /api/sc-technicians/{id} - Lấy chi tiết kỹ thuật viên
-  getTechnicianById: (id) => apiService.get(`/sc-technicians/${id}`),
+//   // GET /api/sc-technicians/{id} - Lấy chi tiết kỹ thuật viên
+//   getTechnicianById: (id) => apiService.get(`/sc-technicians/${id}`),
 
-  // GET /api/sc-technicians/branch/{branchOffice} - Lấy kỹ thuật viên theo chi nhánh
-  getTechniciansByBranch: (branchOffice, params = {}) => {
-    const { page = 0, size = 100 } = params;
-    return apiService.get(
-      `/sc-technicians/branch/${branchOffice}?page=${page}&size=${size}`
-    );
-  },
+//   // GET /api/sc-technicians/branch/{branchOffice} - Lấy kỹ thuật viên theo chi nhánh
+//   getTechniciansByBranch: (branchOffice, params = {}) => {
+//     const { page = 0, size = 100 } = params;
+//     return apiService.get(
+//       `/sc-technicians/branch/${branchOffice}?page=${page}&size=${size}`
+//     );
+//   },
 
-  // GET /api/sc-technicians/specialty/{specialty} - Lấy kỹ thuật viên theo chuyên môn
-  getTechniciansBySpecialty: (specialty, params = {}) => {
-    const { page = 0, size = 100 } = params;
-    return apiService.get(
-      `/sc-technicians/specialty/${specialty}?page=${page}&size=${size}`
-    );
-  },
+//   // GET /api/sc-technicians/specialty/{specialty} - Lấy kỹ thuật viên theo chuyên môn
+//   getTechniciansBySpecialty: (specialty, params = {}) => {
+//     const { page = 0, size = 100 } = params;
+//     return apiService.get(
+//       `/sc-technicians/specialty/${specialty}?page=${page}&size=${size}`
+//     );
+//   },
 
-  // GET /api/sc-technicians/search - Tìm kiếm kỹ thuật viên
-  searchTechnicians: (keyword, params = {}) => {
-    const { page = 0, size = 100, sortBy = "name", sortDir = "asc" } = params;
-    return apiService.get(
-      `/sc-technicians/search?keyword=${keyword}&page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
-    );
-  },
-};
+//   // GET /api/sc-technicians/search - Tìm kiếm kỹ thuật viên
+//   searchTechnicians: (keyword, params = {}) => {
+//     const { page = 0, size = 100, sortBy = "name", sortDir = "asc" } = params;
+//     return apiService.get(
+//       `/sc-technicians/search?keyword=${keyword}&page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
+//     );
+//   },
+// };
 
 // =============================================================================
 // ELECTRIC VEHICLE APIs - Quản lý xe điện

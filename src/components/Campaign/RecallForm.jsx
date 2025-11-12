@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import "../../styles/RecallForm.css";
-import { VEHICLE_TYPES, RECALL_STATUS_OPTIONS } from "../../constants";
+import { VEHICLE_TYPES, RECALL_STATUS_OPTIONS, TECHNICIAN_SPECIALTIES } from "../../constants";
 import { useAuth } from "../../contexts/AuthContext";
 import { recallAPI, vehicleAPI, scTechnicianAPI } from "../../services/api";
 import { toast } from "react-toastify";
@@ -23,7 +23,8 @@ function RecallForm({ recall, onSave, onCancel }) {
     technicianIds: [],
     vehicleId: [],
     electricVehicleId: "",
-    scTechnicianId: ""
+    scTechnicianId: "",
+    specialty: ""
   });
 
   const [errors, setErrors] = useState({});
@@ -98,6 +99,7 @@ function RecallForm({ recall, onSave, onCancel }) {
         vehicleId: recall.vehicleId || [],
         electricVehicleId: recall.electricVehicleId || "",
         scTechnicianId: recall.scTechnicianId || "",
+        specialty: recall.specialty || "-chọn chuyên môn-",
       });
     }
   }, [recall]);
@@ -140,6 +142,10 @@ function RecallForm({ recall, onSave, onCancel }) {
       newErrors.requiredAction = "Hành động yêu cầu là bắt buộc";
     }
     
+    if (!formData.specialty) {
+      newErrors.specialty = "Chuyên môn kỹ thuật viên là bắt buộc";
+    }
+    
     return newErrors;
   };
 
@@ -169,6 +175,7 @@ function RecallForm({ recall, onSave, onCancel }) {
       // Add new fields
       electricVehicleId: formData.electricVehicleId || null,
       scTechnicianId: formData.scTechnicianId || null,
+      specialty: formData.specialty
     };
 
     try {
@@ -438,6 +445,31 @@ function RecallForm({ recall, onSave, onCancel }) {
           </div>
         </div>
       */}
+        
+        {/* Specialty */}
+        <div className="form-section">
+          <div className="form-group">
+            <label className="form-label">Chuyên môn kỹ thuật viên *</label>
+            <select
+              name="specialty"
+              value={formData.specialty}
+              onChange={handleChange}
+              className="form-control"
+              disabled={loading}
+            >
+              <option value="">-- Chọn chuyên môn --</option>
+              {TECHNICIAN_SPECIALTIES.map((spec) => (
+                <option key={spec.value} value={spec.value}>
+                  {spec.label}
+                </option>
+              ))}
+            </select>
+            {errors.specialty && (
+              <div className="error-message">{errors.specialty}</div>
+            )}
+          </div>
+        </div>
+        
         {/* ===== TEXT INPUT / TEXTAREA SECTIONS (BOTTOM) ===== */}
         
         {/* Ngày bắt đầu */}
