@@ -152,12 +152,7 @@ function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
         newErrors.department = "Khu vực là bắt buộc cho vai trò SC";
       }
 
-      // VALIDATION: SC_ADMIN chỉ được tạo user trong cùng chi nhánh
-      if (currentUser?.role === "SC_ADMIN" && !user && currentUserBranch) {
-        if (formData.department !== currentUserBranch) {
-          newErrors.department = `Bạn chỉ có thể tạo tài khoản trong chi nhánh "${currentUserBranch}"`;
-        }
-      }
+      
     }
 
     // Specialty validation for SC_TECHNICAL
@@ -324,34 +319,51 @@ function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
               )}
             </div>
 
-            {/* Chỉ SC roles mới có field Khu vực - KHÔNG hiển thị cho SC_ADMIN khi tạo mới */}
+            {/* Chỉ SC roles mới có field Khu vực */}
             {(formData.role === "SC_ADMIN" ||
               formData.role === "SC_STAFF" ||
-              formData.role === "SC_TECHNICAL") &&
-              !(currentUser?.role === "SC_ADMIN" && !user) && ( // Ẩn hoàn toàn khi SC_ADMIN tạo mới
+              formData.role === "SC_TECHNICAL") && (
                 <div className="form-group">
                   <label className="form-label">Khu vực *</label>
-                  <select
-                    name="department"
-                    value={formData.department}
-                    onChange={handleChange}
-                    className={`form-control ${
-                      errors.department ? "error" : ""
-                    }`}
-                  >
-                    <option value="">Chọn khu vực</option>
-                    {REGIONS.filter((r) => r.value !== "ALL").map((region) => (
-                      <option key={region.value} value={region.label}>
-                        {region.label}
-                      </option>
-                    ))}
-                  </select>
+                  {currentUser?.role === "SC_ADMIN" && !user &&
+                   (formData.role === "SC_STAFF" || formData.role === "SC_TECHNICAL") ? (
+                    <>
+                      <input
+                        type="text"
+                        value={formData.department}
+                        readOnly
+                        disabled
+                        className="form-control"
+                        style={{ backgroundColor: '#f1f5f9' }}
+                      />
+                      <small className="form-help">Tự động gán chi nhánh: {currentUserBranch}</small>
+                    </>
+                  ) : (
+                    <select
+                      name="department"
+                      value={formData.department}
+                      onChange={handleChange}
+                      className={`form-control ${
+                        errors.department ? "error" : ""
+                      }`}
+                    >
+                      <option value="">Chọn khu vực</option>
+                      {REGIONS.filter((r) => r.value !== "ALL").map((region) => (
+                        <option key={region.value} value={region.label}>
+                          {region.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   {errors.department && (
                     <div className="error-message">{errors.department}</div>
                   )}
-                  <small className="form-help">
-                    Chọn quận/huyện khu vực hoạt động
-                  </small>
+                  {!(currentUser?.role === "SC_ADMIN" && !user &&
+                     (formData.role === "SC_STAFF" || formData.role === "SC_TECHNICAL")) && (
+                    <small className="form-help">
+                      Chọn quận/huyện khu vực hoạt động
+                    </small>
+                  )}
                 </div>
               )}
 
@@ -407,8 +419,8 @@ function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
                       {passwordStrength === "weak"
                         ? "Yếu"
                         : passwordStrength === "medium"
-                        ? "Trung bình"
-                        : "Mạnh"}
+                          ? "Trung bình"
+                          : "Mạnh"}
                     </div>
                   </div>
                 )}
@@ -420,9 +432,8 @@ function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`form-control ${
-                    errors.confirmPassword ? "error" : ""
-                  }`}
+                  className={`form-control ${errors.confirmPassword ? "error" : ""
+                    }`}
                   placeholder="Nhập lại mật khẩu"
                 />
                 {errors.confirmPassword && (
@@ -438,9 +449,8 @@ function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
                   {getPasswordRequirements().map((req, index) => (
                     <li
                       key={index}
-                      className={`requirement-item ${
-                        req.met ? "met" : "unmet"
-                      }`}
+                      className={`requirement-item ${req.met ? "met" : "unmet"
+                        }`}
                     >
                       {req.text}
                     </li>

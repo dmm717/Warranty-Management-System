@@ -105,9 +105,7 @@ function UserManagement() {
       // Tự động set department cho SC_ADMIN khi tạo SC_STAFF/SC_TECHNICAL
       if (!editingUser && user?.role === "SC_ADMIN") {
         // Lấy branchOffice từ danh sách users
-        const currentUserBranch = users.find(
-          (u) => u.email === user.email
-        )?.branchOffice;
+        const currentUserBranch = user.branchOffice;
 
         if (userData.role === "SC_STAFF" || userData.role === "SC_TECHNICAL") {
           // Tự động gán chi nhánh của SC_ADMIN
@@ -328,9 +326,7 @@ function UserManagement() {
         <UserForm
           user={editingUser}
           currentUser={user}
-          currentUserBranch={
-            users.find((u) => u.email === user.email)?.branchOffice
-          }
+          currentUserBranch={user?.branchOffice}
           onSave={handleSaveUser}
           onCancel={handleCancelForm}
         />
