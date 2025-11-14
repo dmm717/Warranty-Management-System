@@ -17,14 +17,17 @@
 }
 
 .modal-content {
-  background: white;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(96, 165, 250, 0.3);
   border-radius: 1rem;
   width: 100%;
   max-width: 900px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(96, 165, 250, 0.3);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .modal-content.large {
@@ -36,13 +39,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .modal-header h2 {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-primary, #1f2937);
+  color: rgba(255, 255, 255, 0.95);
   margin: 0;
 }
 
@@ -50,7 +53,7 @@
   background: none;
   border: none;
   font-size: 2rem;
-  color: var(--text-secondary, #6b7280);
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   width: 2.5rem;
   height: 2.5rem;
@@ -62,8 +65,8 @@
 }
 
 .btn-close:hover {
-  background: var(--bg-hover, #f3f4f6);
-  color: var(--text-primary, #1f2937);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .modal-body {
@@ -77,7 +80,7 @@
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1.5rem;
-  border-top: 1px solid var(--border-color, #e5e7eb);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Steps Indicator */
@@ -87,7 +90,7 @@
   align-items: center;
   padding: 1.5rem;
   gap: 2rem;
-  background: var(--bg-light, #f9fafb);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .step {
@@ -105,7 +108,7 @@
   transform: translateY(-50%);
   width: 2rem;
   height: 2px;
-  background: var(--border-color, #e5e7eb);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .step:last-child::after {
@@ -113,15 +116,15 @@
 }
 
 .step.active::after {
-  background: var(--primary-color, #3b82f6);
+  background: #60a5fa;
 }
 
 .step-number {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
-  background: var(--border-color, #e5e7eb);
-  color: var(--text-secondary, #6b7280);
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -131,18 +134,18 @@
 }
 
 .step.active .step-number {
-  background: var(--primary-color, #3b82f6);
+  background: #60a5fa;
   color: white;
 }
 
 .step-label {
   font-size: 0.875rem;
-  color: var(--text-secondary, #6b7280);
+  color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
 }
 
 .step.active .step-label {
-  color: var(--primary-color, #3b82f6);
+  color: #60a5fa;
   font-weight: 600;
 }
 
@@ -191,10 +194,10 @@
 .form-step h3 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--text-primary, #1f2937);
+  color: rgba(255, 255, 255, 0.95);
   margin: 0 0 1.25rem 0;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--border-color, #e5e7eb);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .form-grid {
@@ -216,7 +219,7 @@
 .form-group label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary, #1f2937);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .required {
@@ -228,10 +231,11 @@
 .form-group select,
 .form-group textarea {
   padding: 0.75rem;
-  border: 1px solid var(--border-color, #d1d5db);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 0.5rem;
   font-size: 0.95rem;
-  color: var(--text-primary, #1f2937);
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.08);
   transition: all 0.2s;
 }
 
@@ -239,14 +243,16 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: var(--primary-color, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #60a5fa;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
 }
 
 .form-group input:disabled,
 .form-group select:disabled {
-  background: var(--bg-disabled, #f3f4f6);
+  background: rgba(255, 255, 255, 0.05);
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .form-group textarea {
@@ -258,27 +264,27 @@
 .confirm-section {
   margin-bottom: 1.5rem;
   padding: 1.25rem;
-  background: var(--bg-light, #f9fafb);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 0.75rem;
 }
 
 .confirm-section h4 {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary, #1f2937);
+  color: rgba(255, 255, 255, 0.95);
   margin: 0 0 0.75rem 0;
 }
 
 .confirm-info p {
   margin: 0.5rem 0;
-  color: var(--text-primary, #1f2937);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.95rem;
 }
 
 .confirm-info strong {
   font-weight: 600;
-  color: var(--text-secondary, #6b7280);
+  color: rgba(255, 255, 255, 0.7);
   margin-right: 0.5rem;
 }
 
@@ -294,16 +300,16 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  background: white;
-  border: 2px solid var(--border-color, #e5e7eb);
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .service-option:hover {
-  border-color: var(--primary-color, #3b82f6);
-  background: var(--bg-hover, #f9fafb);
+  border-color: #60a5fa;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .service-option input[type="radio"] {

@@ -548,25 +548,6 @@ function RecallForm({ recall, onSave, onCancel }) {
           </div>
         </div>
 
-        {/* Notification Sent */}
-        <div className="form-section">
-          <div className="form-group">
-            <label className="checkbox-item">
-              <input
-                type="checkbox"
-                name="notificationSent"
-                checked={formData.notificationSent}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  notificationSent: e.target.checked
-                }))}
-                disabled={loading}
-              />
-              <span>Đã gửi thông báo đến khách hàng</span>
-            </label>
-          </div>
-        </div>
-
         {/* Warning */}
         <div className="recall-warning">
           <div className="warning-icon">⚠️</div>

@@ -12,9 +12,11 @@
 
 /* Modal Container */
 .modal-container {
-  background-color: white;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   max-width: 48rem;
   width: 100%;
   margin: 0 1rem;
@@ -92,39 +94,43 @@
 }
 
 .technician-list::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
 .technician-list::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgba(255, 255, 255, 0.3);
   border-radius: 4px;
 }
 
 .technician-list::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgba(255, 255, 255, 0.5);
 }
 
 /* Technician Card */
 .technician-card {
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 1rem;
-  transition: all 0.2s;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  background-color: white;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgb(107 129 167 / 40%) ;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .technician-card:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(96, 165, 250, 0.4);
+  transform: translateY(-2px);
 }
 
 .technician-card.assigned {
-  border-color: #86efac;
-  background-color: #f0fdf4;
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.1) !important;
 }
 
 .technician-info {
@@ -151,13 +157,13 @@
 
 .technician-name {
   font-weight: 600;
-  color: #8e9aac;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 1.125rem;
 }
 
 .technician-details {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Buttons */
@@ -208,20 +214,21 @@
 
 .empty-icon {
   font-size: 3rem;
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.4);
   margin-bottom: 1rem;
 }
 
 .empty-text {
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 1.125rem;
 }
 
 /* Modal Footer */
 .modal-footer {
-  background-color: #f9fafb;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -229,7 +236,7 @@
 
 .footer-info {
   font-size: 0.875rem;
-  color: #4b5563;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .footer-count {

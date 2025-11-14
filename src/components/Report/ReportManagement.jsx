@@ -7,6 +7,7 @@ import ReportDetail from "./ReportDetail";
 import ReportChart from "./ReportChart";
 import { warrantyClaimAPI, serviceCampaignAPI, reportAPI } from "../../services/api";
 import { toast } from "react-toastify";
+import rolePermissionService from "../../services/RolePermissionService";
 import "../../styles/ReportManagement.css";
 
 function ReportManagement() {
@@ -19,6 +20,13 @@ function ReportManagement() {
   const [activeTab, setActiveTab] = useState("list");
   const [loading, setLoading] = useState(true);
   const [reportData, setReportData] = useState({});
+
+  const canViewReports = () => {
+    return rolePermissionService.hasPermission(user?.role, "record_and_report") ||
+           rolePermissionService.hasPermission(user?.role, "update_report") ||
+           rolePermissionService.hasPermission(user?.role, "confirm_manufacturer_report") ||
+           (user?.role === "SC_ADMIN" || user?.role === "EVM_STAFF" || user?.role === "EVM_ADMIN" || user?.role === "Admin");
+  };
 
   useEffect(() => {
     fetchReportsAndStats();
@@ -38,6 +46,34 @@ function ReportManagement() {
       if (response.success && response.data) {
         const reportsData = response.data.content || response.data || [];
         
+        console.log("🔍 Raw API response data (first 3 reports):", reportsData.slice(0, 3));
+        console.log("🔍 Checking for duplicate IDs in reports:");
+        
+        reportsData.forEach((report, index) => {
+          if (report.serviceCampaignId && report.warrantyClaimId) {
+            console.warn(`⚠️ Report ${index} has BOTH serviceCampaignId AND warrantyClaimId:`, {
+              id: report.id,
+              serviceCampaignId: report.serviceCampaignId,
+              warrantyClaimId: report.warrantyClaimId,
+              areEqual: report.serviceCampaignId === report.warrantyClaimId
+            });
+          }
+          if (report.serviceCampaignId && report.recallId) {
+            console.warn(`⚠️ Report ${index} has BOTH serviceCampaignId AND recallId:`, {
+              id: report.id,
+              serviceCampaignId: report.serviceCampaignId,
+              recallId: report.recallId
+            });
+          }
+          if (report.warrantyClaimId && report.recallId) {
+            console.warn(`⚠️ Report ${index} has BOTH warrantyClaimId AND recallId:`, {
+              id: report.id,
+              warrantyClaimId: report.warrantyClaimId,
+              recallId: report.recallId
+            });
+          }
+        });
+        
         const transformedReports = reportsData.map((report) => {
           return {
             ID_Report: report.id || report.reportId || `RPT-${report.id}`,
@@ -54,6 +90,7 @@ function ReportManagement() {
             EvmAdminId: report.evmAdminId,
             serviceCampaignId: report.serviceCampaignId,
             recallId: report.recallId,
+            warrantyClaimId: report.warrantyClaimId,
           };
         });
 
@@ -470,34 +507,45 @@ function ReportManagement() {
 
       {!showForm && !showDetail ? (
         <>
-          <div className="report-tabs">
-            <button
-              className={`tab-btn ${activeTab === "list" ? "active" : ""}`}
-              onClick={() => setActiveTab("list")}
-            >
-              <FileText size={18} style={{ display: 'inline', marginRight: '6px' }} />
-              Danh sách báo cáo
-            </button>
-            <button
-              className={`tab-btn ${activeTab === "analytics" ? "active" : ""}`}
-              onClick={() => setActiveTab("analytics")}
-            >
-              <BarChart3 size={18} style={{ display: 'inline', marginRight: '6px' }} />
-              Phân tích & Thống kê
-            </button>
-          </div>
-
-          {activeTab === "list" ? (
-            <ReportList
-              reports={reports}
-              onEdit={handleEditReport}
-              onView={handleViewDetail}
-              onDelete={handleDeleteReport}
-              onAssign={handleAssignReport}
-              userRole={user?.role}
-            />
+          {/* Kiểm tra quyền xem reports */}
+          {!canViewReports() ? (
+            <div className="no-data-container">
+              <div className="no-data-icon">🚫</div>
+              <h3>Không có quyền truy cập</h3>
+              <p>Bạn không có quyền xem trang báo cáo</p>
+            </div>
           ) : (
-            <ReportChart reportData={reportData} />
+            <>
+              <div className="report-tabs">
+                <button
+                  className={`tab-btn ${activeTab === "list" ? "active" : ""}`}
+                  onClick={() => setActiveTab("list")}
+                >
+                  <FileText size={18} style={{ display: 'inline', marginRight: '6px' }} />
+                  Danh sách báo cáo
+                </button>
+                <button
+                  className={`tab-btn ${activeTab === "analytics" ? "active" : ""}`}
+                  onClick={() => setActiveTab("analytics")}
+                >
+                  <BarChart3 size={18} style={{ display: 'inline', marginRight: '6px' }} />
+                  Phân tích & Thống kê
+                </button>
+              </div>
+
+              {activeTab === "list" ? (
+                <ReportList
+                  reports={reports}
+                  onEdit={handleEditReport}
+                  onView={handleViewDetail}
+                  onDelete={handleDeleteReport}
+                  onAssign={handleAssignReport}
+                  userRole={user?.role}
+                />
+              ) : (
+                <ReportChart reportData={reportData} />
+              )}
+            </>
           )}
         </>
       ) : showForm ? (

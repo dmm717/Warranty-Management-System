@@ -320,6 +320,10 @@ export const vehicleAPI = {
 
   // DELETE /api/ElectricVehicle/{id} - Xóa xe
   deleteVehicle: (id) => apiService.delete(`/ElectricVehicle/${id}`),
+
+  // PATCH /api/ElectricVehicle/{vehicleId}/version/{version} - Cập nhật version xe
+  updateVersion: (vehicleId, version) =>
+    apiService.patch(`/ElectricVehicle/${vehicleId}/version/${version}`),
 };
 
 // =============================================================================
@@ -1039,13 +1043,21 @@ export const warrantyPolicyAPI = {
     apiService.get(`/warranty-policies/check-vin/${vehicleVIN}`),
 };
 
+// =============================================================================
+// EMAIL APIs - Email Communication
+// =============================================================================
+
+export const emailAPI = {
+  // POST /api/campaign/send - Send service campaign email to multiple recipients
+  sendCustomerEmail: (data) => apiService.post("/campaigns/email/send", data),
+};
+
 // Export default object với tất cả APIs
 export default {
   auth: authAPI,
   user: userAPI,
   scTechnician: scTechnicianAPI,
   warrantyClaim: warrantyClaimAPI,
-  scTechnician: scTechnicianAPI,
   vehicle: vehicleAPI,
   serviceCampaign: serviceCampaignAPI,
   partsRequest: partsRequestAPI,
@@ -1061,4 +1073,5 @@ export default {
   serialNumber: serialNumberAPI,
   workResult: workResultAPI,
   warrantyPolicy: warrantyPolicyAPI,
+  email: emailAPI,
 };

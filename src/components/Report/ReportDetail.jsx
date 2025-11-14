@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Target, AlertTriangle } from "lucide-react";
-import { serviceCampaignAPI, recallAPI } from "../../services/api";
+import { useNavigate } from "react-router-dom";
+import { Target, AlertTriangle, Edit, Shield } from "lucide-react";
+import { serviceCampaignAPI, recallAPI, warrantyClaimAPI } from "../../services/api";
 import "../../styles/ReportDetail.css";
 
 function ReportDetail({ report, onEdit, userRole }) {
+  const navigate = useNavigate();
   const [campaignName, setCampaignName] = useState("");
   const [recallName, setRecallName] = useState("");
+  const [warrantyClaimName, setWarrantyClaimName] = useState("");
 
   useEffect(() => {
     const fetchCampaignAndRecallNames = async () => {
@@ -33,6 +36,19 @@ function ReportDetail({ report, onEdit, userRole }) {
             }
           }
         }
+
+        // Fetch warranty claim name if warrantyClaimId exists
+        if (report.warrantyClaimId) {
+          try {
+            const warrantyRes = await warrantyClaimAPI.getClaimById(report.warrantyClaimId);
+            if (warrantyRes.success && warrantyRes.data) {
+              setWarrantyClaimName(warrantyRes.data.claimNumber || warrantyRes.data.description || "Unnamed Warranty Claim");
+            }
+          } catch (error) {
+            console.error("Error fetching warranty claim:", error);
+            setWarrantyClaimName(`Claim #${report.warrantyClaimId}`);
+          }
+        }
       } catch (error) {
         console.error("Error fetching campaign/recall names:", error);
       }
@@ -43,7 +59,23 @@ function ReportDetail({ report, onEdit, userRole }) {
     }
   }, [report]);
 
-  if (!report) return null;
+  const handleCampaignClick = () => {
+    if (report.serviceCampaignId) {
+      navigate(`/campaigns?campaignId=${report.serviceCampaignId}&view=detail`);
+    }
+  };
+
+  const handleRecallClick = () => {
+    if (report.recallId) {
+      navigate(`/campaigns?recallId=${report.recallId}&view=detail&tab=recalls`);
+    }
+  };
+
+  const handleWarrantyClaimClick = () => {
+    if (report.warrantyClaimId) {
+      navigate(`/warranty-claims?claimId=${report.warrantyClaimId}&view=detail`);
+    }
+  };
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -102,7 +134,7 @@ function ReportDetail({ report, onEdit, userRole }) {
           <h3>#{report.ID_Report || report.id}</h3>
           <div className="report-meta">
             {getStatusBadge(report.Status || report.status)}
-            {report.Priority && getPriorityBadge(report.Priority)}
+            
             <span className="report-date">
               {formatDate(report.CreatedDate || report.createdAt)}
             </span>
@@ -111,7 +143,7 @@ function ReportDetail({ report, onEdit, userRole }) {
         <div className="detail-actions">
           {canEdit() && (
             <button onClick={() => onEdit(report)} className="btn btn-outline">
-              <span>✏️</span>
+              <Edit size={16} />
               Chỉnh sửa
             </button>
           )}
@@ -145,13 +177,13 @@ function ReportDetail({ report, onEdit, userRole }) {
                 </div>
               </div>
 
-              {/* Links to Campaign/Recall */}
-              {(report.serviceCampaignId || report.recallId) && (
+              {/* Links to Campaign/Recall/Warranty Claim */}
+              {(report.serviceCampaignId || report.recallId || report.warrantyClaimId) && (
                 <div className="info-section card">
                   <h3 className="section-title">Chiến dịch liên quan</h3>
                   <div className="links-content">
                     {report.serviceCampaignId && (
-                      <div className="link-item">
+                      <div className="link-item clickable" onClick={handleCampaignClick}>
                         <Target size={20} style={{ color: '#4CAF50' }} />
                         <div className="link-info">
                           <strong>Service Campaign</strong>
@@ -161,12 +193,22 @@ function ReportDetail({ report, onEdit, userRole }) {
                       </div>
                     )}
                     {report.recallId && (
-                      <div className="link-item">
+                      <div className="link-item clickable" onClick={handleRecallClick}>
                         <AlertTriangle size={20} style={{ color: '#FF9800' }} />
                         <div className="link-info">
                           <strong>Recall</strong>
                           <span>{recallName || report.recallId}</span>
                           <small>ID: {report.recallId}</small>
+                        </div>
+                      </div>
+                    )}
+                    {report.warrantyClaimId && (
+                      <div className="link-item clickable" onClick={handleWarrantyClaimClick}>
+                        <Shield size={20} style={{ color: '#2196F3' }} />
+                        <div className="link-info">
+                          <strong>Warranty Claim</strong>
+                          <span>{warrantyClaimName || report.warrantyClaimId|| 'N/A'}</span>
+                          <small>ID: {report.warrantyClaimId}</small>
                         </div>
                       </div>
                     )}
@@ -212,32 +254,7 @@ function ReportDetail({ report, onEdit, userRole }) {
             </div>
           </div>
 
-          <div className="detail-col-4">
-            {/* Summary Stats */}
-            <div className="summary-section card">
-              <h3 className="section-title">Thông tin thêm</h3>
-              <div className="summary-stats">
-                {report.ScStaffId && (
-                  <div className="info-item">
-                    <label>SC Staff ID</label>
-                    <span>{report.ScStaffId}</span>
-                  </div>
-                )}
-                {report.EvmAdminId && (
-                  <div className="info-item">
-                    <label>EVM Admin ID</label>
-                    <span>{report.EvmAdminId}</span>
-                  </div>
-                )}
-                {report.warrantyClaimId && (
-                  <div className="info-item">
-                    <label>Warranty Claim ID</label>
-                    <span>{report.warrantyClaimId}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          
         </div>
       </div>
     </div>

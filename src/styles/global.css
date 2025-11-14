@@ -1,0 +1,35 @@
+/* Bulk assign button styles */
+.assign-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.bulk-assign-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.bulk-assign-btn:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.bulk-assign-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Branch info styling */
+.branch-info {
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-weight: normal;
+  margin-left: 0.5rem;
+}

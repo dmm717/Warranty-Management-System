@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Megaphone, AlertTriangle, ArrowLeft } from "lucide-react";
 import CampaignList from "./CampaignList";
@@ -15,6 +16,7 @@ import { toast } from "react-toastify";
 
 function CampaignManagement() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [campaigns, setCampaigns] = useState([]);
   const [recalls, setRecalls] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -26,16 +28,48 @@ function CampaignManagement() {
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
-  const [assignments, setAssignments] = useState([
-    { CampaignsID: "SC001", SC_TechnicianID: "T001" },
-    { CampaignsID: "SC001", SC_TechnicianID: "T002" },
-  ]);
+   const [assignments, setAssignments] = useState([
+    // { CampaignsID: "SC001", SC_TechnicianID: "T001" },
+    // { CampaignsID: "SC001", SC_TechnicianID: "T002" },
+   ]);
   const [vehicles, setVehicles] = useState([]);
   
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Check URL params for auto-opening detail view
+  useEffect(() => {
+    if (!loading && (campaigns.length > 0 || recalls.length > 0)) {
+      const campaignId = searchParams.get('campaignId');
+      const recallId = searchParams.get('recallId');
+      const view = searchParams.get('view');
+      const tab = searchParams.get('tab');
+
+      if (view === 'detail') {
+        if (campaignId && campaigns.length > 0) {
+          const campaign = campaigns.find(c => c.campaignsId === campaignId || c.CampaignsID === campaignId);
+          if (campaign) {
+            setSelectedItem(campaign);
+            setFormType('campaign');
+            setShowDetail(true);
+            setActiveTab('campaigns');
+          }
+        } else if (recallId && recalls.length > 0) {
+          const recall = recalls.find(r => r.id === recallId || r.recallId === recallId || r.Recall_ID === recallId);
+          if (recall) {
+            setSelectedItem(recall);
+            setFormType('recall');
+            setShowDetail(true);
+            setActiveTab('recalls');
+          }
+        }
+      } else if (tab === 'recalls') {
+        setActiveTab('recalls');
+      }
+    }
+  }, [loading, campaigns, recalls, searchParams]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -50,30 +84,56 @@ function CampaignManagement() {
       });
 
       if (campaignsRes.success && campaignsRes.data) {
-        const transformedCampaigns = campaignsRes.data.content.map(
-          (campaign) => ({
+        // Fetch detail cho mỗi campaign để có data đầy đủ
+        const campaignsWithDetails = await Promise.all(
+          campaignsRes.data.content.map(async (campaign) => {
+            try {
+              const detailRes = await serviceCampaignAPI.getCampaignById(campaign.campaignsId);
+              if (detailRes.success && detailRes.data) {
+                // Merge list data với detail data
+                return {
+                  ...campaign,
+                  ...detailRes.data,
+                  // Override với list data nếu cần
+                  campaignsId: campaign.campaignsId,
+                  campaignsTypeName: campaign.campaignsTypeName,
+                };
+              }
+            } catch (error) {
+              console.warn(`Could not fetch detail for campaign ${campaign.campaignsId}:`, error);
+            }
+            return campaign; // Fallback to list data
+          })
+        );
+
+        const transformedCampaigns = campaignsWithDetails.map(
+          (campaign) => {
+            //console.log("Full campaign object from API:", campaign); // Log toàn bộ object
+            return {
             // Backend trả về: campaignsId, campaignsTypeName (from ServiceCampaignsListDTO)
             campaignId: campaign.campaignsId,
             CampaignsID: campaign.campaignsId,
             campaignName: campaign.campaignsTypeName,
             CampaignsTypeName: campaign.campaignsTypeName,
-            description: campaign.description || "N/A",
-            Description: campaign.description || "N/A",
+            description: campaign.description,
+            Description: campaign.description,
             startDate: campaign.startDate,
             StartDate: campaign.startDate,
             endDate: campaign.endDate,
             EndDate: campaign.endDate,
             status: campaign.status,
             Status: campaign.status,
-            requiredParts: campaign.requiredParts || "N/A",
-            RequiredParts: campaign.requiredParts || "N/A",
+            requiredParts: campaign.requiredParts,
+            
             completedVehicles: campaign.completedVehicles || 0,
             CompletedVehicles: campaign.completedVehicles || 0,
             vehicleTypes: campaign.vehicleTypes || [],
             technicians: campaign.technicians || [],
             vehicleTypeCount: campaign.vehicleTypeCount || 0,
             technicianCount: campaign.technicianCount || 0,
-          })
+            specialty: campaign.specialty || "",
+            };
+          }
         );
         setCampaigns(transformedCampaigns);
       } else {
@@ -354,7 +414,46 @@ function CampaignManagement() {
         vehicleId: full.vehicleId || (full.vehicleBasicInfoDTOS ? full.vehicleBasicInfoDTOS.map(v => v.vehicleId || v.VIN) : full.VIN ? [full.VIN] : []),
       };
 
-  // normalized object prepared for edit form
+      // normalized object prepared for edit form
+
+      setSelectedItem(normalized);
+    } else if (type === "campaign" && item) {
+      // Always fetch full campaign detail to ensure Edit form is fully prefilling
+      let full = item;
+      try {
+        setLoading(true);
+        const campaignId = item.campaignId || item.CampaignsID;
+        if (campaignId) {
+          const detailRes = await serviceCampaignAPI.getCampaignById(campaignId);
+          if (detailRes && detailRes.success && detailRes.data) {
+            full = detailRes.data;
+          } else {
+            console.warn("handleEdit: campaign detail API returned no data or error", detailRes);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch campaign detail, using summary item", err);
+      } finally {
+        setLoading(false);
+      }
+
+      const normalized = {
+        ...full,
+        campaignId: item.campaignId || item.CampaignsID,
+        CampaignsID: item.campaignId || item.CampaignsID,
+        CampaignsTypeName: full.campaignsTypeName || full.typeName || full.CampaignsTypeName || "",
+        StartDate: full.startDate || full.StartDate || "",
+        EndDate: full.endDate || full.EndDate || "",
+        RequiredParts: full.requiredParts || full.RequiredParts || "",
+        Description: full.description || full.Description || "",
+        Status: full.status || full.Status || "PLANNED",
+        CompletedVehicles: full.completedVehicles || full.CompletedVehicles || 0,
+        YearScope: full.yearScope || full.YearScope || "",
+        // vehicleTypeIds should be an array of ids (for form selection)
+        vehicleTypeIds: full.vehicleTypeIds || full.vehicleTypes || [],
+        technicianIds: full.technicianIds || full.technicians || [],
+        specialty: full.specialty || "",
+      };
 
       setSelectedItem(normalized);
     } else {
@@ -370,6 +469,8 @@ function CampaignManagement() {
     setFormType(type);
     setShowDetail(true);
     setShowForm(false);
+    console.log("Viewing detail for item:", item);
+    console.log("Item type:", campaigns);
   };
 
   const handleSave = async (itemData) => {
@@ -387,6 +488,9 @@ function CampaignManagement() {
           notificationSent: itemData.NotificationSent || false,
           vehicleTypeIds: itemData.vehicleTypeIds || [],
           technicianIds: itemData.technicianIds || [],
+          specialty: itemData.specialty || "",
+          
+
         };
 
         if (selectedItem) {
@@ -647,6 +751,7 @@ function CampaignManagement() {
               onView={(item) => handleViewDetail(item, "campaign")}
               onUpdateStatus={(id, status) =>
                 handleUpdateStatus(id, status, "campaign")
+                
               }
               onStartCampaign={handleStartCampaign}
               userRole={user?.role}

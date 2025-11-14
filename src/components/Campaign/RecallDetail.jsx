@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, AlertTriangle, Users, Car, FileText, Clock, RefreshCw, UserPlus } from "lucide-react";
-import { recallAPI, vehicleAPI, scTechnicianAPI } from "../../services/api";
+import { Calendar, AlertTriangle, Users, Car, FileText, Clock, RefreshCw, UserPlus, Mail, Settings } from "lucide-react";
+import { recallAPI, vehicleAPI, scTechnicianAPI, emailAPI } from "../../services/api";
 import { RECALL_VEHICLE_STATUS_OPTIONS, VEHICLE_TYPES, RECALL_STATUS } from "../../constants";
 import { toast } from "react-toastify";
 import { useAuth } from "../../contexts/AuthContext";
@@ -22,6 +22,17 @@ function RecallDetail({ recallId, onBack }) {
   const [showDatePickerModal, setShowDatePickerModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [updatingVehicleId, setUpdatingVehicleId] = useState(null);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactData, setContactData] = useState({
+    campaignName: "",
+    recipients: [],
+    subject: "",
+    title: "",
+    body: "",
+    date: "",
+    html: true,
+  });
+  const [loadingVehicles, setLoadingVehicles] = useState(false);
   const isEVMAdmin = user?.role === "EVM_ADMIN";
   const isEVMStaff = user?.role === "EVM_STAFF";
   const isSCAdmin = user?.role === "SC_ADMIN";
@@ -327,6 +338,143 @@ function RecallDetail({ recallId, onBack }) {
       console.error("Error updating return date:", err);
       toast.error("Không thể cập nhật ngày trả xe");
     }
+  };
+
+  // Contact customer handlers
+  const handleOpenContactModal = async () => {
+    // Pre-fill basic data without auto-fetching emails
+    setContactData({
+      campaignName: recall.name || "Recall",
+      recipients: [],
+      subject: `VinFast Recall Notice - ${recall.name || "Recall"}`,
+      title: `VinFast Recall Notice`,
+      body: `Dear Valued Customer,
+
+We have identified an issue with your vehicle that requires immediate attention. This is part of our recall program: ${recall.name || "Recall"}.
+
+Please contact us to schedule a service appointment.
+
+Best regards,
+VinFast Service Team`,
+      date: formatDate(new Date().toISOString()),
+      html: true,
+    });
+    setShowContactModal(true);
+  };
+
+  const handleAutoAssignEmails = async () => {
+    setLoadingVehicles(true);
+    try {
+      // Get recall vehicle types
+      const vehicleTypes = recall.vehicleTypeInfoDTOS || [];
+      const vehicleTypeIds = vehicleTypes.map(vt => vt.id);
+
+      // Fetch all vehicles and filter by matching types
+      const vehiclesResponse = await vehicleAPI.getAllVehicles({ size: 1000 }); // Large size to get all
+      const allVehicles = vehiclesResponse.data.content || vehiclesResponse.data || [];
+
+      // Filter vehicles that match recall's vehicle types
+      const matchingVehicles = allVehicles.filter(vehicle =>
+        vehicleTypeIds.includes(vehicle.electricVehicleTypeId || vehicle.vehicleTypeId)
+      );
+
+      // Extract unique emails
+      const emails = [...new Set(matchingVehicles.map(vehicle => vehicle.email).filter(email => email))];
+
+      // Update recipients
+      setContactData(prev => ({
+        ...prev,
+        recipients: emails
+      }));
+    } catch (error) {
+      console.error("Error fetching vehicles:", error);
+      toast.error("Có lỗi khi tải danh sách email khách hàng.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } finally {
+      setLoadingVehicles(false);
+    }
+  };
+
+  const handleSendContactEmail = async () => {
+    if (!contactData.subject || !contactData.title || !contactData.body || !contactData.date || contactData.recipients.length === 0) {
+      toast.error("Vui lòng điền đầy đủ thông tin email.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+
+    try {
+      // Generate HTML content from title, body, and date
+      const htmlContent = `<h1>${contactData.title}</h1><p>${contactData.body.replace(/\n/g, '<br>')}</p><p>${contactData.date}</p>`;
+
+      const result = await emailAPI.sendCustomerEmail({ ...contactData, content: htmlContent });
+      if (result.success) {
+        toast.success("Email đã được gửi thành công!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        setShowContactModal(false);
+        setContactData({
+          campaignName: "",
+          recipients: [],
+          subject: "",
+          title: "",
+          body: "",
+          date: "",
+          html: true,
+        });
+      } else {
+        toast.error(`Lỗi gửi email: ${result.message}`, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast.error("Có lỗi xảy ra khi gửi email. Vui lòng thử lại.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+  };
+
+  const handleAddRecipient = (email) => {
+    if (email && !contactData.recipients.includes(email)) {
+      setContactData(prev => ({
+        ...prev,
+        recipients: [...prev.recipients, email]
+      }));
+    }
+  };
+
+  const handleRemoveRecipient = (email) => {
+    setContactData(prev => ({
+      ...prev,
+      recipients: prev.recipients.filter(r => r !== email)
+    }));
   };
 
   // Nếu đang xem vehicle detail, hiển thị VehicleDetail component
@@ -689,6 +837,7 @@ function RecallDetail({ recallId, onBack }) {
                   ))}
                 </div>
               </div>
+
             )}
 
             {/* Related Reports Section */}
@@ -708,6 +857,20 @@ function RecallDetail({ recallId, onBack }) {
                 </div>
               </div>
             )}
+
+            {/* Quick Actions Section */}
+            <div className="info-section">
+              <div className="section-title">
+                <Settings size={20} />
+                <h3>Thao tác nhanh</h3>
+              </div>
+              <div className="quick-actions">
+                <button className="action-btn contact-btn" onClick={handleOpenContactModal}>
+                  <span><Mail size={16} /></span>
+                  Liên hệ khách hàng
+                </button>
+              </div>
+            </div>
 
             {/* Empty state for sidebar */}
             {(!recall.technicianBasicDTOS || recall.technicianBasicDTOS.length === 0) &&
@@ -876,6 +1039,157 @@ function RecallDetail({ recallId, onBack }) {
                 disabled={!selectedDate}
               >
                 Cập nhật
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Customer Modal */}
+      {showContactModal && (
+        <div className="modal-overlay" onClick={() => setShowContactModal(false)}>
+          <div className="modal-content contact-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <Mail size={20} style={{ marginRight: '8px' }} />
+                Liên hệ khách hàng
+              </h2>
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="modal-close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {loadingVehicles ? (
+                <div className="loading-message">Đang tải danh sách khách hàng...</div>
+              ) : (
+                <div className="contact-form">
+                  <div className="form-group">
+                    <label className="form-label">Tên recall</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={contactData.campaignName}
+                      onChange={(e) => setContactData(prev => ({ ...prev, campaignName: e.target.value }))}
+                      placeholder="Nhập tên recall"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Người nhận ({contactData.recipients.length})</label>
+                    <div className="recipients-header">
+                      <button
+                        type="button"
+                        onClick={handleAutoAssignEmails}
+                        disabled={loadingVehicles}
+                        className="btn btn-outline btn-sm auto-assign-btn"
+                      >
+                        {loadingVehicles ? "Đang tải..." : "Tự động gán Gmail"}
+                      </button>
+                    </div>
+                    <div className="recipients-list">
+                      {contactData.recipients.map((email, index) => (
+                        <div key={index} className="recipient-item">
+                          <span>{email}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveRecipient(email)}
+                            className="remove-recipient"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="add-recipient">
+                      <input
+                        type="email"
+                        placeholder="Thêm email khách hàng"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAddRecipient(e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                        className="form-control"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          const input = e.target.previousElementSibling;
+                          handleAddRecipient(input.value);
+                          input.value = '';
+                        }}
+                        className="btn btn-sm btn-outline"
+                      >
+                        Thêm
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Tiêu đề</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={contactData.subject}
+                      onChange={(e) => setContactData(prev => ({ ...prev, subject: e.target.value }))}
+                      placeholder="Nhập tiêu đề email"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Ngày gửi</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={contactData.date}
+                      onChange={(e) => setContactData(prev => ({ ...prev, date: e.target.value }))}
+                      placeholder="Chọn ngày gửi"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Tiêu đề chính </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={contactData.title}
+                      onChange={(e) => setContactData(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Nhập tiêu đề chính"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Nội dung </label>
+                    <textarea
+                      className="form-control"
+                      rows="6"
+                      value={contactData.body}
+                      onChange={(e) => setContactData(prev => ({ ...prev, body: e.target.value }))}
+                      placeholder="Nhập nội dung"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-actions">
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="btn btn-outline"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSendContactEmail}
+                className="btn btn-primary"
+                disabled={loadingVehicles}
+              >
+                Gửi Email
               </button>
             </div>
           </div>

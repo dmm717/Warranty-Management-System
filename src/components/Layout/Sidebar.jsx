@@ -51,7 +51,7 @@ function Sidebar() {
       path: "/reports",
       name: "Báo cáo",
       icon: <FileText size={20} />,
-      roles: ["SC_STAFF", "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
+      roles: [ "SC_ADMIN", "EVM_STAFF", "EVM_ADMIN"],
     },
     {
       path: "/shipping",
