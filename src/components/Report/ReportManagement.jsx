@@ -127,6 +127,9 @@ function ReportManagement() {
 
         // Thống kê tổng quan
         const totalClaims = claims.length;
+        const completedClaims = claims.filter(
+          (c) => c.status === "COMPLETED"
+        ).length;
         const approvedClaims = claims.filter(
           (c) => c.status === "APPROVED"
         ).length;
@@ -190,6 +193,7 @@ function ReportManagement() {
         setReportData({
           warrantyStats: {
             totalClaims,
+            completedClaims,
             approvedClaims,
             rejectedClaims,
             pendingClaims,
@@ -204,6 +208,7 @@ function ReportManagement() {
           warrantyStats: {
             totalClaims: 0,
             approvedClaims: 0,
+            completedClaims: 0,
             rejectedClaims: 0,
             pendingClaims: 0,
             avgProcessingTime: 0,

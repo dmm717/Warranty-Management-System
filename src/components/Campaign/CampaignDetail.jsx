@@ -31,7 +31,7 @@ import { TECHNICIAN_SPECIALTIES } from "../../constants";
 import { scTechnicianAPI, emailAPI, vehicleAPI } from "../../services/api";
 import { toast } from "react-toastify";
 
-function CampaignDetail({ item, type, onEdit, onUpdateStatus, userRole }) {
+function CampaignDetail({ item, type, onEdit, userRole }) {
   const { user } = useAuth();
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState("");
@@ -144,17 +144,7 @@ function CampaignDetail({ item, type, onEdit, onUpdateStatus, userRole }) {
     return statusFlow[item.Status] || [];
   };
 
-  const handleStatusUpdate = () => {
-    if (newStatus && newStatus !== item.Status) {
-      onUpdateStatus(
-        isRecall ? item.Recall_ID : item.CampaignsID,
-        newStatus,
-        type
-      );
-      setShowStatusModal(false);
-      setNewStatus("");
-    }
-  };
+ 
 
   // Mock timeline data
   const getTimeline = () => {

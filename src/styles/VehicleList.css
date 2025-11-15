@@ -534,9 +534,11 @@
 
 .vehicle-info h4 {
   margin: 0 0 8px 0;
-  color: #1f2937;
-  font-size: 16px;
-  font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 16px;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.5px;
 }
 
 .vehicle-info p {
