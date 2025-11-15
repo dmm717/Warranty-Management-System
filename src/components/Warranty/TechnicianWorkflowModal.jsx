@@ -1,19 +1,27 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
+import { useAuth } from "../../contexts/AuthContext";
+import { normalizeBranchToEnum } from "../../utils/branchUtils";
 import {
   partsInventoryAPI,
   serialNumberAPI,
   workResultAPI,
+  partsRequestAPI,
+  evmInventoryAPI,
 } from "../../services/api";
 import "./TechnicianWorkflowModal.css";
 
 function TechnicianWorkflowModal({ claim, onClose, onComplete }) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
 
   // Step 1: Parts availability check
   const [partsAvailability, setPartsAvailability] = useState(null);
   const [checkingParts, setCheckingParts] = useState(false);
+  const [branchInventory, setBranchInventory] = useState([]); // Toàn bộ kho chi nhánh
+  const [selectedParts, setSelectedParts] = useState([]); // Phụ tùng SC_TECHNICAL chọn
 
   // Step 2: Serial number mappings
   const [serialMappings, setSerialMappings] = useState([]);
@@ -29,35 +37,312 @@ function TechnicianWorkflowModal({ claim, onClose, onComplete }) {
   const [returnDate, setReturnDate] = useState("");
 
   useEffect(() => {
-    if (claim?.claimId) {
-      checkPartsAvailability();
+    if (user?.branchOffice) {
+      loadBranchInventory();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [claim]);
+  }, [user]);
 
-  const checkPartsAvailability = async () => {
+  const loadBranchInventory = async () => {
     try {
       setCheckingParts(true);
-      const response = await partsInventoryAPI.checkPartsAvailability(
-        claim.claimId
+
+      if (!user?.branchOffice) {
+        throw new Error(
+          "Không tìm thấy thông tin chi nhánh. Vui lòng đăng nhập lại."
+        );
+      }
+
+      // Validate và normalize branch name: "Bình Thạnh" → "BINH_THANH"
+      let normalizedBranch;
+      try {
+        normalizedBranch = normalizeBranchToEnum(user.branchOffice);
+      } catch (error) {
+        console.error(
+          "[TechnicianWorkflow] Invalid branch:",
+          user.branchOffice
+        );
+        throw new Error(
+          `Chi nhánh "${user.branchOffice}" không hợp lệ. Vui lòng liên hệ quản trị viên.`
+        );
+      }
+
+      console.log(
+        `[TechnicianWorkflow] Loading inventory for branch: ${user.branchOffice} → ${normalizedBranch}`
       );
 
-      if (response.success) {
-        setPartsAvailability(response.data);
+      const response = await partsInventoryAPI.getBranchInventory(
+        normalizedBranch
+      );
 
-        if (!response.data.allPartsAvailable) {
-          toast.warning(
-            "Một số phụ tùng không đủ. Vui lòng kiểm tra và yêu cầu bổ sung!"
+      if (response.success && Array.isArray(response.data)) {
+        setBranchInventory(response.data);
+        console.log(
+          `✅ Loaded ${response.data.length} part types for ${user.branchOffice}`
+        );
+        toast.success(
+          `Đã tải ${response.data.length} loại phụ tùng từ kho ${user.branchOffice}`
+        );
+      } else {
+        throw new Error("Dữ liệu kho không hợp lệ");
+      }
+    } catch (error) {
+      console.error("❌ Error loading branch inventory:", error);
+      toast.error(
+        "Lỗi khi tải kho chi nhánh: " + (error.message || "Lỗi không xác định")
+      );
+      setBranchInventory([]); // Reset về rỗng nếu lỗi
+    } finally {
+      setCheckingParts(false);
+    }
+  };
+
+  const handleSelectPart = (part, quantity) => {
+    if (quantity > part.availableQuantity) {
+      toast.error("Số lượng vượt quá hàng tồn kho!");
+      return;
+    }
+
+    if (quantity <= 0) {
+      // Xóa khỏi danh sách đã chọn
+      setSelectedParts(
+        selectedParts.filter((p) => p.partTypeId !== part.partTypeId)
+      );
+      return;
+    }
+
+    // Thêm/cập nhật danh sách đã chọn
+    const existing = selectedParts.find(
+      (p) => p.partTypeId === part.partTypeId
+    );
+    if (existing) {
+      setSelectedParts(
+        selectedParts.map((p) =>
+          p.partTypeId === part.partTypeId
+            ? { ...p, selectedQuantity: quantity }
+            : p
+        )
+      );
+    } else {
+      setSelectedParts([
+        ...selectedParts,
+        { ...part, selectedQuantity: quantity },
+      ]);
+    }
+  };
+
+  const handleConfirmPartsSelection = async () => {
+    if (selectedParts.length === 0) {
+      toast.error("Vui lòng chọn ít nhất một phụ tùng!");
+      return;
+    }
+
+    if (!user?.branchOffice) {
+      toast.error(
+        "Không tìm thấy thông tin chi nhánh. Vui lòng đăng nhập lại."
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Validate branch
+      let normalizedBranch;
+      try {
+        normalizedBranch = normalizeBranchToEnum(user.branchOffice);
+      } catch (error) {
+        throw new Error(`Chi nhánh "${user.branchOffice}" không hợp lệ`);
+      }
+
+      console.log(
+        `🔽 Consuming ${selectedParts.length} part types from ${normalizedBranch}`
+      );
+
+      // Trừ từng phụ tùng từ kho với validation
+      const failedParts = [];
+      for (const part of selectedParts) {
+        try {
+          if (!part.partTypeId || !part.selectedQuantity) {
+            throw new Error(`Dữ liệu phụ tùng không hợp lệ: ${part.partName}`);
+          }
+
+          console.log(
+            `  - Consuming ${part.selectedQuantity}x ${part.partName} (${part.partTypeId})`
           );
+
+          const response = await partsInventoryAPI.consumeParts({
+            partTypeId: part.partTypeId,
+            branch: normalizedBranch,
+            quantity: part.selectedQuantity,
+          });
+
+          if (!response.success || !response.data) {
+            throw new Error(`API trả về lỗi cho ${part.partName}`);
+          }
+
+          console.log(`  ✅ Success: ${part.partName}`);
+        } catch (error) {
+          console.error(`  ❌ Failed: ${part.partName}`, error);
+          failedParts.push({ part: part.partName, error: error.message });
+        }
+      }
+
+      if (failedParts.length > 0) {
+        const failedList = failedParts
+          .map((f) => `${f.part}: ${f.error}`)
+          .join("\\n");
+        throw new Error(`Một số phụ tùng không thể trừ:\\n${failedList}`);
+      }
+
+      toast.success(
+        `✅ Đã trừ ${selectedParts.length} loại phụ tùng từ kho ${user.branchOffice}!`
+      );
+      setActiveStep(2); // Chuyển sang bước mapping serial
+    } catch (error) {
+      console.error("❌ Error consuming parts:", error);
+      toast.error("Lỗi: " + (error.message || "Không thể trừ phụ tùng từ kho"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreatePartsRequest = async () => {
+    if (!user?.branchOffice) {
+      toast.error(
+        "Không tìm thấy thông tin chi nhánh. Vui lòng đăng nhập lại."
+      );
+      return;
+    }
+
+    if (!claim?.vehicle?.vehicleId) {
+      toast.error("Không tìm thấy VIN xe trong claim này.");
+      return;
+    }
+
+    try {
+      // Fetch available part types for dropdown
+      const partTypesResponse =
+        await evmInventoryAPI.getAllPartTypesNoPagination();
+      const partTypes = partTypesResponse.success ? partTypesResponse.data : [];
+
+      if (!partTypes || partTypes.length === 0) {
+        toast.error("Không thể tải danh sách phụ tùng");
+        return;
+      }
+
+      // Show SweetAlert2 form
+      const { value: formValues } = await Swal.fire({
+        title: "Yêu Cầu Phụ Tùng",
+        html: `
+          <div style="text-align: left;">
+            <p style="margin-bottom: 12px; color: #6b7280;">
+              <strong>Claim:</strong> ${claim.claimId}<br/>
+              <strong>Xe:</strong> ${claim.vehicle?.vehicleName || "N/A"}<br/>
+              <strong>VIN:</strong> ${claim.vehicle?.vehicleId}
+            </p>
+            <div style="margin-bottom: 16px;">
+              <label style="display: block; margin-bottom: 4px; font-weight: 600;">Loại phụ tùng <span style="color: red;">*</span></label>
+              <select id="swal-partType" class="swal2-select" style="width: 100%;">
+                <option value="">-- Chọn phụ tùng --</option>
+                ${partTypes
+                  .map(
+                    (pt) =>
+                      `<option value="${pt.id}">${pt.partName} - ${
+                        pt.manufacturer || "N/A"
+                      }</option>`
+                  )
+                  .join("")}
+              </select>
+            </div>
+            <div style="margin-bottom: 16px;">
+              <label style="display: block; margin-bottom: 4px; font-weight: 600;">Số lượng <span style="color: red;">*</span></label>
+              <input id="swal-quantity" type="number" min="1" value="1" class="swal2-input" style="width: 100%; margin: 0;" />
+            </div>
+          </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: "Tạo Yêu Cầu",
+        cancelButtonText: "Hủy",
+        confirmButtonColor: "#3b82f6",
+        cancelButtonColor: "#6b7280",
+        preConfirm: () => {
+          const partTypeId = document.getElementById("swal-partType").value;
+          const quantity = document.getElementById("swal-quantity").value;
+
+          if (!partTypeId) {
+            Swal.showValidationMessage("Vui lòng chọn loại phụ tùng");
+            return false;
+          }
+
+          if (!quantity || parseInt(quantity) < 1) {
+            Swal.showValidationMessage("Số lượng phải lớn hơn 0");
+            return false;
+          }
+
+          return { partTypeId, quantity: parseInt(quantity) };
+        },
+      });
+
+      if (formValues) {
+        const selectedPart = partTypes.find(
+          (pt) => pt.id === formValues.partTypeId
+        );
+
+        if (!selectedPart) {
+          toast.error("Không tìm thấy thông tin phụ tùng");
+          return;
+        }
+
+        const formatDate = (date) => {
+          const d = new Date(date);
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          return `${year}-${month}-${day}`;
+        };
+
+        const today = formatDate(new Date());
+
+        // Match PartsRequestCreateDTO exactly - MUST include vehicleVin for filtering
+        const requestData = {
+          partName: selectedPart.partName,
+          quantity: formValues.quantity,
+          requestDate: today,
+          deliveryDate: today,
+          partTypeId: selectedPart.id,
+          requestedByStaffId: String(user.id),
+          branchOffice: user.branchOffice,
+          vehicleVin: claim.vehicle?.vehicleId || claim.vehicleVIN, // CRITICAL: For filtering Parts Requests by VIN
+        };
+
+        console.log(
+          "[TechnicianWorkflowModal] Creating Parts Request:",
+          requestData
+        );
+
+        const response = await partsRequestAPI.createPartsRequest(requestData);
+
+        if (response.success) {
+          await Swal.fire({
+            icon: "success",
+            title: "Thành công!",
+            text: `Đã tạo yêu cầu phụ tùng. Mã yêu cầu: ${
+              response.data?.id || "N/A"
+            }`,
+            confirmButtonColor: "#3b82f6",
+          });
+
+          // Refresh parts availability
+          await checkPartsAvailability();
         } else {
-          toast.success("Tất cả phụ tùng đều sẵn có!");
+          throw new Error(response.message || "Không thể tạo yêu cầu");
         }
       }
     } catch (error) {
-      console.error("Error checking parts:", error);
-      toast.error("Lỗi khi kiểm tra phụ tùng: " + error.message);
-    } finally {
-      setCheckingParts(false);
+      console.error("Error creating parts request:", error);
+      toast.error(error.message || "Không thể tạo yêu cầu phụ tùng");
     }
   };
 
@@ -98,7 +383,7 @@ function TechnicianWorkflowModal({ claim, onClose, onComplete }) {
       const mappingData = {
         serialNumber: currentSerial.serialNumber,
         partId: currentSerial.partId,
-        vehicleVIN: claim.vehicleVIN,
+        vehicleVIN: claim.vehicle?.vehicleId || claim.vehicleVIN,
         claimId: claim.claimId,
         notes: currentSerial.notes || "",
         durabilityPercentage: currentSerial.durabilityPercentage,
@@ -146,10 +431,35 @@ function TechnicianWorkflowModal({ claim, onClose, onComplete }) {
   };
 
   const handleCompleteWork = async () => {
-    // Validation
+    // Validation 1: Phải có serial mappings
     if (serialMappings.length === 0) {
       toast.error("Vui lòng thêm ít nhất một serial number mapping!");
       return;
+    }
+
+    // ✅ Validation 2: Kiểm tra số lượng serial = số lượng đã lấy
+    const partQuantityMap = {};
+    selectedParts.forEach((part) => {
+      partQuantityMap[part.partTypeId] = part.selectedQuantity;
+    });
+
+    const serialCountMap = {};
+    serialMappings.forEach((mapping) => {
+      serialCountMap[mapping.partId] =
+        (serialCountMap[mapping.partId] || 0) + 1;
+    });
+
+    for (const [partId, requiredQty] of Object.entries(partQuantityMap)) {
+      const mappedQty = serialCountMap[partId] || 0;
+      if (mappedQty !== requiredQty) {
+        const partName =
+          selectedParts.find((p) => p.partTypeId === partId)?.partName ||
+          partId;
+        toast.error(
+          `❌ ${partName}: Cần map ${requiredQty} serial nhưng chỉ có ${mappedQty}!`
+        );
+        return;
+      }
     }
 
     if (!workNotes.trim()) {
@@ -172,7 +482,7 @@ function TechnicianWorkflowModal({ claim, onClose, onComplete }) {
         serialNumbers: serialMappings.map((m) => m.serialNumber),
         completionNotes: workNotes,
         returnDate: new Date(returnDate).toISOString(),
-        completedByTechnicianId: claim.assignedTechnicianId || "TECH001", // Get from claim or user context
+        completedByTechnicianId: claim.assignedTechnicianId, // From claim context - assigned by SC_ADMIN/SC_STAFF
         workDurationHours: null, // Optional
       };
 
@@ -251,11 +561,15 @@ function TechnicianWorkflowModal({ claim, onClose, onComplete }) {
               </div>
               <div className="info-item">
                 <span className="label">Xe:</span>
-                <span className="value">{claim?.vehicleName}</span>
+                <span className="value">
+                  {claim?.vehicle?.vehicleName || "N/A"}
+                </span>
               </div>
               <div className="info-item">
                 <span className="label">VIN:</span>
-                <span className="value">{claim?.vehicleVIN}</span>
+                <span className="value">
+                  {claim?.vehicle?.vehicleId || "N/A"}
+                </span>
               </div>
               <div className="info-item">
                 <span className="label">Mô Tả Sự Cố:</span>
@@ -264,34 +578,21 @@ function TechnicianWorkflowModal({ claim, onClose, onComplete }) {
             </div>
           </div>
 
-          {/* Step 1: Parts Availability Check */}
+          {/* Step 1: Parts Selection from Branch Inventory */}
           {activeStep === 1 && (
             <div className="workflow-step-content">
-              <h3>🔍 Kiểm Tra Tình Trạng Phụ Tùng</h3>
+              <h3>📦 Chọn Phụ Tùng Từ Kho Chi Nhánh</h3>
+              <p style={{ color: "#666", marginBottom: "20px" }}>
+                Chi nhánh: <strong>{user?.branchOffice}</strong>
+              </p>
 
               {checkingParts ? (
-                <div className="loading-state">Đang kiểm tra...</div>
-              ) : partsAvailability ? (
-                <div className="parts-availability-result">
-                  <div
-                    className={`overall-status ${
-                      partsAvailability.allPartsAvailable
-                        ? "available"
-                        : "unavailable"
-                    }`}
-                  >
-                    <span className="icon">
-                      {partsAvailability.allPartsAvailable ? "✅" : "⚠️"}
-                    </span>
-                    <span className="message">
-                      {partsAvailability.overallMessage}
-                    </span>
-                  </div>
-
+                <div className="loading-state">Đang tải kho...</div>
+              ) : (
+                <>
                   <div className="parts-list">
-                    {partsAvailability.parts &&
-                    partsAvailability.parts.length > 0 ? (
-                      partsAvailability.parts.map((part, index) => (
+                    {branchInventory.length > 0 ? (
+                      branchInventory.map((part, index) => (
                         <div
                           key={index}
                           className={`part-item ${
@@ -303,49 +604,107 @@ function TechnicianWorkflowModal({ claim, onClose, onComplete }) {
                             <span className="part-id">
                               (ID: {part.partTypeId})
                             </span>
+                            {part.manufacturer && (
+                              <span
+                                className="part-manufacturer"
+                                style={{ color: "#000", fontWeight: 700 }}
+                              >
+                                | {part.manufacturer}
+                              </span>
+                            )}
                           </div>
                           <div className="part-status">
                             <span className="quantity">
-                              Số lượng: {part.availableQuantity}
+                              Kho: {part.availableQuantity}
                             </span>
-                            <span
-                              className={`status-badge ${
-                                part.isAvailable ? "success" : "error"
-                              }`}
-                            >
-                              {part.message}
-                            </span>
+                            {part.price && (
+                              <span className="part-price">
+                                Giá: {part.price.toLocaleString()} VNĐ
+                              </span>
+                            )}
+                            {part.isAvailable ? (
+                              <div className="quantity-selector">
+                                <label>Chọn số lượng:</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={part.availableQuantity}
+                                  defaultValue="0"
+                                  onChange={(e) =>
+                                    handleSelectPart(
+                                      part,
+                                      parseInt(e.target.value) || 0
+                                    )
+                                  }
+                                  style={{
+                                    width: "80px",
+                                    padding: "6px",
+                                    marginLeft: "10px",
+                                    border: "2px solid #667eea",
+                                    borderRadius: "4px",
+                                    color: "#000",
+                                    fontWeight: 600,
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <span
+                                className="status-badge error"
+                                style={{ color: "#000" }}
+                              >
+                                {part.message}
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))
                     ) : (
                       <div className="no-parts">
-                        Không có thông tin phụ tùng
+                        ⚠️ Kho chi nhánh trống hoặc chưa tải được dữ liệu.
                       </div>
                     )}
                   </div>
 
+                  {selectedParts.length > 0 && (
+                    <div className="selected-parts-summary">
+                      <h4>✅ Phụ Tùng Đã Chọn ({selectedParts.length})</h4>
+                      {selectedParts.map((part, idx) => (
+                        <div key={idx} className="selected-part-item">
+                          <span>{part.partName}</span>
+                          <span>x {part.selectedQuantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="step-actions">
                     <button
                       className="btn-secondary"
-                      onClick={checkPartsAvailability}
+                      onClick={loadBranchInventory}
                       disabled={checkingParts}
                     >
-                      🔄 Kiểm Tra Lại
+                      🔄 Tải Lại Kho
+                    </button>
+                    <button
+                      className="btn-warning"
+                      onClick={handleCreatePartsRequest}
+                      disabled={loading}
+                      style={{
+                        backgroundColor: "#f59e0b",
+                        color: "white",
+                      }}
+                    >
+                      📦 Yêu Cầu Phụ Tùng
                     </button>
                     <button
                       className="btn-primary"
-                      onClick={() => setActiveStep(2)}
-                      disabled={!partsAvailability.allPartsAvailable}
+                      onClick={handleConfirmPartsSelection}
+                      disabled={selectedParts.length === 0 || loading}
                     >
-                      Tiếp Theo →
+                      {loading ? "Đang xử lý..." : "Xác Nhận & Tiếp Theo →"}
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div className="error-state">
-                  Không thể kiểm tra phụ tùng. Vui lòng thử lại.
-                </div>
+                </>
               )}
             </div>
           )}
@@ -354,6 +713,70 @@ function TechnicianWorkflowModal({ claim, onClose, onComplete }) {
           {activeStep === 2 && (
             <div className="workflow-step-content">
               <h3>🏷️ Mapping Serial Numbers</h3>
+
+              {/* ✅ Progress Indicator */}
+              <div
+                className="mapping-progress"
+                style={{
+                  marginBottom: "20px",
+                  padding: "15px",
+                  backgroundColor: "#f0f9ff",
+                  borderRadius: "8px",
+                  border: "1px solid #0ea5e9",
+                }}
+              >
+                <h4 style={{ marginBottom: "10px", color: "#0369a1" }}>
+                  📊 Tiến độ map serial numbers
+                </h4>
+                {selectedParts.map((part) => {
+                  const mappedCount = serialMappings.filter(
+                    (m) => m.partId === part.partTypeId
+                  ).length;
+                  const requiredCount = part.selectedQuantity;
+                  const percentage = (mappedCount / requiredCount) * 100;
+                  const isComplete = mappedCount === requiredCount;
+
+                  return (
+                    <div key={part.partTypeId} style={{ marginBottom: "10px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginBottom: "5px",
+                        }}
+                      >
+                        <span>
+                          <strong>{part.partName}</strong>
+                        </span>
+                        <span
+                          style={{ color: isComplete ? "#16a34a" : "#dc2626" }}
+                        >
+                          {mappedCount}/{requiredCount}{" "}
+                          {isComplete ? "✅" : "⏳"}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "8px",
+                          backgroundColor: "#e5e7eb",
+                          borderRadius: "4px",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${percentage}%`,
+                            height: "100%",
+                            backgroundColor: isComplete ? "#16a34a" : "#3b82f6",
+                            transition: "width 0.3s ease",
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
 
               <div className="serial-mapping-form">
                 <div className="form-group">
@@ -384,10 +807,11 @@ function TechnicianWorkflowModal({ claim, onClose, onComplete }) {
                       })
                     }
                   >
-                    <option value="">-- Chọn loại phụ tùng --</option>
-                    {partsAvailability?.parts?.map((part) => (
+                    <option value="">-- Chọn loại phụ tùng đã lấy --</option>
+                    {selectedParts.map((part) => (
                       <option key={part.partTypeId} value={part.partTypeId}>
-                        {part.partName} (ID: {part.partTypeId})
+                        {part.partName} - Đã lấy: {part.selectedQuantity} cái
+                        (ID: {part.partTypeId})
                       </option>
                     ))}
                   </select>

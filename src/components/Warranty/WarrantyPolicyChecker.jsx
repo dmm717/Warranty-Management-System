@@ -130,20 +130,20 @@ function WarrantyPolicyChecker({ vehicleId, onClose, onCheckComplete }) {
                   </div>
                 )}
 
-              {checkResult.applicablePolicies &&
-                checkResult.applicablePolicies.length > 0 && (
+              {checkResult.allPolicies &&
+                checkResult.allPolicies.length > 0 && (
                   <div className="policies-section">
                     <h4>
-                      📋 Các Chính Sách Áp Dụng (
+                      📋 Các Chính Sách Bảo Hành (
                       {
-                        checkResult.applicablePolicies.filter(
+                        checkResult.allPolicies.filter(
                           (p) => p.coverageType !== "NONE"
                         ).length
                       }
                       )
                     </h4>
                     <div className="policies-list">
-                      {checkResult.applicablePolicies
+                      {checkResult.allPolicies
                         .filter((policy) => policy.coverageType !== "NONE")
                         .map((policy, index) => {
                           // Format coverage type để hiển thị đẹp hơn

@@ -242,31 +242,32 @@ function WarrantyClaimList({
                             <Edit size={16} />
                           </button>
                         )}
-                      {/* EVM_STAFF có quyền xóa yêu cầu bảo hành */}
-                      {userRole === "EVM_STAFF" && onDelete && (
-                        <button
-                          onClick={async () => {
-                            const result = await Swal.fire({
-                              title: "Xác nhận xóa",
-                              text: `Bạn có chắc muốn xóa yêu cầu bảo hành ${claim.claimId}?`,
-                              icon: "warning",
-                              showCancelButton: true,
-                              confirmButtonColor: "#d33",
-                              cancelButtonColor: "#3085d6",
-                              confirmButtonText: "Xóa",
-                              cancelButtonText: "Hủy",
-                            });
+                      {/* EVM_ADMIN và SC_ADMIN có quyền xóa yêu cầu bảo hành */}
+                      {(userRole === "EVM_ADMIN" || userRole === "SC_ADMIN") &&
+                        onDelete && (
+                          <button
+                            onClick={async () => {
+                              const result = await Swal.fire({
+                                title: "Xác nhận xóa",
+                                text: `Bạn có chắc muốn xóa yêu cầu bảo hành ${claim.claimId}?`,
+                                icon: "warning",
+                                showCancelButton: true,
+                                confirmButtonColor: "#d33",
+                                cancelButtonColor: "#3085d6",
+                                confirmButtonText: "Xóa",
+                                cancelButtonText: "Hủy",
+                              });
 
-                            if (result.isConfirmed) {
-                              onDelete(claim.claimId);
-                            }
-                          }}
-                          className="btn btn-sm btn-danger"
-                          title="Xóa yêu cầu bảo hành"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
+                              if (result.isConfirmed) {
+                                onDelete(claim.claimId);
+                              }
+                            }}
+                            className="btn btn-sm btn-danger"
+                            title="Xóa yêu cầu bảo hành"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                     </div>
                   </td>
                 </tr>

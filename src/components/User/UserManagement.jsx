@@ -104,7 +104,7 @@ function UserManagement() {
 
       // Tự động set department cho SC_ADMIN khi tạo SC_STAFF/SC_TECHNICAL
       if (!editingUser && user?.role === "SC_ADMIN") {
-        // Lấy branchOffice từ danh sách users
+        // ✅ Lấy branchOffice TRỰC TIẾP TỪ user context, không từ danh sách users
         const currentUserBranch = user.branchOffice;
 
         if (userData.role === "SC_STAFF" || userData.role === "SC_TECHNICAL") {
@@ -168,11 +168,7 @@ function UserManagement() {
               : null,
         };
 
-        console.log("📤 Sending register data:", registerData);
-
         const response = await authAPI.register(registerData);
-
-        console.log("📥 Register response:", response);
 
         if (response.success) {
           await fetchUsers();
