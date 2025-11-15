@@ -5,17 +5,29 @@ import { toast } from "react-toastify";
 import "../../styles/PartsManagement.css";
 
 // Office Branches từ backend - VinFast Service Centers HCMC
+// SYNC WITH: OfficeBranch.java enum (21 branches)
 const OFFICE_BRANCHES = [
   "D1",
   "DISTRICT3",
+  "DISTRICT4",
   "DISTRICT5",
+  "DISTRICT6",
   "DISTRICT7",
-  "THU_DUC",
-  "TAN_BINH",
+  "DISTRICT8",
+  "DISTRICT10",
+  "DISTRICT11",
+  "DISTRICT12",
+  "BINH_TAN",
   "BINH_THANH",
-  "PHU_NHUAN",
   "GO_VAP",
-  "TAN_PHU"
+  "PHU_NHUAN",
+  "TAN_BINH",
+  "TAN_PHU",
+  "THU_DUC",
+  "NHA_BE",
+  "CAN_GIO",
+  "CU_CHI",
+  "HOC_MON",
 ];
 
 function TransferPartModal({ isOpen, onClose, onSuccess, part }) {
@@ -38,8 +50,11 @@ function TransferPartModal({ isOpen, onClose, onSuccess, part }) {
 
     try {
       console.log(`📤 Transferring part ${part.id} to ${selectedBranch}`);
-      
-      const response = await evmInventoryAPI.transferToSC(part.id, selectedBranch);
+
+      const response = await evmInventoryAPI.transferToSC(
+        part.id,
+        selectedBranch
+      );
 
       if (response.success || response.status === 200) {
         toast.success(`Chuyển phụ tùng sang ${selectedBranch} thành công!`);
@@ -62,7 +77,10 @@ function TransferPartModal({ isOpen, onClose, onSuccess, part }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content transfer-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-content transfer-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h2>Chuyển phụ tùng sang SC</h2>
           <button className="btn-close" onClick={onClose}>
@@ -135,7 +153,9 @@ function TransferPartModal({ isOpen, onClose, onSuccess, part }) {
               <ArrowRight size={24} className="transfer-arrow" />
               <div className="transfer-node">
                 <strong>{selectedBranch || "Chi nhánh SC"}</strong>
-                <span className="status-badge status-transferred">TRANSFERRED</span>
+                <span className="status-badge status-transferred">
+                  TRANSFERRED
+                </span>
               </div>
             </div>
           </div>

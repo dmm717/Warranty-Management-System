@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { scTechnicianAPI, warrantyClaimAPI } from "../../services/api";
 import { toast } from "react-toastify";
+import { useAuth } from "../../contexts/AuthContext";
 import "./AssignTechnicianToClaimModal.css";
 
 function AssignTechnicianToClaimModal({ claim, onClose, onAssigned }) {
+  const { user } = useAuth();
   const [technicians, setTechnicians] = useState([]);
   const [filteredTechnicians, setFilteredTechnicians] = useState([]);
   const [selectedTechId, setSelectedTechId] = useState("");
@@ -46,7 +48,19 @@ function AssignTechnicianToClaimModal({ claim, onClose, onAssigned }) {
         });
 
         if (response.success && response.data?.content) {
-          setTechnicians(response.data.content);
+          let techList = response.data.content;
+
+          // 🔒 FILTER: SC_ADMIN và SC_STAFF chỉ thấy technicians cùng branch
+          if (
+            (user?.role === "SC_ADMIN" || user?.role === "SC_STAFF") &&
+            user?.branchOffice
+          ) {
+            techList = techList.filter(
+              (tech) => tech.branchOffice === user.branchOffice
+            );
+          }
+
+          setTechnicians(techList);
         }
       } catch (error) {
         console.error("Error fetching technicians:", error);
@@ -57,12 +71,32 @@ function AssignTechnicianToClaimModal({ claim, onClose, onAssigned }) {
     };
 
     fetchTechnicians();
-  }, []);
+  }, [user?.role, user?.branchOffice]);
 
   const handleAssign = async () => {
     if (!selectedTechId) {
       toast.warning("Vui lòng chọn kỹ thuật viên");
       return;
+    }
+
+    // 🔒 FE VALIDATION: Đảm bảo technician được chọn thuộc cùng branch
+    const selectedTech = technicians.find((t) => t.id === selectedTechId);
+    if (
+      (user?.role === "SC_ADMIN" || user?.role === "SC_STAFF") &&
+      selectedTech
+    ) {
+      if (selectedTech.branchOffice !== user.branchOffice) {
+        toast.error(
+          `❌ Bạn chỉ được phân công kỹ thuật viên của chi nhánh ${
+            user.branchOffice || "của bạn"
+          }`,
+          {
+            position: "top-right",
+            autoClose: 5000,
+          }
+        );
+        return;
+      }
     }
 
     try {

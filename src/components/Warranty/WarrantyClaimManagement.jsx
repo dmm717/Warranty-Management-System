@@ -60,14 +60,21 @@ function WarrantyClaimManagement() {
 
       if (response.success && response.data?.content) {
         // Transform data từ BE sang format FE - match với Backend DTOs
-        const transformedClaims = response.data.content.map((claim) => ({
+        let transformedClaims = response.data.content.map((claim) => ({
           claimId: claim.claimId,
           customerName: claim.customerName,
           customerPhone: claim.customerPhone,
           claimDate: claim.claimDate || new Date().toISOString().split("T")[0],
           status: claim.status || "PENDING",
           vehicleName: claim.vehicleName || "N/A",
+          officeBranch: claim.officeBranch, // Thêm officeBranch
         }));
+
+        // ✅ FILTER: SC_ADMIN, SC_STAFF, và SC_TECHNICAL - Backend đã filter nhưng FE double-check
+        // Backend filter triệt để rồi, FE chỉ cần hiển thị data nhận được
+        // Không cần filter thêm ở FE nữa vì:
+        // - SC_ADMIN/SC_STAFF: Backend đã filter theo branchOffice
+        // - SC_TECHNICAL: Backend đã filter theo assigned technician
 
         setClaims(transformedClaims);
         setFilteredClaims(transformedClaims);
@@ -205,6 +212,23 @@ function WarrantyClaimManagement() {
 
   const handleDeleteClaim = async (claimId) => {
     try {
+      // 🔒 FE VALIDATION: SC_ADMIN và SC_STAFF chỉ được xóa claims của chi nhánh mình
+      if (user?.role === "SC_ADMIN" || user?.role === "SC_STAFF") {
+        const claim = claims.find((c) => c.claimId === claimId);
+        if (claim && claim.officeBranch !== user.branchOffice) {
+          toast.error(
+            `❌ Bạn chỉ được xóa yêu cầu bảo hành của chi nhánh ${
+              user.branchOffice?.branchName || "của bạn"
+            }`,
+            {
+              position: "top-right",
+              autoClose: 5000,
+            }
+          );
+          return;
+        }
+      }
+
       setLoading(true);
       const response = await warrantyClaimAPI.deleteClaim(claimId);
 
@@ -243,6 +267,11 @@ function WarrantyClaimManagement() {
     rejectionReason = null
   ) => {
     try {
+      // 🔒 FE VALIDATION: SC_ADMIN và SC_STAFF chỉ được approve/reject claims của chi nhánh mình
+      // NOTE: Bỏ validation frontend vì backend đã có validateBranchAccess() với proper mapping
+      // claim.officeBranch = enum (D1, DISTRICT10...), user.branchOffice = string ("Quận 1", "Quận 10"...)
+      // Backend sẽ handle validation này đúng cách với OfficeBranch.findByUserBranchOffice()
+
       setLoading(true);
 
       // SC_ADMIN duyệt/từ chối → Gọi approve-reject endpoint
@@ -250,10 +279,12 @@ function WarrantyClaimManagement() {
         user?.role === "SC_ADMIN" &&
         (newStatus === "APPROVED" || newStatus === "REJECTED")
       ) {
+        // 🔧 RequiredParts KHÔNG BẮT BUỘC - SC_TECHNICAL sẽ điền sau
         const approveRejectData = {
           claimId: claimId,
           action: newStatus === "APPROVED" ? "APPROVE" : "REJECT",
           rejectionReason: rejectionReason || "",
+          requiredParts: "", // Để trống - technician sẽ điền sau khi kiểm tra xe
           approvedByUserId: user?.id,
         };
 
@@ -332,7 +363,8 @@ function WarrantyClaimManagement() {
         {!showForm &&
           !showDetail &&
           user?.role !== "SC_ADMIN" &&
-          user?.role !== "EVM_ADMIN" && (
+          user?.role !== "EVM_ADMIN" &&
+          user?.role !== "SC_TECHNICAL" && ( // 🔒 SC_TECHNICAL không tạo claim
             <button onClick={handleCreateClaim} className="btn btn-primary">
               <span>➕</span>
               Tạo yêu cầu mới

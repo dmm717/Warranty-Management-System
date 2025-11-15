@@ -148,15 +148,8 @@ function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
       formData.role === "SC_STAFF" ||
       formData.role === "SC_TECHNICAL"
     ) {
-      if (!formData.department.trim()) {
+      if (!formData.department || !formData.department.trim()) {
         newErrors.department = "Khu vực là bắt buộc cho vai trò SC";
-      }
-
-      // VALIDATION: SC_ADMIN chỉ được tạo user trong cùng chi nhánh
-      if (currentUser?.role === "SC_ADMIN" && !user && currentUserBranch) {
-        if (formData.department !== currentUserBranch) {
-          newErrors.department = `Bạn chỉ có thể tạo tài khoản trong chi nhánh "${currentUserBranch}"`;
-        }
       }
     }
 
@@ -324,36 +317,69 @@ function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
               )}
             </div>
 
-            {/* Chỉ SC roles mới có field Khu vực - KHÔNG hiển thị cho SC_ADMIN khi tạo mới */}
+            {/* Chỉ SC roles mới có field Khu vực */}
             {(formData.role === "SC_ADMIN" ||
               formData.role === "SC_STAFF" ||
-              formData.role === "SC_TECHNICAL") &&
-              !(currentUser?.role === "SC_ADMIN" && !user) && ( // Ẩn hoàn toàn khi SC_ADMIN tạo mới
-                <div className="form-group">
-                  <label className="form-label">Khu vực *</label>
-                  <select
-                    name="department"
-                    value={formData.department}
-                    onChange={handleChange}
-                    className={`form-control ${
-                      errors.department ? "error" : ""
-                    }`}
-                  >
-                    <option value="">Chọn khu vực</option>
-                    {REGIONS.filter((r) => r.value !== "ALL").map((region) => (
-                      <option key={region.value} value={region.label}>
-                        {region.label}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.department && (
-                    <div className="error-message">{errors.department}</div>
-                  )}
-                  <small className="form-help">
-                    Chọn quận/huyện khu vực hoạt động
-                  </small>
-                </div>
-              )}
+              formData.role === "SC_TECHNICAL") && (
+              <div className="form-group">
+                <label className="form-label">Khu vực *</label>
+                {/* SC_ADMIN tạo SC_STAFF/SC_TECHNICAL: Hiển thị readonly branch */}
+                {currentUser?.role === "SC_ADMIN" &&
+                !user &&
+                (formData.role === "SC_STAFF" ||
+                  formData.role === "SC_TECHNICAL") ? (
+                  <>
+                    <input
+                      type="text"
+                      name="department"
+                      value={formData.department}
+                      className="form-control"
+                      readOnly
+                      disabled
+                      style={{
+                        backgroundColor: "#f1f5f9",
+                        cursor: "not-allowed",
+                      }}
+                    />
+                    <small className="form-help" style={{ color: "#3b82f6" }}>
+                      🔒 Tự động gán chi nhánh của bạn: {currentUserBranch}
+                    </small>
+                  </>
+                ) : (
+                  <>
+                    <select
+                      name="department"
+                      value={formData.department}
+                      onChange={handleChange}
+                      className={`form-control ${
+                        errors.department ? "error" : ""
+                      }`}
+                      disabled={
+                        currentUser?.role === "SC_ADMIN" &&
+                        !user &&
+                        (formData.role === "SC_STAFF" ||
+                          formData.role === "SC_TECHNICAL")
+                      }
+                    >
+                      <option value="">Chọn khu vực</option>
+                      {REGIONS.filter((r) => r.value !== "ALL").map(
+                        (region) => (
+                          <option key={region.value} value={region.label}>
+                            {region.label}
+                          </option>
+                        )
+                      )}
+                    </select>
+                    {errors.department && (
+                      <div className="error-message">{errors.department}</div>
+                    )}
+                    <small className="form-help">
+                      Chọn quận/huyện khu vực hoạt động
+                    </small>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Specialty field - Chỉ cho SC_TECHNICAL */}
             {formData.role === "SC_TECHNICAL" && (

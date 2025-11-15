@@ -257,6 +257,7 @@
   border-radius: 8px;
   border: 2px solid #e0e0e0;
   transition: all 0.3s;
+  background: white;
 }
 
 .part-item.available {
@@ -283,43 +284,119 @@
 
 .part-name {
   font-weight: 700;
-  font-size: 15px;
-  color: #333;
+  font-size: 16px;
+  color: #000 !important;
 }
 
 .part-id {
-  font-size: 13px;
-  color: #666;
+  font-size: 14px;
+  color: #1565c0 !important;
+  font-weight: 600;
+  background: #e3f2fd;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .part-status {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .part-status .quantity {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #000 !important;
+}
+
+.part-status .quantity-detail {
+  font-size: 13px;
   font-weight: 600;
-  color: #555;
+  color: #000 !important;
+  background: #e3f2fd;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  border: 1px solid #2196f3;
 }
 
 .part-status .status-badge {
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-block;
+  width: fit-content;
 }
 
 .part-status .status-badge.success {
   background: #4caf50;
-  color: white;
+  color: white !important;
 }
 
 .part-status .status-badge.error {
-  background: #ff9800;
-  color: white;
+  background: #fff3e0;
+  color: #000 !important;
+  border: 2px solid #ff9800;
+  font-weight: 700;
+}
+
+.part-status .part-manufacturer {
+  font-size: 13px;
+  color: #000 !important;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.part-status .part-price {
+  font-size: 15px;
+  color: #2e7d32 !important;
+  font-weight: 700;
+}
+
+.part-status .quantity-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.part-status .quantity-selector label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #000 !important;
+}
+
+.selected-parts-summary {
+  background: #e8f5e9;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 20px;
+}
+
+.selected-parts-summary h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #2e7d32 !important;
+  font-weight: 700;
+}
+
+.selected-part-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #000 !important;
+}
+
+.selected-part-item:last-child {
+  margin-bottom: 0;
 }
 
 .loading-state,

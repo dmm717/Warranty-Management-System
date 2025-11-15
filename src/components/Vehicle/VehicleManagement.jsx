@@ -5,9 +5,11 @@ import VehicleSearch from "./VehicleSearch";
 import { vehicleAPI } from "../../services/api";
 import { VEHICLE_STATUS } from "../../constants";
 import { toast } from "react-toastify";
+import { useAuth } from "../../contexts/AuthContext";
 import "../../styles/VehicleManagement.css";
 
 function VehicleManagement() {
+  const { user } = useAuth();
   const [vehicles, setVehicles] = useState([]);
   const [filteredVehicles, setFilteredVehicles] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -28,6 +30,10 @@ function VehicleManagement() {
     try {
       setLoading(true);
 
+      console.log("👤 Current user:", user);
+      console.log("🔐 User role:", user?.role);
+      console.log("🏢 User branch:", user?.officeBranch || user?.branchOffice);
+
       const response = await vehicleAPI.getAllVehicles({
         page: 0,
         size: 100,
@@ -35,11 +41,17 @@ function VehicleManagement() {
         sortDir: "asc",
       });
 
+      console.log("📋 Fetch vehicles response:", response);
+
       if (
         response.success &&
         response.data?.content &&
         Array.isArray(response.data.content)
       ) {
+        console.log(
+          "📊 Total vehicles from API:",
+          response.data.content.length
+        );
         // Transform data từ BE sang format FE
         const transformedVehicles = response.data.content.map((vehicle) => {
           const transformed = {
@@ -61,9 +73,11 @@ function VehicleManagement() {
           return transformed;
         });
 
+        console.log("✨ Transformed vehicles:", transformedVehicles);
         setVehicles(transformedVehicles);
         setFilteredVehicles(transformedVehicles);
       } else {
+        console.error("❌ Invalid response structure:", response);
         const errorMsg = response.message || "Không thể tải danh sách xe";
         toast.error(errorMsg);
       }
@@ -195,12 +209,15 @@ function VehicleManagement() {
           vehicleData,
           imageFile
         );
+        console.log("✅ Create vehicle response:", response);
         if (response.success) {
+          console.log("✅ Fetching vehicles after create...");
           await fetchVehicles();
           setShowForm(false);
           setEditingVehicle(null);
           toast.success("Thêm xe mới thành công!");
         } else {
+          console.error("❌ Create vehicle failed:", response.message);
           toast.error(response.message || "Không thể thêm xe mới");
         }
       }
@@ -229,10 +246,13 @@ function VehicleManagement() {
     <div className="vehicle-management">
       <div className="page-header">
         <h1>Quản lý xe</h1>
-        <button onClick={handleAddVehicle} className="btn btn-primary">
-          <span>➕</span>
-          Đăng ký xe mới
-        </button>
+        {/* 🔒 SC_TECHNICAL không được đăng ký xe mới */}
+        {user?.role !== "SC_TECHNICAL" && (
+          <button onClick={handleAddVehicle} className="btn btn-primary">
+            <span>➕</span>
+            Đăng ký xe mới
+          </button>
+        )}
       </div>
 
       {!showForm ? (
