@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Megaphone, Eye, Edit } from "lucide-react";
 import "../../styles/CampaignList.css";
+import api from "../../services/api";
 
 function CampaignList({
   campaigns,
@@ -12,6 +13,82 @@ function CampaignList({
   onStartCampaign, // Callback để bắt đầu chiến dịch (SC_ADMIN)
   onDelete, // Callback để xóa chiến dịch
 }) {
+  const [vehicleCounts, setVehicleCounts] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Filter campaigns based on debounced search term
+  const filteredCampaigns = campaigns && campaigns.length > 0 ? campaigns.filter(campaign =>
+    (campaign.campaignsTypeName && campaign.campaignsTypeName.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+    (campaign.CampaignsTypeName && campaign.CampaignsTypeName.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+    (campaign.description && campaign.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+    (campaign.Description && campaign.Description.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+    (campaign.campaignsId && campaign.campaignsId.toString().includes(debouncedSearchTerm)) ||
+    (campaign.CampaignsID && campaign.CampaignsID.toString().includes(debouncedSearchTerm))
+  ) : [];
+
+  // Hàm đếm số lượng xe theo campaign ID
+  const countVehiclesForCampaign = async (campaignId) => {
+    try {
+      // console.log(`🔍 Đang đếm xe cho campaign ID: ${campaignId}`);
+
+      // Fetch tất cả vehicles với size lớn để lấy hết
+      const response = await api.vehicle.getAllVehicles({ page: 0, size: 10000 }); // Size lớn để lấy tất cả
+      const vehicles = response.data?.content || response.data || [];
+
+      // console.log(`📊 Tổng số xe từ API: ${vehicles.length}`);
+      // console.log('🚗 Danh sách xe:', vehicles.slice(0, 5)); // Log 5 xe đầu tiên để check structure
+
+      // Đếm số xe có vision == campaignId
+      const matchingVehicles = vehicles.filter(vehicle => vehicle.vision == campaignId);
+      const count = matchingVehicles.length;
+
+      // console.log(`✅ Số xe có vision == ${campaignId}: ${count}`);
+      // console.log('🎯 Xe phù hợp:', matchingVehicles);
+
+      setVehicleCounts(prev => ({
+        ...prev,
+        [campaignId]: count
+      }));
+
+      // console.log(`💾 Đã cập nhật vehicleCounts cho ${campaignId}:`, { ...vehicleCounts, [campaignId]: count });
+
+      return count;
+    } catch (error) {
+      console.error('❌ Lỗi khi đếm xe:', error);
+      return 0;
+    }
+  };
+
+  // Fetch vehicle counts khi campaigns thay đổi
+  useEffect(() => {
+    const fetchVehicleCounts = async () => {
+      // console.log(`🚀 Bắt đầu đếm xe cho ${campaigns.length} campaigns`);
+      for (const campaign of campaigns) {
+        const campaignId = campaign.campaignsId || campaign.CampaignsID;
+        if (campaignId && !vehicleCounts[campaignId]) {
+          // console.log(`📋 Đang xử lý campaign: ${campaignId}`);
+          await countVehiclesForCampaign(campaignId);
+        } else {
+          // console.log(`⏭️ Bỏ qua campaign ${campaignId} (đã có count: ${vehicleCounts[campaignId]})`);
+        }
+      }
+      // console.log('✅ Hoàn thành đếm xe cho tất cả campaigns');
+    };
+
+    if (campaigns.length > 0) {
+      fetchVehicleCounts();
+    }
+  }, [campaigns]);
   const getStatusBadge = (status) => {
     const statusClasses = {
       PLANNED: "status-preparing",
@@ -62,7 +139,7 @@ function CampaignList({
   const canEditCampaign = () => {
     // Chỉ EVM_ADMIN và SC_ADMIN có quyền edit
     // EVM_STAFF không có quyền edit
-    return userRole === "EVM_ADMIN" || userRole === "SC_ADMIN";
+    return userRole === "EVM_ADMIN" || userRole === "EVM_STAFF";
   };
 
   const canDeleteCampaign = () => {
@@ -97,7 +174,7 @@ function CampaignList({
     return [];
   };
 
-  if (campaigns.length === 0) {
+  if (!campaigns || campaigns.length === 0) {
     return (
       <div className="no-data-container">
         <div className="no-data-icon">📢</div>
@@ -109,6 +186,29 @@ function CampaignList({
 
   return (
     <div className="campaign-list">
+      {/* Search Input */}
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Tìm kiếm chiến dịch theo tên, mô tả hoặc mã..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm("")}
+          >
+            Xóa
+          </button>
+        )}
+      </div>
+
+      {/* Results Count */}
+      <div className="results-count">
+        Hiển thị {filteredCampaigns.length} / {(campaigns && campaigns.length) || 0} chiến dịch
+        {searchTerm && ` (tìm kiếm: "${searchTerm}")`}
+      </div>
+
       <div className="table-container">
         <table className="table">
           <thead>
@@ -117,13 +217,14 @@ function CampaignList({
               <th>Tên chiến dịch</th>
               <th>Thời gian</th>
               <th>Phụ tùng yêu cầu</th>
-              <th>Tiến độ xe đã sữa</th>
+              <th>số xe có cùng version</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
-            {campaigns.map((campaign) => (
+            {filteredCampaigns.length > 0 ? (
+              filteredCampaigns.map((campaign) => (
               <tr key={campaign.campaignsId || campaign.CampaignsID}>
                 <td>
                   <div className="campaign-id">
@@ -178,9 +279,9 @@ function CampaignList({
                   <div className="progress-info">
                     <div className="progress-text">
                       <div className="progress-number">
-                        <strong>{campaign.completedVehicles || 0}</strong>
+                        <strong>{vehicleCounts[campaign.campaignsId || campaign.CampaignsID] ?? (campaign.completedVehicles || 0)}</strong>
                       </div>
-                      <div className="progress-label">xe đã sửa chữa</div>
+                      <div className="progress-label">version</div>
                     </div>
                     {campaign.vehicleTypeCount > 0 && (
                       <small className="text-muted">
@@ -199,39 +300,6 @@ function CampaignList({
                         currentStatus,
                         userRole
                       );
-
-                      return canUpdate && availableStatuses.length > 0 ? (
-                        <div className="status-actions">
-                          {availableStatuses.map((nextStatus) => {
-                            // Map status to Vietnamese labels
-                            const statusLabels = {
-                              ACTIVE: "Bắt đầu",
-                              PAUSED: "Dừng",
-                              COMPLETED: "Hoàn thành",
-                              CANCELLED: "Hủy bỏ",
-                            };
-
-                            return (
-                              <button
-                                key={nextStatus}
-                                onClick={() => {
-                                  onUpdateStatus(
-                                    campaign.campaignsId ||
-                                      campaign.CampaignsID,
-                                    nextStatus
-                                  );
-                                }}
-                                className="btn btn-sm status-btn"
-                                title={`Chuyển sang ${
-                                  statusLabels[nextStatus] || nextStatus
-                                }`}
-                              >
-                                → {statusLabels[nextStatus] || nextStatus}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ) : null;
                     })()}
                   </div>
                 </td>
@@ -245,20 +313,6 @@ function CampaignList({
                     >
                       <Eye size={16} />
                     </button>
-
-                    {/* SC_ADMIN: Button bắt đầu chiến dịch (PLANNED → ACTIVE) */}
-                    {userRole === "SC_ADMIN" &&
-                      campaign.status === "PLANNED" &&
-                      onStartCampaign && (
-                        <button
-                          onClick={() => onStartCampaign(campaign)}
-                          className="btn btn-sm btn-success"
-                          title="Bắt đầu chiến dịch và gửi thông báo"
-                        >
-                          🚀 Bắt đầu
-                        </button>
-                      )}
-
                     {/* EVM_ADMIN và SC_ADMIN có quyền edit */}
                     {canEditCampaign() && (
                       <button
@@ -267,17 +321,6 @@ function CampaignList({
                         title="Chỉnh sửa"
                       >
                         <Edit size={16} />
-                      </button>
-                    )}
-
-                    {/* Chỉ SC_ADMIN mới có quyền phân công kỹ thuật viên */}
-                    {canAssignTechnician() && (
-                      <button
-                        onClick={() => onAssign(campaign)}
-                        className="btn btn-sm btn-warning"
-                        title="Phân công kỹ thuật viên"
-                      >
-                        👷
                       </button>
                     )}
 
@@ -307,7 +350,14 @@ function CampaignList({
                   </div>
                 </td>
               </tr>
-            ))}
+            ))
+            ) : (
+              <tr className="no-results-row">
+                <td colSpan="7">
+                  {searchTerm ? `Không tìm thấy chiến dịch nào phù hợp với "${searchTerm}"` : 'Không có chiến dịch nào'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

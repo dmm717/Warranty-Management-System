@@ -433,8 +433,8 @@ function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
                       {passwordStrength === "weak"
                         ? "Yếu"
                         : passwordStrength === "medium"
-                        ? "Trung bình"
-                        : "Mạnh"}
+                          ? "Trung bình"
+                          : "Mạnh"}
                     </div>
                   </div>
                 )}
@@ -446,9 +446,8 @@ function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`form-control ${
-                    errors.confirmPassword ? "error" : ""
-                  }`}
+                  className={`form-control ${errors.confirmPassword ? "error" : ""
+                    }`}
                   placeholder="Nhập lại mật khẩu"
                 />
                 {errors.confirmPassword && (
@@ -464,9 +463,8 @@ function UserForm({ user, currentUser, currentUserBranch, onSave, onCancel }) {
                   {getPasswordRequirements().map((req, index) => (
                     <li
                       key={index}
-                      className={`requirement-item ${
-                        req.met ? "met" : "unmet"
-                      }`}
+                      className={`requirement-item ${req.met ? "met" : "unmet"
+                        }`}
                     >
                       {req.text}
                     </li>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { ArrowLeft, Plus } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import WarrantyClaimList from "./WarrantyClaimList";
 import WarrantyClaimForm from "./WarrantyClaimForm";
@@ -15,6 +15,7 @@ import "../../styles/WarrantyClaimManagement.css";
 function WarrantyClaimManagement() {
   const { user } = useAuth();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [claims, setClaims] = useState([]);
   const [filteredClaims, setFilteredClaims] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -45,6 +46,45 @@ function WarrantyClaimManagement() {
       }
     }
   }, [location.state, claims]);
+
+  // Handle navigation từ URL query parameters
+  useEffect(() => {
+    const claimId = searchParams.get('claimId');
+    const view = searchParams.get('view');
+
+    if (claimId && view === 'detail' && claims.length > 0) {
+      const claim = claims.find((c) => c.claimId === claimId);
+
+      if (claim) {
+        setSelectedClaim(claim);
+        setShowDetail(true);
+        setShowForm(false);
+      } else {
+        // Nếu không tìm thấy claim trong list hiện tại, thử fetch từ API
+        fetchClaimById(claimId);
+      }
+    }
+  }, [searchParams, claims]);
+
+  const fetchClaimById = async (claimId) => {
+    try {
+      setLoading(true);
+      const response = await warrantyClaimAPI.getClaimById(claimId);
+
+      if (response.success && response.data) {
+        setSelectedClaim(response.data);
+        setShowDetail(true);
+        setShowForm(false);
+      } else {
+        toast.error("Không tìm thấy yêu cầu bảo hành với ID: " + claimId);
+      }
+    } catch (error) {
+      console.error("Error fetching claim by ID:", error);
+      toast.error("Lỗi khi tải thông tin yêu cầu bảo hành");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchClaims = async () => {
     try {

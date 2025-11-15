@@ -322,7 +322,7 @@ function UserManagement() {
         <UserForm
           user={editingUser}
           currentUser={user}
-          currentUserBranch={user?.branchOffice} // ✅ Lấy trực tiếp từ user context
+          currentUserBranch={user?.branchOffice}
           onSave={handleSaveUser}
           onCancel={handleCancelForm}
         />

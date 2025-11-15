@@ -7,10 +7,12 @@ function ReportChart({ reportData }) {
 
   const renderWarrantyChart = () => {
     const { warrantyStats } = reportData;
-    const total = warrantyStats?.totalClaims || 0;
+    
     const approved = warrantyStats?.approvedClaims || 0;
     const rejected = warrantyStats?.rejectedClaims || 0;
     const pending = warrantyStats?.pendingClaims || 0;
+    const completed = warrantyStats?.completedClaims || 0;
+    const total = approved+rejected+pending+completed || 0;
 
     return (
       <div className="chart-section">
@@ -21,6 +23,13 @@ function ReportChart({ reportData }) {
             <div className="stat-label">Đã duyệt</div>
             <div className="stat-percentage">
               {total > 0 ? Math.round((approved / total) * 100) : 0}%
+            </div>
+          </div>
+          <div className="stat-card completed">
+            <div className="stat-number">{total -rejected - pending - approved}</div>
+            <div className="stat-label">đã xong</div>
+            <div className="stat-percentage">
+              {total > 0 ? Math.round((completed/ total) * 100) : 0}%
             </div>
           </div>
           <div className="stat-card rejected">
@@ -53,10 +62,12 @@ function ReportChart({ reportData }) {
                     from 0deg,
                     #4ade80 0deg,
                     #4ade80 ${(approved / total) * 360}deg,
-                    #f87171 ${(approved / total) * 360}deg,
-                    #f87171 ${((approved + rejected) / total) * 360}deg,
+                    #fbbf24 ${(approved / total) * 360}deg,
                     #fbbf24 ${((approved + rejected) / total) * 360}deg,
-                    #fbbf24 360deg
+                    #f87171 ${((approved + rejected) / total) * 360}deg,
+                    #f87171 ${((approved +  pending+ rejected) / total) * 360}deg,
+                    #3b82f6 ${((approved + pending + rejected) / total) * 360}deg,
+                    #3b82f6 360deg
                   )`
                 : 'conic-gradient(rgba(255, 255, 255, 0.1) 0deg, rgba(255, 255, 255, 0.1) 360deg)'
             }}
@@ -65,6 +76,25 @@ function ReportChart({ reportData }) {
               <div className="pie-total">{total}</div>
               <div className="pie-label">Claims</div>
             </div>
+          </div>
+        </div>
+
+        <div className="pie-legend">
+          <div className="legend-item">
+            <div className="legend-color" style={{ backgroundColor: '#4ade80' }}></div>
+            <span>Đã duyệt ({approved})</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-color" style={{ backgroundColor: '#3b82f6' }}></div>
+            <span>Đã xong ({total - rejected - pending - approved})</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-color" style={{ backgroundColor: '#f87171' }}></div>
+            <span>Từ chối ({rejected})</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-color" style={{ backgroundColor: '#fbbf24' }}></div>
+            <span>Chờ xử lý ({pending})</span>
           </div>
         </div>
       </div>
@@ -181,20 +211,7 @@ function ReportChart({ reportData }) {
         {activeChart === "trends" && renderTrendsChart()}
       </div>
 
-      <div className="chart-actions">
-        <button className="btn btn-outline">
-          <FileText size={16} />
-          Xuất PDF
-        </button>
-        <button className="btn btn-outline">
-          <BarChart3 size={16} />
-          Xuất Excel
-        </button>
-        <button className="btn btn-primary">
-          <Mail size={16} />
-          Chia sẻ
-        </button>
-      </div>
+      
     </div>
   );
 }

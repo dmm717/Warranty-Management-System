@@ -45,6 +45,7 @@ class RolePermissionService {
         "distribute_vehicles_to_centers",
         "confirm_manufacturer_report",
         "update_campaign_status_per_vehicle",
+        "assign_work_to_technician",
       ],
 
       // Admin - Quản trị hệ thống
@@ -56,6 +57,7 @@ class RolePermissionService {
         "distribute_vehicles_to_centers",
         "confirm_manufacturer_report",
         "update_campaign_status_per_vehicle",
+        "assign_work_to_technician",
         // Admin có thêm quyền quản trị
         "manage_users",
         "manage_system_settings",
@@ -67,10 +69,7 @@ class RolePermissionService {
         "view_affected_vehicles",
         "send_notification_to_sc",
         "confirm_appointment_date",
-        "assign_work_to_technician",
         "reject_campaign",
-        "record_and_report",
-        "update_report",
       ],
 
       // SC Admin - Quản lý trung tâm dịch vụ

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "../../styles/CampaignForm.css";
+import { VEHICLE_TYPES, TECHNICIAN_SPECIALTIES } from "../../constants";
+import { createPortal } from "react-dom";
 
 function CampaignForm({ campaign, onSave, onCancel }) {
   const [formData, setFormData] = useState({
@@ -11,6 +13,8 @@ function CampaignForm({ campaign, onSave, onCancel }) {
     Status: "PLANNED", // Luôn là PLANNED khi EVM_ADMIN tạo mới
     CompletedVehicles: 0,
     YearScope: "", // Phạm vi năm sản xuất (VD: 2020-2023)
+    vehicleTypeIds: [], // Mảng ID các loại xe áp dụng chiến dịch
+    specialty: "", // Chuyên môn kỹ thuật viên cho chiến dịch
   });
 
   const [errors, setErrors] = useState({});
@@ -32,6 +36,10 @@ function CampaignForm({ campaign, onSave, onCancel }) {
         CompletedVehicles:
           campaign.CompletedVehicles || campaign.completedVehicles || 0,
         YearScope: campaign.YearScope || campaign.yearScope || "",
+        vehicleTypeIds: Array.isArray(campaign.vehicleTypeIds)
+          ? campaign.vehicleTypeIds.map(vt => typeof vt === 'object' ? vt.id || vt.vehicleTypeId : vt)
+          : campaign.vehicleTypeIds ? [campaign.vehicleTypeIds] : [],
+        specialty: campaign.specialty || "",
       });
     }
   }, [campaign]);
@@ -48,6 +56,24 @@ function CampaignForm({ campaign, onSave, onCancel }) {
         ...prev,
         [name]: "",
       }));
+    }
+  };
+
+  const handleVehicleTypeChange = (id) => {
+    if (!id) return;
+    setFormData(prev => {
+      const current = new Set((prev.vehicleTypeIds || []).map(String));
+      const sid = String(id);
+      if (current.has(sid)) {
+        current.delete(sid);
+      } else {
+        current.add(sid);
+      }
+      const next = Array.from(current);
+      return { ...prev, vehicleTypeIds: next };
+    });
+    if (errors.vehicleTypeIds) {
+      setErrors(prev => ({ ...prev, vehicleTypeIds: "" }));
     }
   };
 
@@ -84,8 +110,16 @@ function CampaignForm({ campaign, onSave, onCancel }) {
       newErrors.RequiredParts = "Phụ tùng yêu cầu là bắt buộc";
     }
 
-    if (!formData.YearScope || !formData.YearScope.trim()) {
-      newErrors.YearScope = "Phạm vi năm sản xuất là bắt buộc";
+    // if (!formData.YearScope || !formData.YearScope.trim()) {
+    //   newErrors.YearScope = "Phạm vi năm sản xuất là bắt buộc";
+    // }
+
+    if (!formData.vehicleTypeIds || formData.vehicleTypeIds.length === 0) {
+      newErrors.vehicleTypeIds = "Loại xe điện là bắt buộc";
+    }
+
+    if (!formData.specialty || !formData.specialty.trim()) {
+      newErrors.specialty = "Chuyên môn kỹ thuật viên là bắt buộc";
     }
 
     setErrors(newErrors);
@@ -127,31 +161,61 @@ function CampaignForm({ campaign, onSave, onCancel }) {
                 <div className="error-message">{errors.CampaignsTypeName}</div>
               )}
             </div>
-            {/* Status field - hidden, luôn là PLANNED khi tạo mới */}
+
+            <div className="form-group">
+              <label className="form-label">Loại xe điện *</label>
+
+              <VehicleTypeDropdown className="vehicle-dropdown"
+                vehicleTypes={VEHICLE_TYPES}
+                selectedIds={formData.vehicleTypeIds}
+                onSelect={handleVehicleTypeChange}
+                singleSelect={false}
+                error={errors.vehicleTypeIds}
+              />
+            </div>
+          </div>
+          <div className="form-technician-specialty">
+
+            <div className="form-group">
+              <label className="form-label">Chuyên môn kỹ thuật viên *</label>
+              <select
+                name="specialty"
+                value={formData.specialty}
+                onChange={handleChange}
+                className={`form-control ${
+                  errors.specialty ? "error" : ""
+                }`}
+              >
+                <option value="">Chọn chuyên môn</option>
+                {TECHNICIAN_SPECIALTIES.map((spec) => (
+                  <option key={spec.value} value={spec.value}>
+                    {spec.label}
+                  </option>
+                ))}
+              </select>
+              {errors.specialty && (
+                <div className="error-message">{errors.specialty}</div>
+              )}
+            </div>
+
             {campaign && (
               <div className="form-group">
                 <label className="form-label">Trạng thái</label>
-                <input
-                  type="text"
-                  value={
-                    campaign.status === "PLANNED"
-                      ? "Chuẩn bị"
-                      : campaign.status === "ACTIVE"
-                      ? "Đang triển khai"
-                      : campaign.status === "PAUSED"
-                      ? "Dừng"
-                      : campaign.status === "COMPLETED"
-                      ? "Hoàn thành"
-                      : campaign.status === "CANCELLED"
-                      ? "Hủy bỏ"
-                      : campaign.status
-                  }
+                <select
+                  name="Status"
+                  value={formData.Status}
+                  onChange={handleChange}
                   className="form-control"
-                  disabled
-                  readOnly
-                />
+                >
+                  <option value="PLANNED">Chuẩn bị</option>
+                  <option value="ACTIVE">Đang triển khai</option>
+                  
+                  <option value="COMPLETED">Hoàn thành</option>
+                  
+                </select>
+                
                 <small className="form-help">
-                  Trạng thái được thay đổi thông qua danh sách chiến dịch
+                  Chọn trạng thái mới cho chiến dịch
                 </small>
               </div>
             )}
@@ -208,6 +272,7 @@ function CampaignForm({ campaign, onSave, onCancel }) {
             </div>
 
             {/* ✅ Thêm phạm vi năm sản xuất */}
+            {/*
             <div className="form-group">
               <label className="form-label">Phạm vi năm sản xuất *</label>
               <input
@@ -225,30 +290,10 @@ function CampaignForm({ campaign, onSave, onCancel }) {
                 Năm sản xuất của các dòng xe áp dụng chiến dịch
               </small>
             </div>
+            */}
           </div>
 
-          <div className="form-row">
-            {/* ✅ Thêm ô nhập số xe hoàn thành */}
-            <div className="form-group">
-              <label className="form-label">Số xe hoàn thành</label>
-              <input
-                type="number"
-                name="CompletedVehicles"
-                value={formData.CompletedVehicles}
-                onChange={handleChange}
-                min="0"
-                className={`form-control ${
-                  errors.CompletedVehicles ? "error" : ""
-                }`}
-                placeholder="Nhập số xe đã hoàn thành"
-                disabled
-                readOnly
-              />
-              <small className="form-help">
-                Tự động cập nhật từ báo cáo của kỹ thuật viên
-              </small>
-            </div>
-          </div>
+          
 
           <div className="form-row">
             <div className="form-group">
@@ -282,3 +327,123 @@ function CampaignForm({ campaign, onSave, onCancel }) {
 }
 
 export default CampaignForm;
+
+/* -------------------------------------------------------------------------
+  VehicleTypeDropdown - small local component that renders a toggle button
+  and an expandable panel containing the checkbox grid. Implemented here to
+  avoid adding new files. Handles outside click to close.
+------------------------------------------------------------------------- */
+function VehicleTypeDropdown({ vehicleTypes, selectedIds, onSelect, singleSelect = false, disabled, error }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const toggleRef = useRef(null);
+  const panelRef = useRef(null);
+  const [panelStyle, setPanelStyle] = useState({});
+
+  useEffect(() => {
+    const handleOutside = (e) => {
+      // Click inside the original dropdown wrapper should keep open
+      if (dropdownRef.current && dropdownRef.current.contains(e.target)) return;
+      // Click inside the portal panel should also keep open
+      if (panelRef.current && panelRef.current.contains(e.target)) return;
+      // Otherwise close
+      setOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  // adjust panel width to match toggle width when opened
+  useEffect(() => {
+    if (!open) return;
+
+    const adjust = () => {
+      const toggleEl = toggleRef.current;
+      if (!toggleEl) return;
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const rect = toggleEl.getBoundingClientRect();
+      // prefer matching toggle width, but clamp to viewport and a sensible max
+      const maxAllowed = Math.min(760, viewportWidth - 32);
+      const width = Math.min(rect.width || toggleEl.offsetWidth, maxAllowed);
+
+      // compute fixed position to avoid clipping by parent overflow/staking contexts
+      if (viewportWidth <= 768) {
+        setPanelStyle({ position: 'fixed', width: 'calc(100% - 16px)', left: 8, top: rect.bottom + 8 });
+      } else {
+        setPanelStyle({ position: 'fixed', width: width + 'px', left: rect.left + 'px', top: rect.bottom + 8 + 'px' });
+      }
+    };
+
+    adjust();
+    window.addEventListener('resize', adjust);
+    window.addEventListener('scroll', adjust, true);
+    return () => {
+      window.removeEventListener('resize', adjust);
+      window.removeEventListener('scroll', adjust, true);
+    };
+  }, [open]);
+
+  // normalize selected ids to strings to avoid type-mismatch (number vs string)
+  const normalizedSelectedIds = new Set((selectedIds || []).map(String));
+  const selectedLabels = vehicleTypes
+    .filter((vt) => normalizedSelectedIds.has(String(vt.id)))
+    .map((vt) => vt.name + " (" + vt.id + ")");
+
+  return (
+    <div className="vehicle-dropdown" ref={dropdownRef}>
+      <button
+        type="button"
+        className={`form-control vehicle-dropdown-toggle ${selectedIds && selectedIds.length ? 'has-value' : ''} ${error ? 'error' : ''}`}
+        ref={toggleRef}
+        onClick={() => !disabled && setOpen((s) => !s)}
+        aria-expanded={open}
+        disabled={disabled}
+      >
+        <span className="vehicle-dropdown-label">
+          {selectedLabels.length > 0 ? selectedLabels.join(', ') : 'Chọn model xe...'}
+        </span>
+        <span className={`caret ${open ? 'open' : ''}`}></span>
+      </button>
+
+      {error && (
+        <div className="error-message">{error}</div>
+      )}
+
+      {open && createPortal(
+        <div ref={panelRef} className="vehicle-dropdown-panel" style={{ ...panelStyle, zIndex: 9999 }}>
+          <div className="vehicle-types-grid">
+            {vehicleTypes.map((vt) => (
+              <div className="vehicle-item" key={vt.id}>
+                <label
+                  className="vehicle-checkbox"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // notify click to toggle selection
+                    if (singleSelect) {
+                      onSelect && onSelect(vt.id);
+                      setOpen(false);
+                    } else {
+                      // For multi-select always notify caller with the id; caller will toggle
+                      onSelect && onSelect(vt.id);
+                    }
+                  }}
+                >
+                  <input
+                    type={singleSelect ? 'radio' : 'checkbox'}
+                    name={singleSelect ? 'vehicle-type-radio' : undefined}
+                    checked={normalizedSelectedIds.has(String(vt.id))}
+                    readOnly
+                    disabled={disabled}
+                  />
+                  <span>{vt.name} ({vt.id})</span>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}

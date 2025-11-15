@@ -1,10 +1,16 @@
 import React, { useState } from "react";
-import { Car, Phone, Mail, Edit, Trash2 } from "lucide-react";
+import { Car, Phone, Mail, Edit, Trash2, RefreshCw } from "lucide-react";
 import "../../styles/VehicleList.css";
+import { vehicleAPI, serviceCampaignAPI } from "../../services/api";
 
 function VehicleList({ vehicles, onEdit, onDelete }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [showVersionModal, setShowVersionModal] = useState(false);
+  const [selectedVehicleForVersion, setSelectedVehicleForVersion] = useState(null);
+  const [selectedCampaignId, setSelectedCampaignId] = useState("");
+  const [campaigns, setCampaigns] = useState([]);
+  const [updatingCampaign, setUpdatingCampaign] = useState(false);
 
   const handleImageClick = (vehicle) => {
     if (
@@ -21,6 +27,43 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
     setSelectedImage(null);
     setSelectedVehicle(null);
   };
+
+  const handleOpenVersionModal = (vehicle) => {
+    setSelectedVehicleForVersion(vehicle);
+    setShowVersionModal(true);
+    setSelectedCampaignId(""); // reset khi mở modal
+    // Gọi API lấy danh sách campaign
+    serviceCampaignAPI.getAllCampaigns({
+      page: 0,
+      size: 100,
+      sortBy: "startDate",
+      sortDir: "desc",
+    })
+      .then((res) => {
+        console.log("Campaign API response:", res);
+        if (res.success) {
+          const campaignsData = res.data?.content || res.data || [];
+          console.log("Campaigns data:", campaignsData);
+          setCampaigns(campaignsData);
+        } else {
+          console.error("API call failed:", res.message);
+          alert(`Không thể tải danh sách campaign: ${res.message}`);
+          setCampaigns([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching campaigns:", error);
+        alert("Không thể tải danh sách campaign. Vui lòng thử lại.");
+        setCampaigns([]);
+      });
+  };
+
+  const handleCloseVersionModal = () => {
+    setShowVersionModal(false);
+    setSelectedVehicleForVersion(null);
+    setSelectedCampaignId("");
+  };
+
   const getStatusBadge = (status) => {
     const statusClasses = {
       ACTIVE: "status-active",
@@ -222,6 +265,13 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
                         <Edit size={16} />
                       </button>
                       <button
+                        onClick={() => handleOpenVersionModal(vehicle)}
+                        className="btn btn-sm btn-primary"
+                        title="Gán Campaign"
+                      >
+                        <RefreshCw size={16} />
+                      </button>
+                      <button
                         onClick={() => onDelete(vehicle.vehicleId)}
                         className="btn btn-sm btn-danger"
                         title="Xóa"
@@ -236,6 +286,84 @@ function VehicleList({ vehicles, onEdit, onDelete }) {
           </table>
         </div>
       </div>
+
+      {/* Assign Campaign Modal */}
+      {showVersionModal && (
+        <div className="modal-overlay" onClick={handleCloseVersionModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Gán Campaign cho Xe</h3>
+              <button
+                onClick={handleCloseVersionModal}
+                className="modal-close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              {selectedVehicleForVersion && (
+                <div className="version-update-info">
+                  <div className="vehicle-info">
+                    <h4>{selectedVehicleForVersion.Vehicle_Name}</h4>
+                    <p>VIN: {selectedVehicleForVersion.vehicleId}</p>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="campaignSelect">Chọn Campaign:</label>
+                    <select
+                      id="campaignSelect"
+                      value={selectedCampaignId}
+                      onChange={async (e) => {
+                        const campaignId = e.target.value;
+                        setSelectedCampaignId(campaignId);
+                        
+                        if (campaignId) {
+                          // Lưu ID campaign vào version của vehicle
+                          setUpdatingCampaign(true);
+                          try {
+                            const response = await vehicleAPI.updateVersion(selectedVehicleForVersion.vehicleId, campaignId);
+                            
+                            if (response.success) {
+                              alert(`Đã lưu campaign ID: ${campaignId} vào version của xe ${selectedVehicleForVersion.Vehicle_Name}`);
+                              handleCloseVersionModal();
+                              // Có thể refresh vehicle list ở đây nếu cần
+                              // onRefresh();
+                            } else {
+                              alert(`Lỗi: ${response.message || "Không thể cập nhật version"}`);
+                            }
+                          } catch (error) {
+                            console.error("Error updating vehicle version:", error);
+                            alert("Có lỗi xảy ra khi cập nhật version. Vui lòng thử lại.");
+                          } finally {
+                            setUpdatingCampaign(false);
+                          }
+                        }
+                      }}
+                      className="form-control"
+                      disabled={updatingCampaign}
+                    >
+                      <option value="">-- Chọn chiến dịch --</option>
+                      {campaigns.map((c) => (
+                        <option key={c.id || c.campaignsId} value={c.id || c.campaignsId}>
+                          {c.name || c.campaignsTypeName || c.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button
+                onClick={handleCloseVersionModal}
+                className="btn btn-outline"
+                disabled={updatingCampaign}
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
